@@ -63,8 +63,10 @@ waivers:
 | Static phone-home rule hits (`PH-*`) | Yes | It may be dead code, or disabled by a config the rule can't see. Say so in writing. |
 | Crypto inventory (`CRYPTO-*`) | Yes | Accepted risk is a legitimate approver decision. |
 | Observed egress attempt (out of scope) | **No** | It happened. Fix it, or declare the destination in scope (§2) if it's truly internal. |
-| Unsafe deserialization / code-on-load (`MODEL-PICKLE-*`, Keras Lambda, TorchScript code) | **No** | It executes code on load. Convert the format. |
+| Code on load: `MODEL-PICKLE-*`, `MODEL-KERAS-LAMBDA`, `MODEL-KERAS-UNSAFE-MODULE`, `MODEL-TORCHSCRIPT`, `MODEL-CHAT-TEMPLATE-SUSPICIOUS` | **No** | It executes code on load. Convert the format. |
 | `trust_remote_code` / `auto_map` (`MODEL-REMOTE-CODE`) | **No** | Same reason. |
+| `MODEL-ONNX-EXTERNAL-DATA-ESCAPE`, `MODEL-ARCHIVE-ANOMALY` | **No** | The loader reads outside the model, or loaders and scanners can see different content. Re-export the model. |
+| Can't verify: `MODEL-PARSE-FAILED`, `MODEL-UNSCANNED-FORMAT`, `MODEL-ONNX-EXTERNAL-DATA-MISSING`, `MODEL-NUMPY-OBJECT-ARRAY` | Yes | Gapproof fails closed on these. If the file is legitimately unusual, the vendor accepts it in writing. |
 | INV-01 violation (`AGENT-INV01-*`) | **No** | The mitigation is a `human_approval` gate in the manifest, which is itself evidence. |
 
 ## 5. Interaction with `--skip`

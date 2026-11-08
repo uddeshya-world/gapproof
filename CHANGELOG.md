@@ -4,6 +4,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (M1: safe filesystem + model scanner)
+- `internal/fsscan`: extracts `docker save` / `podman save` archives (Docker and OCI layouts) layer by layer with OCI whiteouts.
+  - Every write goes through `os.Root`, and symlinks resolve with chroot semantics. `../` traversal, absolute and climbing symlinks, symlink loops and write-through-symlink are all contained or rejected.
+  - Limits on entries, file size, total bytes, metadata and decompression ratio. zstd and xz layers are refused with a clear error.
+  - Integrity chain: config digest, then every `diff_id`, then OCI blob digests. The engine image ID is recorded too.
+  - Device files are never created and setuid bits are dropped. Case collisions on macOS are reported.
+- `internal/models`: finds and SHA-256-hashes model artefacts and checks them without loading anything:
+  - A pickle opcode walker for protocols 0–5, raw and inside PyTorch zips, including legacy torch files, with stack and memo emulation.
+  - safetensors header validation, GGUF metadata and tensor infos, and ONNX external-data checks (including subgraphs).
+  - TorchScript code, Keras Lambda layers and non-Keras modules, NumPy object arrays (their pickle payload is walked), Hugging Face `auto_map`, and SSTI-style chat templates.
+  - Zip-bomb and duplicate-member detection.
+  - It fails closed, and pickle imports are deny-by-default.
+- 30 generated fixtures, a golden `scan.json` and a determinism test. Coverage is 91% on `internal/models`.
+- The import-policy test now covers every package in the module and forbids `os/exec` and `plugin` outside the harness (rule 3).
+
 ### Added (M0: skeleton + no-egress self-test)
 - Go module `github.com/uddeshya-world/gapproof` (Go 1.26+) and the package layout from CLAUDE.md.
 - Cobra CLI: `scan`, `report`, `sign`, `verify`, `diff`, `keygen`, `rules list|test`, `harness load`, the hidden `sinkhole`, and `version`. All argument validation is real now: exit 2 for usage errors, and exit 3 for stubs until their milestone lands.

@@ -28,3 +28,19 @@ A grep for `net/http` misses `net.Dial`, `net.Lookup*` and `net.Resolver`. **Dec
 
 ## D-009 (2026-11-08): How we talk about Gapproof's own FIPS mode
 Releases build with `GOFIPS140=v1.0.0`. The Go 1.27.3 toolchain lists `v1.0.0-c2097c7c` in `GOROOT/lib/fips140/certified.txt`. **Decision:** README and `version` state the facts (FIPS mode on, module version, SHA-256 + Ed25519). We don't quote a CMVP certificate number until it's checked on the NIST CMVP site.
+
+## D-010 (2026-11-08): The model scanner fails closed and denies imports by default
+**Decision:**
+- Any model file Gapproof can't fully parse becomes `MODEL-PARSE-FAILED` (high), never a silent skip. Truncated files, bombs, over-limit sizes and zips Go's reader rejects (which Python might still load) all count.
+- Pickle imports are judged against an allowlist of tensor-rebuild, storage and dtype names. Known code-execution roots are `MODEL-PICKLE-CODE-EXEC` (critical). Everything else is `MODEL-PICKLE-UNKNOWN-IMPORT` (high). Operands that can't be resolved statically (memo tricks the walker can't follow, or EXT opcodes) are `MODEL-PICKLE-UNRESOLVED-IMPORT` (high).
+- The walker emulates the stack and memo, so STACK_GLOBAL operands routed through BINGET/MEMOIZE still resolve.
+
+**Consequence:** sklearn and joblib models show up as high findings until they're converted or waived. That's deliberate: an arbitrary pickled object can't be shown safe. Compressed joblib is `MODEL-UNSCANNED-FORMAT`. For legacy Keras `.h5`, the scanner only searches the stored model_config JSON for Lambda layers; it doesn't parse HDF5.
+
+## D-011 (2026-11-08): Image identity records both the config digest and the engine image ID
+On Docker 29 (containerd store) the engine's image ID is the OCI index digest, not the config digest. **Decision:**
+- `ConfigDigest` (sha256 of the config, which pins every verified `diff_id`) is the content binding for evidence.
+- `ImageID` (the `index.json` target, verified against its blob) is recorded so approvers can match `docker images --digests` and registry digests.
+
+## D-012 (2026-11-08): Extraction on case-insensitive hosts is reported, not silently wrong
+macOS's default filesystem merges paths that differ only by case. **Decision:** the extractor detects a case-insensitive temp filesystem and records every collision in `Stats.CaseCollisions` and the warnings. **Consequence:** an M4 report must surface collisions as an incomplete scan. Release scans should run on Linux, or point `TMPDIR` at a case-sensitive volume.

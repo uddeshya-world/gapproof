@@ -11,13 +11,18 @@ import (
 	"testing"
 )
 
-// Rule 1: Gapproof never makes a network call. A grep for "net/http" is
+// Rule 1: Gapproof never makes a network call. Rule 3: it never executes
+// scanned content. A grep for "net/http" is
 // easy to defeat (net.Dial, net.LookupHost, net.Resolver), so this test
 // checks the binary's real import graph instead.
 //
 //  A. No HTTP/TLS/RPC/SMTP client stack anywhere in the binary.
 //  B. Any non-standard-library package that imports a std package reaching
 //     "net" must be on netAllowed, with a justification.
+//  C. Only the egress harness may run processes (os/exec, to drive the
+//     container engine); nothing may load plugins.
+//
+// It checks every package in the module, not just what the CLI links today.
 
 const modulePath = "github.com/uddeshya-world/gapproof"
 
@@ -26,6 +31,11 @@ var netAllowed = map[string]string{
 	modulePath + "/internal/sinkhole": "listens on the harness's private netns only (spec §3.1); never dials out",
 	modulePath + "/internal/harness":  "reserved for container-network plumbing; must not dial",
 	"github.com/spf13/pflag":          "imports net only for net.IP/net.IPNet flag value types; no sockets",
+}
+
+// execAllowed: packages permitted to import os/exec.
+var execAllowed = map[string]string{
+	modulePath + "/internal/harness": "drives docker/podman through their CLI (spec §3.1); never runs scanned content",
 }
 
 func forbiddenAlways(p string) bool {
@@ -65,6 +75,12 @@ func checkNetworkPolicy(pkgs []goPkg) []string {
 			continue
 		}
 		for _, imp := range p.Imports {
+			if imp == "plugin" {
+				v = append(v, p.ImportPath+" imports plugin (rule 3: never load code)")
+			}
+			if _, ok := execAllowed[p.ImportPath]; !ok && imp == "os/exec" && strings.HasPrefix(p.ImportPath, modulePath) {
+				v = append(v, p.ImportPath+" imports os/exec; only the harness may run processes (rule 3)")
+			}
 			if _, ok := netAllowed[imp]; ok {
 				continue // importing an allowed package is fine; it carries its own justification
 			}
@@ -78,7 +94,7 @@ func checkNetworkPolicy(pkgs []goPkg) []string {
 }
 
 func TestNoNetworkImports(t *testing.T) {
-	out, err := exec.Command("go", "list", "-deps", "-json", ".").Output()
+	out, err := exec.Command("go", "list", "-deps", "-json", modulePath+"/...").Output()
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
@@ -110,7 +126,7 @@ func TestCheckNetworkPolicy(t *testing.T) {
 	std := func(path string, deps ...string) goPkg {
 		return goPkg{ImportPath: path, Standard: true, Deps: deps}
 	}
-	base := []goPkg{std("net"), std("os"), std("net/netip"), std("log/syslog", "net")}
+	base := []goPkg{std("net"), std("os"), std("net/netip"), std("log/syslog", "net"), std("os/exec"), std("plugin")}
 	tests := []struct {
 		name    string
 		pkg     goPkg
@@ -123,6 +139,9 @@ func TestCheckNetworkPolicy(t *testing.T) {
 		{"allowed sinkhole", goPkg{ImportPath: modulePath + "/internal/sinkhole", Imports: []string{"net"}}, ""},
 		{"importing allowed pkg", goPkg{ImportPath: modulePath + "/cmd/gapproof", Imports: []string{modulePath + "/internal/sinkhole"}}, ""},
 		{"http client linked", goPkg{ImportPath: modulePath + "/internal/agents", Imports: []string{"net/http"}}, "binary links net/http"},
+		{"exec outside harness", goPkg{ImportPath: modulePath + "/internal/models", Imports: []string{"os/exec"}}, "only the harness may run processes"},
+		{"exec in harness", goPkg{ImportPath: modulePath + "/internal/harness", Imports: []string{"os/exec"}}, ""},
+		{"plugin", goPkg{ImportPath: modulePath + "/internal/models", Imports: []string{"plugin"}}, "never load code"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
