@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-SENTRY-DSN-ENV",
+    "severity": "high",
+    "title": "SENTRY_DSN points at a public host",
+    "explanation": "The image environment sets SENTRY_DSN to a public host. Sentry SDKs read it automatically and send events there.",
+    "evidence": {
+      "path": "(image config)",
+      "sha256": "fixture",
+      "detail": "image env SENTRY_DSN points at public host o1.ingest.sentry.io"
+    },
+    "fix": "Unset SENTRY_DSN, or point it at a Sentry instance inside the enclave.",
+    "controls": [
+      "SC-7",
+      "AC-4"
+    ]
+  }
+]

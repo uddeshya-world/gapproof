@@ -59,8 +59,9 @@ func runE(fn func(cmd *cobra.Command, args []string) error) func(*cobra.Command,
 		}
 		var ue *usageError
 		var bt *belowThresholdError
+		var cf *checkFailedError
 		var ie *internalError
-		if errors.As(err, &ue) || errors.As(err, &bt) || errors.As(err, &ie) || errors.Is(err, errNotImplemented) {
+		if errors.As(err, &ue) || errors.As(err, &bt) || errors.As(err, &cf) || errors.As(err, &ie) || errors.Is(err, errNotImplemented) {
 			return err
 		}
 		return &internalError{err}

@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-CHROMA-TELEMETRY",
+    "severity": "high",
+    "title": "ChromaDB anonymized telemetry is on",
+    "explanation": "chromadb sends anonymized telemetry (PostHog) by default. It's off only when ANONYMIZED_TELEMETRY is False in the environment or anonymized_telemetry=False is passed in client Settings.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/chromadb-0.5.23.dist-info/METADATA",
+      "sha256": "a62520e24e40f214e0e24c13c455609652f3626ccff8ec08d8c2a71ba8f3483f",
+      "detail": "chromadb 0.5.23 installed; not disabled in the image (none of ANONYMIZED_TELEMETRY=0|false|no|off)"
+    },
+    "fix": "Set ANONYMIZED_TELEMETRY=False in the image environment.",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

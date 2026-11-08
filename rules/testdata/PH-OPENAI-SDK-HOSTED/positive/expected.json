@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-OPENAI-SDK-HOSTED",
+    "severity": "medium",
+    "title": "OpenAI client defaults to the hosted API",
+    "explanation": "The openai package is installed and OPENAI_BASE_URL isn't set, so clients created without base_url call api.openai.com. That is often a hosted fallback for embeddings or completions. Code may still pass base_url explicitly, which this rule can't see.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/openai-1.54.4.dist-info/METADATA",
+      "sha256": "74e28e8fb8b049f15eadb174808d82a1c4ade2e8bbdb4824f2adaf6a6923a9ab",
+      "detail": "openai 1.54.4 installed; not disabled in the image (none of OPENAI_BASE_URL=*)"
+    },
+    "fix": "Set OPENAI_BASE_URL to the in-enclave model server (OpenAI-compatible), or remove the hosted fallback.",
+    "controls": [
+      "SC-7",
+      "AC-4"
+    ]
+  }
+]

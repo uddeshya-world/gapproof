@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-TELEMETRY-SDK",
+    "severity": "medium",
+    "title": "Product-analytics SDK installed",
+    "explanation": "A product-analytics client (PostHog, Mixpanel, Segment) is installed. These SDKs send events to SaaS endpoints when called. Some arrive as dependencies of other packages (chromadb pulls in posthog), so confirm whether anything calls them.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/posthog-3.7.0.dist-info/METADATA",
+      "sha256": "d2c25e4752d682e6cd25674732378c2708a166424469068db57449b6cd1d3032",
+      "detail": "posthog 3.7.0 installed"
+    },
+    "fix": "Remove the SDK from the runtime image, or make sure nothing calls it and its upstream library's telemetry switch is off.",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

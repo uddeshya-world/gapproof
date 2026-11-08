@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-GRADIO-ANALYTICS",
+    "severity": "high",
+    "title": "Gradio analytics are on",
+    "explanation": "Gradio sends usage analytics to Gradio's servers unless GRADIO_ANALYTICS_ENABLED is set to something other than \"True\". Its own guide is inconsistent about the default, but the API docs and source enable analytics when the variable is unset.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/gradio-5.4.0.dist-info/METADATA",
+      "sha256": "135d2e8cfbe403eb059d5f1fd393b31674791ba2c14390bb8dae999ecc3c963f",
+      "detail": "gradio 5.4.0 installed; not disabled in the image (none of GRADIO_ANALYTICS_ENABLED=!true)"
+    },
+    "fix": "Set GRADIO_ANALYTICS_ENABLED=False in the image environment (and analytics_enabled=False in code).",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

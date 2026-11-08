@@ -1,0 +1,17 @@
+id: PH-HF-HUB-ONLINE
+title: Hugging Face Hub online mode is on
+severity: high
+confidence: high
+explanation: >-
+  huggingface_hub is installed and offline mode isn't set in the image environment.
+  Model, tokenizer and config loads try to reach huggingface.co (downloads, revision
+  checks) and fail or stall in an air-gapped network.
+match:
+  python_package: huggingface-hub
+  unless_env:
+    HF_HUB_OFFLINE: ["1", "true", "yes", "on"]
+    TRANSFORMERS_OFFLINE: ["1", "true", "yes", "on"]
+fix: Bake the models into the image and set HF_HUB_OFFLINE=1 in the image environment.
+controls: [SC-7, CM-7]
+source:
+  - https://huggingface.co/docs/huggingface_hub/package_reference/environment_variables

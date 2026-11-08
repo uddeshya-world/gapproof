@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (M2: phone-home rules + crypto inventory)
+- `rules/`: embedded rule pack of 16 phone-home rules, each with a verified source URL or `confidence: low`, plus positive and negative fixtures and golden output.
+- `rules/cmvp_snapshot.json` (2026-11-09): OpenSSL FIPS provider 3.1.2 (#4985, active), 3.0.8/3.0.9 (#4282, historical since 2026-09-21), Go Cryptographic Module v1.0.0 (#5247, active), v1.26.0 (in process).
+- `internal/inventory`: Python distributions (with wheel tags) and application source files in one walk.
+- `internal/phonehome`: strict YAML rule engine. Conditions cover installed packages, image env values, public URLs in env, and application source. `unless_env` and `unless_file` suppress a rule. Evidence anchors to METADATA, a source line, or the image config digest.
+- `internal/crypto`:
+  - Finds OpenSSL, LibreSSL, BoringSSL, NSS, Mbed TLS, GnuTLS, libgcrypt, wolfSSL and nettle, including static copies inside wheels and node addons.
+  - Detects the OpenSSL FIPS provider and whether `openssl.cnf` activates it, and Go binaries' FIPS mode via buildinfo.
+  - Assigns statuses from the CMVP snapshot, and flags weak hashes and non-CSPRNG secrets in application code.
+- `gapproof rules list [--json]` and `gapproof rules test <id> <fixture-dir> [--expect match|none]`.
+- e2e: a real `python:3.12-slim` + `cryptography` image. The wheel's bundled OpenSSL 3.4.1 is reported as unvalidated, with the snapshot date.
+
 ### Added (M1: safe filesystem + model scanner)
 - `internal/fsscan`: extracts `docker save` / `podman save` archives (Docker and OCI layouts) layer by layer with OCI whiteouts.
   - Every write goes through `os.Root`, and symlinks resolve with chroot semantics. `../` traversal, absolute and climbing symlinks, symlink loops and write-through-symlink are all contained or rejected.

@@ -89,29 +89,6 @@ func newKeygenCmd() *cobra.Command {
 	return cmd
 }
 
-func newRulesCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "rules",
-		Short: "Inspect the embedded phone-home rule pack",
-		Args:  exactArgs(0),
-	}
-	cmd.AddCommand(
-		&cobra.Command{
-			Use:   "list",
-			Short: "List embedded rules",
-			Args:  exactArgs(0),
-			RunE:  runE(func(*cobra.Command, []string) error { return notImplemented("M2") }),
-		},
-		&cobra.Command{
-			Use:   "test <rule-id> <fixture-dir>",
-			Short: "Run one rule against a fixture directory",
-			Args:  exactArgs(2),
-			RunE:  runE(func(*cobra.Command, []string) error { return notImplemented("M2") }),
-		},
-	)
-	return cmd
-}
-
 func newHarnessCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "harness",

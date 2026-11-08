@@ -1,0 +1,19 @@
+[
+  {
+    "rule": "PH-TRUST-REMOTE-CODE",
+    "severity": "high",
+    "title": "Application loads models with trust_remote_code=True",
+    "explanation": "Application code passes trust_remote_code=True, so loading the model imports and runs Python files that ship with the model repository. In an online setup those files are fetched from the Hub at load time.",
+    "evidence": {
+      "path": "app/load.py",
+      "sha256": "1982621ad20c106d359aa6c98c455f9522a4765c6f566bbfa822f083106d3f4e",
+      "offset": 35,
+      "detail": "m = AutoModel.from_pretrained(p, trust_remote_code=True)"
+    },
+    "fix": "Vendor the model code into your source tree and load with trust_remote_code=False.",
+    "controls": [
+      "SI-7",
+      "CM-7"
+    ]
+  }
+]

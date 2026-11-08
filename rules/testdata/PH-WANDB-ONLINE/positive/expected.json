@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-WANDB-ONLINE",
+    "severity": "high",
+    "title": "Weights \u0026 Biases syncs online",
+    "explanation": "wandb is installed and WANDB_MODE isn't offline or disabled, so any wandb.init() call syncs runs, metrics and artifacts to the W\u0026B service.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/wandb-0.18.7.dist-info/METADATA",
+      "sha256": "9decaf3b83a2d6a279f2404af31b7a9dcc550e4f829353556b854300d38b48ae",
+      "detail": "wandb 0.18.7 installed; not disabled in the image (none of WANDB_MODE=offline|disabled|dryrun)"
+    },
+    "fix": "Set WANDB_MODE=disabled (or offline) in the image environment, or remove wandb from the runtime image.",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

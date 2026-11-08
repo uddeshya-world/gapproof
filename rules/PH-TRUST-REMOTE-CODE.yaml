@@ -1,0 +1,14 @@
+id: PH-TRUST-REMOTE-CODE
+title: Application loads models with trust_remote_code=True
+severity: high
+confidence: high
+explanation: >-
+  Application code passes trust_remote_code=True, so loading the model imports and runs
+  Python files that ship with the model repository. In an online setup those files are
+  fetched from the Hub at load time.
+match:
+  source_regex: 'trust_remote_code\s*=\s*True'
+fix: Vendor the model code into your source tree and load with trust_remote_code=False.
+controls: [SI-7, CM-7]
+source:
+  - https://huggingface.co/docs/transformers/models#custom-models

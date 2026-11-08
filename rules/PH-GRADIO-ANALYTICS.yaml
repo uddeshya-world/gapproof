@@ -1,0 +1,17 @@
+id: PH-GRADIO-ANALYTICS
+title: Gradio analytics are on
+severity: high
+confidence: high
+explanation: >-
+  Gradio sends usage analytics to Gradio's servers unless GRADIO_ANALYTICS_ENABLED is
+  set to something other than "True". Its own guide is inconsistent about the default,
+  but the API docs and source enable analytics when the variable is unset.
+match:
+  python_package: gradio
+  unless_env:
+    GRADIO_ANALYTICS_ENABLED: ["!true"]
+fix: Set GRADIO_ANALYTICS_ENABLED=False in the image environment (and analytics_enabled=False in code).
+controls: [CM-7, SC-7]
+source:
+  - https://www.gradio.app/guides/environment-variables
+  - https://www.gradio.app/docs/gradio/blocks

@@ -1,0 +1,17 @@
+id: PH-HOSTED-LLM-SDK
+title: Hosted model API client installed
+severity: medium
+confidence: high
+explanation: >-
+  A client for a hosted model or embedding API is installed (Cohere, Google GenAI,
+  Voyage, Mistral). These SDKs call the vendor's cloud API, a common hidden hosted
+  fallback in RAG pipelines.
+match:
+  python_package: [cohere, google-genai, google-generativeai, voyageai, mistralai]
+fix: Remove hosted-API clients from the air-gapped build, or confirm they're unused and document it.
+controls: [SC-7, AC-4]
+source:
+  - https://pypi.org/project/cohere/
+  - https://pypi.org/project/google-genai/
+  - https://pypi.org/project/voyageai/
+  - https://pypi.org/project/mistralai/

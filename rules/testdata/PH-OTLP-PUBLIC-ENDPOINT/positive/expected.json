@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-OTLP-PUBLIC-ENDPOINT",
+    "severity": "high",
+    "title": "OpenTelemetry exports to a public endpoint",
+    "explanation": "An OTEL_EXPORTER_OTLP_*ENDPOINT variable points at a public host, so traces, metrics or logs are exported outside the network.",
+    "evidence": {
+      "path": "(image config)",
+      "sha256": "fixture",
+      "detail": "image env OTEL_EXPORTER_OTLP_TRACES_ENDPOINT points at public host otlp.observability-vendor.example.com"
+    },
+    "fix": "Point the OTLP endpoint at a collector inside the enclave.",
+    "controls": [
+      "SC-7",
+      "AC-4"
+    ]
+  }
+]

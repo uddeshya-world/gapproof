@@ -1,0 +1,19 @@
+id: PH-HF-TELEMETRY
+title: Hugging Face library telemetry is on
+severity: high
+confidence: high
+explanation: >-
+  huggingface_hub sends usage telemetry to Hugging Face by default. Telemetry is off
+  only when HF_HUB_DISABLE_TELEMETRY (or DO_NOT_TRACK) is set, or offline mode is on.
+match:
+  python_package: huggingface-hub
+  unless_env:
+    HF_HUB_DISABLE_TELEMETRY: ["1", "true", "yes", "on"]
+    DO_NOT_TRACK: ["1", "true", "yes", "on"]
+    DISABLE_TELEMETRY: ["1", "true", "yes", "on"]
+    HF_HUB_OFFLINE: ["1", "true", "yes", "on"]
+    TRANSFORMERS_OFFLINE: ["1", "true", "yes", "on"]
+fix: Set HF_HUB_DISABLE_TELEMETRY=1 (and HF_HUB_OFFLINE=1) in the image environment.
+controls: [CM-7, SC-7]
+source:
+  - https://huggingface.co/docs/huggingface_hub/package_reference/environment_variables

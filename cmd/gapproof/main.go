@@ -45,10 +45,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 func exitCode(err error) int {
 	var ie *internalError
 	var bt *belowThresholdError
+	var cf *checkFailedError
 	switch {
 	case err == nil:
 		return exitOK
-	case errors.As(err, &bt):
+	case errors.As(err, &bt), errors.As(err, &cf):
 		return exitBelowThreshold
 	case errors.Is(err, errNotImplemented), errors.As(err, &ie):
 		return exitInternal
@@ -74,6 +75,12 @@ type internalError struct{ err error }
 
 func (e *internalError) Error() string { return e.err.Error() }
 func (e *internalError) Unwrap() error { return e.err }
+
+// checkFailedError means a check ran and its result didn't meet the
+// expectation (exit 1), e.g. `rules test --expect`.
+type checkFailedError struct{ msg string }
+
+func (e *checkFailedError) Error() string { return e.msg }
 
 // belowThresholdError means the scan ran but the target is below --min-agr.
 type belowThresholdError struct{ level, min string }

@@ -1,0 +1,17 @@
+id: PH-OTLP-PUBLIC-ENDPOINT
+title: OpenTelemetry exports to a public endpoint
+severity: high
+confidence: high
+explanation: >-
+  An OTEL_EXPORTER_OTLP_*ENDPOINT variable points at a public host, so traces, metrics
+  or logs are exported outside the network.
+match:
+  env_public_url:
+    - OTEL_EXPORTER_OTLP_ENDPOINT
+    - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+    - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+    - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+fix: Point the OTLP endpoint at a collector inside the enclave.
+controls: [SC-7, AC-4]
+source:
+  - https://opentelemetry.io/docs/specs/otel/protocol/exporter/

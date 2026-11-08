@@ -1,0 +1,17 @@
+id: PH-LANGSMITH-TRACING
+title: LangSmith tracing is enabled
+severity: high
+confidence: high
+explanation: >-
+  The image environment turns on LangSmith tracing, which sends prompts, outputs and
+  traces to the LangSmith service. LANGCHAIN_TRACING_V2 is the older name for the same
+  switch.
+match:
+  env:
+    LANGSMITH_TRACING: ["1", "true", "yes", "on"]
+    LANGCHAIN_TRACING_V2: ["1", "true", "yes", "on"]
+fix: Remove LANGSMITH_TRACING / LANGCHAIN_TRACING_V2 from the image, or point LANGSMITH_ENDPOINT at a self-hosted instance inside the enclave.
+controls: [SC-7, AC-4]
+source:
+  - https://docs.langchain.com/langsmith/annotate-code
+  - https://docs.langchain.com/langsmith/trace-without-env-vars

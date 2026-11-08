@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-LANGSMITH-TRACING",
+    "severity": "high",
+    "title": "LangSmith tracing is enabled",
+    "explanation": "The image environment turns on LangSmith tracing, which sends prompts, outputs and traces to the LangSmith service. LANGCHAIN_TRACING_V2 is the older name for the same switch.",
+    "evidence": {
+      "path": "(image config)",
+      "sha256": "fixture",
+      "detail": "image env LANGCHAIN_TRACING_V2=true"
+    },
+    "fix": "Remove LANGSMITH_TRACING / LANGCHAIN_TRACING_V2 from the image, or point LANGSMITH_ENDPOINT at a self-hosted instance inside the enclave.",
+    "controls": [
+      "SC-7",
+      "AC-4"
+    ]
+  }
+]

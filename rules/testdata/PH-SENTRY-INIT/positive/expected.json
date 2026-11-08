@@ -1,0 +1,19 @@
+[
+  {
+    "rule": "PH-SENTRY-INIT",
+    "severity": "high",
+    "title": "Application initialises the Sentry SDK",
+    "explanation": "Application code calls sentry_sdk.init(), which sends errors and performance data to the configured Sentry DSN. Without a DSN it's a no-op, but a DSN in code or in SENTRY_DSN makes it phone home.",
+    "evidence": {
+      "path": "app/main.py",
+      "sha256": "df647904ceca6e13134d7abef898db6fc0efe5cf7b0cbe1da55845ea693cbc54",
+      "offset": 19,
+      "detail": "sentry_sdk.init(dsn=\"https://key@o1.ingest.sentry.io/1\")"
+    },
+    "fix": "Remove the Sentry SDK from the air-gapped build, or point it at a Sentry instance inside the enclave.",
+    "controls": [
+      "SC-7",
+      "AC-4"
+    ]
+  }
+]

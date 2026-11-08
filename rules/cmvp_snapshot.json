@@ -1,0 +1,46 @@
+{
+  "snapshot_date": "2026-11-09",
+  "curated": "manually, from the NIST CMVP listings and vendor pages cited per entry",
+  "note": "Informative only. Gapproof matches a module's name and version against this list. It does not check the operational environment, configuration or security policy, and the list can be out of date: confirm on the NIST CMVP site.",
+  "modules": [
+    {
+      "library": "openssl-fips-provider",
+      "name": "OpenSSL FIPS Provider",
+      "versions": ["3.1.2"],
+      "certificate": "4985",
+      "standard": "FIPS 140-3",
+      "status": "active",
+      "sunset": "2030-03-10",
+      "source": "https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4985"
+    },
+    {
+      "library": "openssl-fips-provider",
+      "name": "OpenSSL FIPS Provider",
+      "versions": ["3.0.8", "3.0.9"],
+      "certificate": "4282",
+      "standard": "FIPS 140-2",
+      "status": "historical",
+      "sunset": "2026-09-21",
+      "note": "FIPS 140-2 certificates moved to the CMVP Historical List at their 2026-09-21 sunset (also #4811 for the same versions).",
+      "source": "https://openssl-library.org/news/fips-cve/index.html"
+    },
+    {
+      "library": "go",
+      "name": "Go Cryptographic Module",
+      "versions": ["v1.0.0"],
+      "certificate": "5247",
+      "standard": "FIPS 140-3",
+      "status": "active",
+      "source": "https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/5247"
+    },
+    {
+      "library": "go",
+      "name": "Go Cryptographic Module",
+      "versions": ["v1.26.0"],
+      "standard": "FIPS 140-3",
+      "status": "in-process",
+      "note": "On the CMVP Modules In Process list; not validated.",
+      "source": "https://go.dev/doc/security/fips140"
+    }
+  ]
+}

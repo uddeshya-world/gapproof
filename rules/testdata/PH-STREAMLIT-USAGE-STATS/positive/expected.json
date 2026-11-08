@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-STREAMLIT-USAGE-STATS",
+    "severity": "high",
+    "title": "Streamlit usage statistics are on",
+    "explanation": "Streamlit's browser.gatherUsageStats defaults to true, so the app's browser client sends usage statistics to Streamlit. It's off only when a config.toml sets it to false (or the matching STREAMLIT_ environment variable does).",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/streamlit-1.40.0.dist-info/METADATA",
+      "sha256": "940373d41f53b2af3d1ae22c52b10d3142ca189c7ae3d4923d1087c514bf990a",
+      "detail": "streamlit 1.40.0 installed; not disabled in the image (none of STREAMLIT_BROWSER_GATHER_USAGE_STATS=0|false|no|off); no matching config file"
+    },
+    "fix": "Add \"[browser] gatherUsageStats = false\" to .streamlit/config.toml in the image.",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

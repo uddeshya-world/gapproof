@@ -1,0 +1,17 @@
+id: PH-UNSTRUCTURED-ANALYTICS
+title: Unstructured library analytics may be on
+severity: medium
+confidence: low
+explanation: >-
+  The unstructured library is reported to send a Scarf analytics ping by default,
+  disabled by SCARF_NO_ANALYTICS or DO_NOT_TRACK. Only a third-party source confirms
+  this, so the rule is low confidence until checked against upstream.
+match:
+  python_package: unstructured
+  unless_env:
+    SCARF_NO_ANALYTICS: ["1", "true", "yes", "on"]
+    DO_NOT_TRACK: ["1", "true", "yes", "on"]
+fix: Set SCARF_NO_ANALYTICS=true and DO_NOT_TRACK=true in the image environment.
+controls: [CM-7, SC-7]
+source:
+  - https://www.everydev.ai/tools/unstructured

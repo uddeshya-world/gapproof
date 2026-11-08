@@ -1,0 +1,13 @@
+id: PH-SENTRY-DSN-ENV
+title: SENTRY_DSN points at a public host
+severity: high
+confidence: high
+explanation: >-
+  The image environment sets SENTRY_DSN to a public host. Sentry SDKs read it
+  automatically and send events there.
+match:
+  env_public_url: [SENTRY_DSN]
+fix: Unset SENTRY_DSN, or point it at a Sentry instance inside the enclave.
+controls: [SC-7, AC-4]
+source:
+  - https://docs.sentry.io/platforms/python/configuration/options/

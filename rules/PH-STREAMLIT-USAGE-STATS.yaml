@@ -1,0 +1,19 @@
+id: PH-STREAMLIT-USAGE-STATS
+title: Streamlit usage statistics are on
+severity: high
+confidence: high
+explanation: >-
+  Streamlit's browser.gatherUsageStats defaults to true, so the app's browser client
+  sends usage statistics to Streamlit. It's off only when a config.toml sets it to false
+  (or the matching STREAMLIT_ environment variable does).
+match:
+  python_package: streamlit
+  unless_env:
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS: ["0", "false", "no", "off"]
+  unless_file:
+    path_regex: '(^|/)\.streamlit/config\.toml$'
+    content_regex: '(?m)^\s*gatherUsageStats\s*=\s*false'
+fix: Add "[browser] gatherUsageStats = false" to .streamlit/config.toml in the image.
+controls: [CM-7, SC-7]
+source:
+  - https://docs.streamlit.io/develop/concepts/configuration/options

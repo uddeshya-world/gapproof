@@ -73,40 +73,55 @@ driver (own netns, on gapproof-<runid>)  --->  <sinkhole-ip>:<target-port>
 **Coverage statement (goes in every report, rule 4).** The harness detects IPv4 packets originated by processes in the target container during the observation window. It does **not** detect: code paths the workload didn't exercise (the static phone-home rules cover part of this), IPv6-only behaviour (IPv6 is disabled by design, so a v6-only app shows as failing), or exfiltration through in-scope names the vendor declared. Each in-scope attempt is listed so the approver can judge it.
 
 ### 3.2 Static phone-home rules (`internal/phonehome`, `rules/*.yaml`)
-These catch what the observation window might miss (code paths the workload didn't hit). The rule pack is embedded with `go:embed`. Each rule:
+These catch what the observation window might miss (code paths the workload didn't hit). The rule pack is embedded with `go:embed` (`rules/rules.go`), one rule per `rules/<ID>.yaml`:
 ```yaml
 id: PH-CHROMA-TELEMETRY
-title: ChromaDB anonymized telemetry enabled by default
-match:
-  python_package: chromadb
-  unless_env: { ANONYMIZED_TELEMETRY: "False" }
+title: ChromaDB anonymized telemetry is on
 severity: high
-fix: "Set ANONYMIZED_TELEMETRY=False in the image environment."
+confidence: high            # low when the upstream docs couldn't be verified
+explanation: >-
+  chromadb sends anonymized telemetry (PostHog) by default...
+match:                      # every condition present must hold
+  python_package: chromadb  # string or list: any installed distribution (PEP 503 names)
+  # env: {VAR: [values]}            any VAR has one of the values ("*" = any non-empty, "!x" = set and not x)
+  # env_public_url: [VAR, ...]      any VAR holds a URL/host that isn't private or internal
+  # source_regex: '...'             application .py/.js (not site-packages/node_modules/stdlib)
+  unless_env:               # any satisfied unless_* suppresses the rule
+    ANONYMIZED_TELEMETRY: ["0", "false", "no", "off"]
+  # unless_file: {path_regex: '...', content_regex: '...'}
+fix: Set ANONYMIZED_TELEMETRY=False in the image environment.
 controls: [CM-7, SC-7]
+source:
+  - https://docs.trychroma.com/telemetry
 ```
-Seed rules for v0.1 (verify each against current upstream docs while implementing; record the source URL in the rule):
-- Hugging Face Hub online access / telemetry (`HF_HUB_OFFLINE`, `HF_HUB_DISABLE_TELEMETRY`, `TRANSFORMERS_OFFLINE`)
-- Gradio analytics (`GRADIO_ANALYTICS_ENABLED`)
-- Streamlit usage stats (`browser.gatherUsageStats`)
-- ChromaDB telemetry (`ANONYMIZED_TELEMETRY`)
-- Unstructured / Scarf analytics (`SCARF_NO_ANALYTICS`, `DO_NOT_TRACK`)
-- LangSmith / LangChain tracing env (`LANGCHAIN_TRACING_V2`, `LANGSMITH_*`)
-- LiteLLM telemetry
-- Sentry, PostHog, Segment, Mixpanel, W&B, Datadog SDK imports with non-local DSNs/endpoints
-- OTLP exporters pointing at non-RFC1918 endpoints
-- Hosted LLM/embedding SDK usage (openai, anthropic, cohere, google-genai, voyageai) with no local `base_url` override
-- `trust_remote_code=True` in source; `auto_map` in model `config.json`
-Matching: Python package metadata (`*.dist-info/METADATA`), env from image config, string/AST-lite scans of `.py`/`.js` files. No code execution.
+- Rules are decoded strictly (unknown keys fail) and validated on load: ID format and file name, severity, confidence, controls, an https `source`, at least one match condition, compilable regexes.
+- Every rule has `rules/testdata/<ID>/{positive,negative}/` fixtures (`rootfs/` plus an optional `env.txt`) and a golden `expected.json`. The tests fail if a rule lacks them.
+- `gapproof rules test <ID> <fixture-dir> [--expect match|none]` runs one rule against a fixture.
+- Evidence anchors: an installed package's `METADATA` (path + sha256), the matching source line (path + sha256 + offset), or `(image config)` with the config digest for environment-only rules.
+
+The seed pack (16 rules) covers:
+- Hugging Face Hub online mode and telemetry, Gradio, Streamlit, ChromaDB, Unstructured (low confidence), LangSmith, W&B, Sentry (code and DSN)
+- Analytics SDKs (PostHog, Mixpanel, Segment), OTLP to a public endpoint
+- Hosted LLM SDKs: OpenAI and Anthropic (both low confidence on their base-URL env vars), and Cohere, Google GenAI, Voyage and Mistral
+- `trust_remote_code=True`
+
+LiteLLM was dropped: its telemetry is opt-in (`LITELLM_TELEMETRY_*`), so there's no default phone-home to flag. `auto_map` in model configs is a models-module rule (`MODEL-REMOTE-CODE`).
+Matching uses Python package metadata (`*.dist-info/METADATA`, `*.egg-info/PKG-INFO`), env from the image config, and line scans of application source. Nothing is executed.
 
 ### 3.3 Crypto inventory (`internal/crypto`)
 Walk the extracted rootfs (read-only):
-- **ELF shared objects** (`debug/elf`) named `libssl*`, `libcrypto*`, `libgnutls*`, `libnss3*`, `libmbedcrypto*`, `libwolfssl*`, *and* any `.so` inside `site-packages/*/.libs` or `*.libs` (manylinux-bundled). Read the version string from `.rodata` (e.g. `OpenSSL 3.0.13`).
+- **ELF shared objects** (`debug/elf`): crypto-named libraries (`libssl*`, `libcrypto*`, `libgnutls*`, `libnss3*`, `libmbed*`, `libwolfssl*`, `libgcrypt*`, `libnettle*`), **every** `.so`/`.node` under site-packages, dist-packages or node_modules, and executables. Read version markers from `.rodata` (whole file if there's none), e.g. `OpenSSL 3.0.13 30 Jan 2024`, LibreSSL, BoringSSL, NSS, Mbed TLS. Static copies matter: the `cryptography` wheel links OpenSSL into `_rust.abi3.so` with no `libssl` file at all (verified on cryptography 44.0.2, which bundles OpenSSL 3.4.1). Executables that dynamically link a crypto library (e.g. `/usr/bin/openssl`) aren't separate modules.
 - **OpenSSL FIPS provider:** presence of `fips.so`, `fipsmodule.cnf`, and an `openssl.cnf` that activates it.
 - **Python `cryptography`:** wheel vs source build (the wheel bundles its own OpenSSL with no FIPS provider).
-- **Go binaries** (`debug/buildinfo`): Go version, `GOFIPS140` / BoringCrypto build settings.
+- **Go binaries** (`debug/buildinfo`): Go version, `GOFIPS140` (recorded as the exact module snapshot, e.g. `v1.0.0-c2097c7c`, matched on its `v1.0.0` base) and BoringCrypto build settings. Only binaries whose `.gopclntab` names public crypto packages count as crypto modules.
 - **Java:** `java.security` provider list (later).
 - **Source hints:** `hashlib.md5(` / `sha1(` without `usedforsecurity=False`; `random.` used near "token|secret|key".
-- **CMVP mapping:** compare found module and version against an embedded, dated snapshot (`rules/cmvp_snapshot.json`, manually curated for v0.1, with its date shown in every report). Status per module: `validated-snapshot-match` | `unvalidated` | `unknown`. **Never "compliant".**
+- **CMVP mapping:** compare found module and version against an embedded, dated snapshot (`rules/cmvp_snapshot.json`, manually curated, each entry with its source URL; its date is in every crypto finding and in `rules list`). Status per module: `validated-snapshot-match` | `unvalidated` | `unknown`. **Never "compliant".**
+  - A system OpenSSL 3 libcrypto counts as validated only via a *configured* FIPS provider whose version holds an *active* certificate.
+  - Bundled copies are always unvalidated.
+  - Certificates past their sunset (FIPS 140-2 moved to the historical list on 2026-09-21) don't count.
+  - Libraries whose vendor builds may be validated (GnuTLS, NSS, libgcrypt, Mbed TLS, wolfSSL, nettle) are `unknown`.
+- **Findings:** `CRYPTO-UNVALIDATED-MODULE` and `CRYPTO-UNKNOWN-MODULE` (high, waivable per AGR_SPEC §4), `CRYPTO-FIPS-PROVIDER-NOT-CONFIGURED`, `CRYPTO-WEAK-HASH` and `CRYPTO-INSECURE-RANDOM` (medium).
 
 ### 3.4 Model artefacts (`internal/models`)
 - Discover: `.safetensors`, `.bin`, `.pt`, `.pth`, `.ckpt`, `.pkl`, `.joblib`, `.gguf`, `.onnx`, `.h5`, `.keras`, plus HF `config.json`, `tokenizer.json`, `generation_config.json`, `README.md` (licence).

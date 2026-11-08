@@ -5,7 +5,7 @@
 |---|---|---|
 | M0 Skeleton + no-egress self-test | ✅ 2026-11-08 (CI jobs verified locally in Linux containers; GitHub Actions runs on first push) | 1 |
 | M1 Safe filesystem + model scanner | ✅ 2026-11-08 (models coverage 91%, real `docker save` verified) | 1–2 |
-| M2 Phone-home rules + crypto inventory | ⬜ | 2 |
+| M2 Phone-home rules + crypto inventory | ✅ 2026-11-09 (16 rules, real cryptography-wheel image verified) | 2 |
 | M3 Egress harness + sinkhole | ⬜ | 2–3 |
 | M4 Evidence, AGR, report, demo apps → **v0.1 (quiet release to design partners)** | ⬜ | 3 |
 | M5 Agent containment (MESA port) | ⬜ | 4–5 |

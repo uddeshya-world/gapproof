@@ -25,6 +25,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
   internal/harness/      egress harness (container orchestration, sinkhole)
   internal/sinkhole/     netns owner: NFLOG + DNS/TCP/UDP catch-alls, logs every attempt (runs as `gapproof sinkhole`)
   internal/fsscan/       safe image/rootfs extraction + walking
+  internal/inventory/    shared walk: Python distributions + application source files
   internal/crypto/       crypto inventory
   internal/models/       model artifact parsing (safetensors, pickle opcode scan, gguf, onnx)
   internal/phonehome/    static phone-home rules (rules/*.yaml embedded via go:embed)
@@ -49,6 +50,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - The owner works a day job; keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
+- 2026-11-09 — **M2 done** (branch `m2-phonehome-crypto`). Covers the phone-home rule pack (16 rules with sources and fixtures; `rules list` and `rules test`), the crypto inventory with the CMVP snapshot, and the shared inventory. The real-image e2e confirms the cryptography wheel bundles OpenSSL 3.4.1 statically (review P1 #5 closed). Decisions D-013…D-015.
 - 2026-11-08 — **M1 done** (branch `m1-fsscan-models`, 2 commits). Covers safe image extraction (`internal/fsscan`, verified on a real Docker 29 `docker save`) and the model scanner (`internal/models`, 91% coverage, 30 generated fixtures, a golden `scan.json`). The import policy now enforces rule 3 (no `os/exec`/`plugin` outside the harness) across every package. Decisions D-010…D-012. The scanners aren't wired into `gapproof scan` yet (that's M4).
 - 2026-11-08 — **M0 done** (branch `m0-skeleton`, committed, not pushed). `make lint test build e2e` is green: 94% coverage, a 3.5 MB static binary, FIPS mode on, `TestNoEgress` passing on OrbStack, and `TestNoNetworkImports` mutation-checked. The CI steps also passed in clean `golang:1.26` and `goreleaser check` containers. Decisions D-007…D-009. The name stays Gapproof (Airlock collides with Airlock Digital).
 - 2026-11-08 — Fixed the kit review's 4 blocking items, before M0: (1) public launch moved to v0.2/M6, v0.1 is a quiet release; (2) private docs moved out of the repo; (3) egress harness redesigned around a shared netns + NFLOG (spec §3.1, M3); (4) AGR rewritten as `docs/AGR_SPEC.md` (`unassessed` vs AGR-0, scope file, waivers, signing removed from the level). See `docs/DECISIONS.md` D-001…D-006.
@@ -56,9 +58,11 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 
 ## Open questions / next steps
 - Push to a personal GitHub (keep the repo private until the owner's pre-launch legal check is done) so GitHub Actions runs.
-- Owner OK on the proposed deps (yaml for M2, jsonschema for M6) in docs/DEPENDENCIES.md.
-- Next: M2 (phone-home rules + crypto inventory). It needs the YAML dep approved.
+- Owner OK on the jsonschema test dep for M6 (docs/DEPENDENCIES.md).
+- Next: M3 (egress harness + sinkhole, spec §3.1).
+- Promote the low-confidence rules (Unstructured, OpenAI and Anthropic base URL) after checking upstream source.
+- Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.
 - Module path: `github.com/uddeshya-world/gapproof` (confirm it's the personal account).
 - MESA INV-01 source isn't in the workspace; the owner points to it before M5.
-- Still open from the review (P1): OpenSSL-in-wheel detection (§3.3), `verify --rescan`.
+- Still open from the review (P1): `verify --rescan`.

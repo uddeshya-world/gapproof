@@ -44,3 +44,20 @@ On Docker 29 (containerd store) the engine's image ID is the OCI index digest, n
 
 ## D-012 (2026-11-08): Extraction on case-insensitive hosts is reported, not silently wrong
 macOS's default filesystem merges paths that differ only by case. **Decision:** the extractor detects a case-insensitive temp filesystem and records every collision in `Stats.CaseCollisions` and the warnings. **Consequence:** an M4 report must surface collisions as an incomplete scan. Release scans should run on Linux, or point `TMPDIR` at a case-sensitive volume.
+
+## D-013 (2026-11-09): Rule pack format and honesty about confidence
+**Decision:** one rule per `rules/<ID>.yaml`, decoded strictly, with mandatory `source:` URLs and `confidence: high|low`. Every rule ships with positive and negative fixtures and a golden output. Rules whose upstream variable couldn't be confirmed from primary docs are `low`: Unstructured's `SCARF_NO_ANALYTICS` and the OpenAI/Anthropic base-URL variables. LiteLLM was dropped because its telemetry is opt-in. **Consequence:** a community rule can't land without evidence and tests. The low-confidence rules should be promoted after a check against upstream source.
+
+## D-014 (2026-11-09): Crypto status model
+**Decision:**
+- Only an *active* certificate in the dated snapshot gives `validated-snapshot-match`.
+- A system OpenSSL 3 inherits it only through a FIPS provider that an `openssl.cnf` in the image actually activates.
+- Copies bundled in wheels and node modules are always `unvalidated`.
+- Historical and in-process entries are `unvalidated`.
+- Vendor-buildable libraries are `unknown`.
+- Executables that dynamically link a crypto library aren't modules, so `/usr/bin/openssl` is not double counted.
+
+**Consequence:** the first real-image test (python:3.12-slim + cryptography 44.0.2) reports the wheel's bundled OpenSSL 3.4.1 and the system OpenSSL 3.5.7 as unvalidated, and nettle as unknown. Base-image libraries will need waivers; that's the honest result.
+
+## D-015 (2026-11-09): A shared inventory package
+**Decision:** `internal/inventory` does the one walk the rule modules share: Python distributions (with wheel tags) and application source files, excluding site-packages, node_modules and the stdlib. It's not in the original layout, but it keeps phone-home and crypto from walking twice and from flagging library code as application code.

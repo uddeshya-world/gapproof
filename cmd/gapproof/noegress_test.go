@@ -53,6 +53,7 @@ func TestNoEgress(t *testing.T) {
 		{[]string{"verify", "--help"}, exitOK},
 		{[]string{"report", "--help"}, exitOK},
 		{[]string{"rules", "list", "--help"}, exitOK},
+		{[]string{"rules", "list"}, exitOK},                                                      // embedded rule pack + CMVP snapshot, no network
 		{[]string{"scan", "--out", "/tmp/o"}, exitUsage},                                         // usage path works offline
 		{[]string{"scan", "--rootfs", "/", "--skip", "egress", "--out", "/tmp/o"}, exitInternal}, // stub until M1
 	}

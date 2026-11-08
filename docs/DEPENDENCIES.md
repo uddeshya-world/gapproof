@@ -7,6 +7,7 @@ Rule: standard library first. Every third-party module needs a one-line justific
 |---|---|---|
 | `github.com/spf13/cobra` | v1.10.2 | CLI framework (named in CLAUDE.md). |
 | `github.com/spf13/pflag` | v1.0.9 | Cobra's flag parser (transitive). Imports `net` only for its `net.IP`/`net.IPNet` flag types, with no sockets. Explicitly allowlisted in `TestNoNetworkImports`. |
+| `go.yaml.in/yaml/v3` | v3.0.6 | Approved by the owner on 2026-11-08. The phone-home rule pack is YAML, and the stdlib has no YAML parser. Strict decoding (`KnownFields`) keeps community rules honest. Doesn't reach `net` (checked by `TestNoNetworkImports`). |
 | `github.com/inconshreveable/mousetrap` | v1.1.0 | Cobra's transitive dependency. Windows-only, so it isn't compiled into the linux/darwin builds. |
 
 ## Dev-only (never linked)
@@ -17,5 +18,4 @@ Rule: standard library first. Every third-party module needs a one-line justific
 ## Proposed, needs owner OK before it's added
 | Module | Milestone | Why |
 |---|---|---|
-| `go.yaml.in/yaml/v3` | M2 | Rule pack, `agents.yaml`, scope and waivers files are YAML. The stdlib has no YAML parser, and hand-rolling one for hostile-ish input is worse. |
 | `github.com/santhosh-tekuri/jsonschema/v6` | M6 (test-only) | Validate CycloneDX 1.6 and OSCAL output against vendored schemas. |
