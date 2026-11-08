@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # TODO(M8): pin actions to full commit SHAs.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod # tests the minimum supported Go
+      - name: lint
+        run: make lint
+      - name: unit tests
+        run: make test
+      - name: build (static, FIPS module mode, size gate)
+        run: make build
+      - name: version output
+        run: ./bin/gapproof version
+
+  no-egress:
+    # Rule 1: the binary runs under --network none. Fails, never skips, in CI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: pre-pull the test base image (test infra, not gapproof)
+        run: docker pull gcr.io/distroless/static-debian12:nonroot
+      - name: TestNoEgress
+        run: make e2e
+
+  goreleaser-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: check

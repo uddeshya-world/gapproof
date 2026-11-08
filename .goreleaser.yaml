@@ -1,0 +1,52 @@
+# GoReleaser v2. Static binaries in FIPS 140-3 module mode, checksums, SBOMs.
+# Validate locally with: goreleaser check
+version: 2
+
+project_name: gapproof
+
+before:
+  hooks:
+    - go mod tidy
+    - go test -count=1 ./...
+
+builds:
+  - id: gapproof
+    main: ./cmd/gapproof
+    binary: gapproof
+    env:
+      - CGO_ENABLED=0
+      - GOFIPS140=v1.0.0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.CommitDate}}
+    mod_timestamp: "{{ .CommitTimestamp }}" # reproducible builds
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - docs/AGR_SPEC.md
+
+checksum:
+  name_template: checksums.sha256
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive # needs syft on PATH (installed in the release workflow)
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^chore:"]
+
+release:
+  github:
+    owner: uddeshya-world
+    name: gapproof
+  draft: true # a human publishes; v0.1 is a quiet release (docs/DECISIONS.md D-001)

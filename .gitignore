@@ -1,0 +1,14 @@
+# never commit signing keys
+keys/
+*.key
+# private material belongs outside this repo (see docs/DECISIONS.md D-002)
+interviews/
+content/
+# build outputs
+/dist/
+/bin/
+/build/
+*.oci.tar
+.DS_Store
+.env
+*.pem
