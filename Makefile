@@ -33,7 +33,7 @@ lint:
 	go run $(STATICCHECK) ./...
 
 e2e: ## container tests; fails (not skips) without Docker/Podman. M4 adds the demo scans.
-	GAPPROOF_REQUIRE_CONTAINER=1 go test -count=1 -run 'TestNoEgress' -v ./cmd/gapproof
+	GAPPROOF_REQUIRE_CONTAINER=1 go test -count=1 -run 'TestNoEgress|TestRealDockerSave' -v ./...
 
 clean:
 	rm -rf bin dist
