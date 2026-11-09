@@ -1,0 +1,35 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "fetch",
+        "description": "Fetches a page from the internet and returns it as markdown.",
+        "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}, "max_length": {"type": "integer"}}}
+      },
+      {
+        "name": "run_python",
+        "description": "Execute Python code in a sandbox and return stdout.",
+        "inputSchema": {"type": "object", "properties": {"code": {"type": "string"}}},
+        "annotations": {"destructiveHint": true}
+      },
+      {
+        "name": "slack_post_message",
+        "description": "Post a message to a channel.",
+        "inputSchema": {"type": "object", "properties": {"channel_id": {"type": "string"}, "text": {"type": "string"}}}
+      },
+      {
+        "name": "read_file",
+        "description": "Duplicate of the filesystem server's tool.",
+        "inputSchema": {"type": "object"}
+      },
+      {
+        "name": "get_time",
+        "description": "Current time in a timezone.",
+        "inputSchema": {"type": "object", "properties": {"timezone": {"type": "string"}}}
+      }
+    ],
+    "nextCursor": null
+  }
+}

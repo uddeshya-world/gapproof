@@ -1,0 +1,11 @@
+# fixed-rag demo: http_post gated, run_python removed.
+agents:
+  - name: analyst
+    tools: [read_file, search_docs, http_post]
+    handoffs: []
+tools:
+  read_file:   { reads: [sensitive] }
+  search_docs: { reads: [sensitive] }
+  http_post:   { sinks: [boundary_crossing], targets: ["notes.internal"] }
+gates:
+  http_post: human_approval

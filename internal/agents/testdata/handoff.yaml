@@ -1,0 +1,15 @@
+# Sensitive data crosses two handoffs before reaching a sink; the handoffs
+# also form a cycle (summarizer hands back to retriever).
+agents:
+  - name: retriever
+    tools: [read_db]
+    handoffs: [summarizer]
+  - name: summarizer
+    tools: [summarize]
+    handoffs: [notifier, retriever]
+  - name: notifier
+    tools: [send_email]
+tools:
+  read_db:    { reads: [sensitive] }
+  summarize:  {}
+  send_email: { sinks: [boundary_crossing] }
