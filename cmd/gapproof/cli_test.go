@@ -52,8 +52,7 @@ func TestExitCodes(t *testing.T) {
 		{"rules test unknown rule", []string{"rules", "test", "PH-NOPE", "dir"}, exitUsage, "unknown rule"},
 		{"rules test bad fixture", []string{"rules", "test", "PH-CHROMA-TELEMETRY", "/nonexistent"}, exitUsage, "rootfs/"},
 		{"rules test bad expect", []string{"rules", "test", "PH-CHROMA-TELEMETRY", "x", "--expect", "maybe"}, exitUsage, "--expect"},
-		{"harness load stub", []string{"harness", "load", "h.tar"}, exitInternal, "arrives in M3"},
-		{"sinkhole stub", []string{"sinkhole"}, exitInternal, "arrives in M3"},
+		{"harness load missing tar", []string{"harness", "load", "/nonexistent.tar"}, exitUsage, "harness image tarball"},
 
 		// other commands' usage errors
 		{"report needs in", []string{"report"}, exitUsage, "--in is required"},

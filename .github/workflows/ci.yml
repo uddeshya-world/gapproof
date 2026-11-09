@@ -28,6 +28,7 @@ jobs:
 
   no-egress:
     # Rule 1: the binary runs under --network none. Fails, never skips, in CI.
+    # Also the M3 egress harness on Linux + Docker.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +37,9 @@ jobs:
           go-version-file: go.mod
       - name: pre-pull the test base image (test infra, not gapproof)
         run: docker pull gcr.io/distroless/static-debian12:nonroot
-      - name: TestNoEgress
+      - name: pre-pull test-only images (test infra, not gapproof)
+        run: docker pull alpine:3.20 && docker pull python:3.12-slim
+      - name: e2e (TestNoEgress, harness image build + load, 9-attempt egress probe, host-side leak capture, cleanup)
         run: make e2e
 
   goreleaser-check:

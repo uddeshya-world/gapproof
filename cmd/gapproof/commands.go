@@ -1,9 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
 	"slices"
+	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
+
+	"github.com/uddeshya-world/gapproof/internal/harness"
+	"github.com/uddeshya-world/gapproof/internal/sinkhole"
 )
 
 // Stub commands. Each validates its arguments now, so the CLI contract (and
@@ -99,17 +107,65 @@ func newHarnessCmd() *cobra.Command {
 		Use:   "load <gapproof-harness.oci.tar>",
 		Short: "Load the pinned harness image into Docker/Podman and check its digest",
 		Args:  exactArgs(1),
-		RunE:  runE(func(*cobra.Command, []string) error { return notImplemented("M3") }),
+		RunE: runE(func(cmd *cobra.Command, args []string) error {
+			if _, err := os.Stat(args[0]); err != nil {
+				return usagef("harness image tarball: %v", err)
+			}
+			e, err := harness.DetectEngine(cmd.Context())
+			if err != nil {
+				return err
+			}
+			cfg, err := harness.Load(cmd.Context(), e, args[0])
+			if err != nil {
+				return err
+			}
+			pin := "pinned by this build"
+			if !harness.Pinned() {
+				pin = "UNPINNED: development build of gapproof"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "loaded %s (config %s, %s)\n", harness.ImageRef(), cfg, pin)
+			return nil
+		}),
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:    "digest <gapproof-harness.oci.tar>",
+		Short:  "Print the config digest and layer diff_ids to pin (release tooling)",
+		Hidden: true,
+		Args:   exactArgs(1),
+		RunE: runE(func(cmd *cobra.Command, args []string) error {
+			cfg, layers, err := harness.Digest(cmd.Context(), args[0])
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", cfg, strings.Join(layers, ","))
+			return nil
+		}),
 	})
 	return cmd
 }
 
 func newSinkholeCmd() *cobra.Command {
-	return &cobra.Command{
+	var pcap string
+	cmd := &cobra.Command{
 		Use:    "sinkhole",
 		Short:  "Internal: run the egress sinkhole inside the harness sidecar",
 		Hidden: true,
 		Args:   exactArgs(0),
-		RunE:   runE(func(*cobra.Command, []string) error { return notImplemented("M3") }),
+		RunE: runE(func(cmd *cobra.Command, _ []string) error {
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			cfg := sinkhole.Config{Events: cmd.OutOrStdout()}
+			if pcap != "" {
+				f, err := os.OpenFile(pcap, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				cfg.Pcap = f
+			}
+			return sinkhole.Run(ctx, cfg)
+		}),
 	}
+	cmd.Flags().StringVar(&pcap, "pcap", "", "also write NFLOG packets (first 256 bytes) as pcapng to this path")
+	return cmd
 }

@@ -61,3 +61,36 @@ macOS's default filesystem merges paths that differ only by case. **Decision:** 
 
 ## D-015 (2026-11-09): A shared inventory package
 **Decision:** `internal/inventory` does the one walk the rule modules share: Python distributions (with wheel tags) and application source files, excluding site-packages, node_modules and the stdlib. It's not in the original layout, but it keeps phone-home and crypto from walking twice and from flagging library code as application code.
+
+## D-016 (2026-11-09): The harness netns trusts nothing: no uid or subnet exemptions
+The spec's first draft exempted uid 65532 (the sinkhole) and the run subnet from logging and redirects. That's unsafe on two counts:
+- 65532 is the distroless `nonroot` uid, so a common target would bypass logging, and any root target can `setuid(65532)`.
+- The `--internal` network's gateway is the host. A target that reached it could use a proxy listening on the host.
+
+**Decision:** the sinkhole never originates traffic (its replies are ESTABLISHED), so nothing is exempt. Every NEW non-loopback flow is logged and redirected, including flows to the run subnet and gateway. Driver→target traffic enters via INPUT and its replies are ESTABLISHED, so it is never logged; the probe test asserts this.
+
+Docker's embedded resolver (127.0.0.11) is handled explicitly:
+- its port-53 traffic is redirected to our DNS listener ahead of Docker's `DOCKER_OUTPUT` chain;
+- anything else sent to 127.0.0.11 is logged and dropped, because dockerd would forward it from the host namespace.
+
+Two kernel details surfaced on Docker 29 (nft):
+- REDIRECT of non-loopback traffic needs `net.ipv4.conf.all.route_localnet=1`.
+- The filter hook still sees the pre-NAT output interface, so redirected packets are accepted by listener port on 127.0.0.1 rather than by `-o lo`.
+
+**Consequence:** the M3 probe passes. All 9 attempts are logged with the correct destination and hints, a host-side capture sees zero packets, and the driver's traffic isn't logged.
+
+## D-017 (2026-11-09): Harness image pinned by layer diff_ids; target capability requests are refused
+- **Pinning.** The engine's "image ID" differs between the classic and containerd stores (D-011). The release therefore pins the config digest, checked on `harness load` against the tarball, plus the layer diff_ids, checked on every scan via `image inspect .RootFS.Layers`. Both are store-independent.
+- **Breaking the circularity.** The binary inside the harness image is built without the pin. `make harness` writes `dist/harness.pin` and later `make build`s embed it. Every `run` passes `--pull never`.
+- **Capability requests.** An image can't grant itself capabilities. One whose labels name `NET_ADMIN`/`NET_RAW` (e.g. `cap_add=NET_RAW`) is refused and recorded, never run degraded. The target always runs with `--cap-drop NET_RAW --cap-drop NET_ADMIN`, `no-new-privileges` and memory/pids limits.
+- **Not read-only.** The target is not `--read-only`, because too many real apps write caches. This is listed as a hardening option for M8.
+- **Podman.** Rootless Podman hasn't been smoke-tested: there's no Podman on the dev machine. The CLI calls are engine-neutral; the open risks are `--sysctl` and `container:` network mode under rootless netavark. Tracked for M8/M9.
+
+## D-018 (2026-11-09): Sinkhole outputs: raw flows are the audit trail, listener events are the evidence
+`egress.log.jsonl` carries:
+- one `flow` line per NFLOG record (the original 5-tuple, including repeats);
+- enriched `dns|tcp|udp` lines from the listeners;
+- `icmp|ip` lines straight from NFLOG;
+- `ready` (with the iptables-save digest) and `stats` (which records NFLOG overruns as a coverage gap).
+
+Any TCP/UDP flow that no listener explains is still reported at shutdown, so nothing NFLOG saw goes unlisted. The evidence set (M4) uses only the attempt kinds. The pcapng is written by the sinkhole to an anonymous volume, so it survives `docker stop`, and is copied out before teardown.

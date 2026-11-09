@@ -12,3 +12,4 @@ content/
 .DS_Store
 .env
 *.pem
+.claude/
