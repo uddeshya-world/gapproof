@@ -44,7 +44,22 @@ type Finding struct {
 	Evidence    Evidence `json:"evidence"`
 	Fix         string   `json:"fix"`
 	Controls    []string `json:"controls"`
+	// Status is "open" or "waived". Scanners leave it empty; Finalize sets
+	// it. A waived finding is never deleted (AGR_SPEC §3).
+	Status Status     `json:"status,omitempty"`
+	Waiver *WaiverRef `json:"waiver,omitempty"`
 }
+
+// Status of a finding after waivers are applied.
+type Status string
+
+const (
+	StatusOpen   Status = "open"
+	StatusWaived Status = "waived"
+)
+
+// Open reports whether the finding still counts against the level.
+func (f Finding) Open() bool { return f.Status != StatusWaived }
 
 // Evidence is the raw, checkable basis for a finding.
 type Evidence struct {
