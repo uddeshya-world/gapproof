@@ -38,7 +38,7 @@ test: ## unit tests (TestNoEgress skips without a container engine)
 lint:
 	@unformatted=$$(gofmt -l cmd internal rules); test -z "$$unformatted" || { echo "gofmt needed:"; echo "$$unformatted"; exit 1; }
 	go vet ./...
-	go run $(STATICCHECK) ./...
+	go run -exec "env GOOS=linux" $(STATICCHECK) ./... # analyse the shipped (Linux) target
 
 e2e: harness build ## container tests (fail, never skip): no-egress, real images, the M3 egress harness
 	./$(BIN) harness load $(HARNESS_TAR)

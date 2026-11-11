@@ -295,3 +295,19 @@ func TestFlowsLookupWaits(t *testing.T) {
 		t.Error("looked-up flow is explained")
 	}
 }
+
+// The TCP listener can read SO_ORIGINAL_DST before the NFLOG record
+// arrives; the explanation must survive that race.
+func TestExplainBeforeAdd(t *testing.T) {
+	f := NewFlows()
+	dst := netip.MustParseAddr("198.18.0.3")
+	f.Explain(protoTCP, dst, 443, 55506)
+	f.Add(Flow{Proto: protoTCP, Dst: dst, DstPort: 443, SrcPort: 55506}, time.Now())
+	// a mismatched early explanation must not hide a flow
+	f.Explain(protoTCP, dst, 80, 40000)
+	f.Add(Flow{Proto: protoTCP, Dst: dst, DstPort: 443, SrcPort: 40000}, time.Now())
+	u := f.Unexplained()
+	if len(u) != 1 || u[0].SrcPort != 40000 {
+		t.Fatalf("unexplained = %+v, want only sport 40000", u)
+	}
+}

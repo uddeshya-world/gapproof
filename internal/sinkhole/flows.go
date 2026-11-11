@@ -16,6 +16,14 @@ type Flows struct {
 	byPort  map[flowKey]*flowRec // (proto, src port) -> most recent
 	all     []*flowRec
 	maxKeep int
+	// early holds explanations that arrived before their NFLOG record
+	// (the TCP listener reads SO_ORIGINAL_DST and can win the race).
+	early map[flowKey]earlyExpl
+}
+
+type earlyExpl struct {
+	dst   netip.Addr
+	dport int
 }
 
 type flowKey struct{ proto, sport int }
@@ -28,7 +36,7 @@ type flowRec struct {
 
 // NewFlows returns an empty table.
 func NewFlows() *Flows {
-	f := &Flows{byPort: map[flowKey]*flowRec{}, maxKeep: 1 << 16}
+	f := &Flows{byPort: map[flowKey]*flowRec{}, maxKeep: 1 << 16, early: map[flowKey]earlyExpl{}}
 	f.cond = sync.NewCond(&f.mu)
 	return f
 }
@@ -39,7 +47,12 @@ func (f *Flows) Add(fl Flow, t time.Time) {
 	defer f.mu.Unlock()
 	r := &flowRec{Flow: fl, seen: t}
 	if fl.Proto == protoTCP || fl.Proto == protoUDP {
-		f.byPort[flowKey{fl.Proto, fl.SrcPort}] = r
+		k := flowKey{fl.Proto, fl.SrcPort}
+		f.byPort[k] = r
+		if e, ok := f.early[k]; ok {
+			delete(f.early, k)
+			r.explained = e.dst == fl.Dst && e.dport == fl.DstPort
+		}
 	}
 	if len(f.all) < f.maxKeep {
 		f.all = append(f.all, r)
@@ -70,12 +83,19 @@ func (f *Flows) Lookup(proto, sport int, wait time.Duration) (Flow, bool) {
 }
 
 // Explain marks the TCP/UDP flow with this destination and source port as
-// accounted for by a listener (TCP uses SO_ORIGINAL_DST, not Lookup).
+// accounted for by a listener (TCP uses SO_ORIGINAL_DST, not Lookup). If
+// the NFLOG record hasn't arrived yet, the explanation is held and applied
+// when it does.
 func (f *Flows) Explain(proto int, dst netip.Addr, dport, sport int) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if r, ok := f.byPort[flowKey{proto, sport}]; ok && r.Dst == dst && r.DstPort == dport {
+	k := flowKey{proto, sport}
+	if r, ok := f.byPort[k]; ok && r.Dst == dst && r.DstPort == dport && !r.explained {
 		r.explained = true
+		return
+	}
+	if len(f.early) < f.maxKeep {
+		f.early[k] = earlyExpl{dst, dport}
 	}
 }
 

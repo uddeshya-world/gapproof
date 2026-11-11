@@ -127,7 +127,6 @@ func (r *reader) u16() uint16 {
 
 func (r *reader) bytes(n int) []byte {
 	if n > len(*r) {
-		n = len(*r)
 		v := *r
 		*r = nil
 		return v
