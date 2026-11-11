@@ -16,6 +16,7 @@ type scanOpts struct {
 	observe                                 time.Duration
 	skip                                    []string
 	minAGR                                  int
+	pcap                                    bool
 
 	replay      string
 	only        []string
@@ -37,9 +38,9 @@ func newScanCmd() *cobra.Command {
 				return err
 			}
 			if o.replay != "" {
-				return notImplemented("M4")
+				return replay(cmd.OutOrStdout(), o.replay, o.only, o.replaySpeed)
 			}
-			return notImplemented("M1–M4")
+			return o.run(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 		}),
 	}
 	f := cmd.Flags()
@@ -53,6 +54,7 @@ func newScanCmd() *cobra.Command {
 	f.IntVar(&o.minAGR, "min-agr", -1, "CI gate: exit 1 if the result is below AGR-N (0-4)")
 	f.StringVar(&o.scope, "scope", "", "gapproof.scope.yaml: declared internal names/CIDRs (docs/AGR_SPEC.md §2)")
 	f.StringVar(&o.waivers, "waivers", "", "gapproof.waivers.yaml: accepted risks (docs/AGR_SPEC.md §3)")
+	f.BoolVar(&o.pcap, "pcap", false, "also save egress.pcapng (NFLOG packets, first 256 bytes)")
 	f.StringVar(&o.out, "out", "", "evidence output directory")
 	f.StringVar(&o.replay, "replay", "", "re-print the terminal output of a saved evidence directory")
 	f.StringSliceVar(&o.only, "only", nil, "with --replay: only these modules")

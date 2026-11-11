@@ -19,6 +19,10 @@ import (
 	"github.com/uddeshya-world/gapproof/internal/sinkhole"
 )
 
+// TargetHostname is the hostname of the shared netns (the target inherits
+// it). It is always in scope (AGR_SPEC §2).
+const TargetHostname = "gapproof-target"
+
 // Label put on every container and network a run creates.
 const (
 	LabelRunID = "gapproof.runid"
@@ -124,7 +128,7 @@ func Run(ctx context.Context, e *Engine, cfg Config) (res *Result, err error) {
 	sinkArgs := []string{"run", "-d", "--pull", "never", "--name", r.name("sinkhole")}
 	sinkArgs = append(sinkArgs, labels...)
 	sinkArgs = append(sinkArgs,
-		"--network", r.net,
+		"--network", r.net, "--hostname", TargetHostname,
 		"--cap-drop", "ALL", "--cap-add", "NET_ADMIN", "--cap-add", "SETUID", "--cap-add", "SETGID",
 		"--sysctl", "net.ipv6.conf.all.disable_ipv6=1",
 		"--sysctl", "net.ipv6.conf.default.disable_ipv6=1",

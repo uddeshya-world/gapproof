@@ -80,6 +80,34 @@ func Load(ctx context.Context, e *Engine, tarPath string) (string, error) {
 	return cfg, nil
 }
 
+// LoadTarget loads a target image tarball into the engine and returns the
+// engine's image ID for it. The caller binds that ID to the digest it
+// extracted, so the image that runs is the image that was scanned.
+func LoadTarget(ctx context.Context, e *Engine, tarPath string) (string, error) {
+	out, err := e.run(ctx, "load", "-i", tarPath)
+	if err != nil {
+		return "", err
+	}
+	ref := loadedRef(string(out))
+	if ref == "" {
+		return "", fmt.Errorf("couldn't find the loaded image in: %s", strings.TrimSpace(string(out)))
+	}
+	id, err := e.run(ctx, "image", "inspect", "--format", "{{.Id}}", ref)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(id)), nil
+}
+
+// SaveTarget writes a local image (never pulled) to a docker-save tarball.
+func SaveTarget(ctx context.Context, e *Engine, ref, out string) error {
+	if _, err := e.run(ctx, "image", "inspect", "--format", "{{.Id}}", ref); err != nil {
+		return fmt.Errorf("image %q is not available locally (gapproof never pulls; docker load or build it first): %w", ref, err)
+	}
+	_, err := e.run(ctx, "save", "-o", out, ref)
+	return err
+}
+
 func diffIDs(im *fsscan.Image) []string {
 	var l []string
 	for _, x := range im.Layers {

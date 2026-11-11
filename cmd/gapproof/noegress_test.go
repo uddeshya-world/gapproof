@@ -52,6 +52,14 @@ func TestNoEgress(t *testing.T) {
 		raw, _ := os.ReadFile(src)
 		os.WriteFile(filepath.Join(work, dst), raw, 0o644)
 	}
+	if err := os.CopyFS(filepath.Join(work, "rootfs"), os.DirFS("../../rules/testdata/PH-CHROMA-TELEMETRY/positive/rootfs")); err != nil {
+		t.Fatal(err)
+	}
+	if raw, err := os.ReadFile("../../internal/agents/testdata/leaky.yaml"); err != nil {
+		t.Fatal(err)
+	} else {
+		os.WriteFile(filepath.Join(work, "agents.yaml"), raw, 0o644)
+	}
 	ev := filepath.Join(t.TempDir(), "ev")
 	os.Mkdir(ev, 0o755)
 	os.WriteFile(filepath.Join(ev, "summary.json"), []byte(`{"agr":{"level":"AGR-2"}}`), 0o644)
@@ -76,9 +84,11 @@ func TestNoEgress(t *testing.T) {
 		{[]string{"verify", "--help"}, exitOK},
 		{[]string{"report", "--help"}, exitOK},
 		{[]string{"rules", "list", "--help"}, exitOK},
-		{[]string{"rules", "list"}, exitOK},                                                      // embedded rule pack + CMVP snapshot, no network
-		{[]string{"scan", "--out", "/tmp/o"}, exitUsage},                                         // usage path works offline
-		{[]string{"scan", "--rootfs", "/", "--skip", "egress", "--out", "/tmp/o"}, exitInternal}, // stub until M1
+		{[]string{"rules", "list"}, exitOK},              // embedded rule pack + CMVP snapshot, no network
+		{[]string{"scan", "--out", "/tmp/o"}, exitUsage}, // usage path works offline
+		// Full static scans offline (review P1 #6): an image tar and a rootfs.
+		{[]string{"scan", "--image", "/work/img.tar", "--skip", "egress", "--out", "/tmp/o1"}, exitOK},
+		{[]string{"scan", "--rootfs", "/work/rootfs", "--skip", "egress", "--agents", "/work/agents.yaml", "--out", "/tmp/o2"}, exitOK},
 	}
 	for _, tc := range cases {
 		args := append([]string{

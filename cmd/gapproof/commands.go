@@ -10,6 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/uddeshya-world/gapproof/internal/agents"
+	"github.com/uddeshya-world/gapproof/internal/evidence"
 	"github.com/uddeshya-world/gapproof/internal/harness"
 	"github.com/uddeshya-world/gapproof/internal/sinkhole"
 )
@@ -30,7 +32,17 @@ func newReportCmd() *cobra.Command {
 			if f, _ := cmd.Flags().GetString("format"); !slices.Contains([]string{"html", "md", "both"}, f) {
 				return usagef("--format must be html, md or both")
 			}
-			return notImplemented("M4")
+			in, _ := cmd.Flags().GetString("in")
+			f, _ := cmd.Flags().GetString("format")
+			b, err := evidence.Load(in)
+			if err != nil {
+				return usagef("--in: %v", err)
+			}
+			if err := writeReports(in, b, f); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "wrote the %s report in %s (re-run `gapproof sign --rehash` if the directory was signed)\n", f, in)
+			return nil
 		}),
 	}
 	cmd.Flags().String("in", "", "evidence directory")
@@ -117,5 +129,40 @@ func newSinkholeCmd() *cobra.Command {
 		}),
 	}
 	cmd.Flags().StringVar(&pcap, "pcap", "", "also write NFLOG packets (first 256 bytes) as pcapng to this path")
+	return cmd
+}
+
+func newAgentsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "agents",
+		Short: "Work with agent manifests (agents.yaml)",
+		Args:  exactArgs(0),
+	}
+	cmd.AddCommand(&cobra.Command{
+		Use:   "import-mcp <tools-list.json>...",
+		Short: "Suggest an agents.yaml from MCP tools/list dumps (labels are low-confidence: review them)",
+		Args: func(c *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return usagef("give at least one tools/list JSON dump")
+			}
+			return nil
+		},
+		RunE: runE(func(cmd *cobra.Command, args []string) error {
+			var dumps [][]byte
+			for _, a := range args {
+				b, err := os.ReadFile(a)
+				if err != nil {
+					return usagef("%v", err)
+				}
+				dumps = append(dumps, b)
+			}
+			y, err := agents.SuggestManifest(dumps...)
+			if err != nil {
+				return usagef("%v", err)
+			}
+			_, err = cmd.OutOrStdout().Write(y)
+			return err
+		}),
+	})
 	return cmd
 }

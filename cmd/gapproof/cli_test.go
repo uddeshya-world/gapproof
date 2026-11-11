@@ -35,10 +35,10 @@ func TestExitCodes(t *testing.T) {
 		{"scan positional arg", []string{"scan", "extra"}, exitUsage, "accepts 0 arg"},
 
 		// valid invocations of stubs (exit 3 until their milestone)
-		{"scan image stub", []string{"scan", "--image", "a.tar", "--out", "o"}, exitInternal, "not implemented yet (arrives in M1–M4"},
-		{"scan rootfs stub", []string{"scan", "--rootfs", "r", "--skip", "egress", "--out", "o"}, exitInternal, "not implemented yet"},
-		{"replay stub", []string{"scan", "--replay", "e", "--only", "egress"}, exitInternal, "arrives in M4"},
-		{"report stub", []string{"report", "--in", "e"}, exitInternal, "arrives in M4"},
+		{"scan missing image tar", []string{"scan", "--image", "/nonexistent/a.tar", "--skip", "egress", "--out", "o"}, exitUsage, "no such file"},
+		{"scan missing rootfs", []string{"scan", "--rootfs", "/nonexistent", "--skip", "egress", "--out", "/nonexistent/o"}, exitUsage, "--rootfs"},
+		{"replay missing dir", []string{"scan", "--replay", "/nonexistent", "--only", "egress"}, exitUsage, "--replay"},
+		{"report missing dir", []string{"report", "--in", "/nonexistent"}, exitUsage, "--in"},
 		{"diff stub", []string{"diff", "a", "b"}, exitInternal, "arrives in M7"},
 		{"rules list", []string{"rules", "list"}, exitOK, "PH-CHROMA-TELEMETRY"},
 		{"rules list snapshot date", []string{"rules", "list"}, exitOK, "CMVP snapshot dated 20"},
