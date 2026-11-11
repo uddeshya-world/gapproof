@@ -1,0 +1,4307 @@
+{
+  "assessment-results": {
+    "uuid": "33d87ebc-0d53-519a-9ff6-7df3b0442bf1",
+    "metadata": {
+      "title": "Gapproof assessment results: demo/fixed-rag:1.0",
+      "last-modified": "2026-11-09T10:10:00Z",
+      "version": "v0.2.0-test",
+      "oscal-version": "1.1.2",
+      "remarks": "Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+    },
+    "import-ap": {
+      "href": "#a0738dae-9bf2-5f0b-a894-e7be7ba65396",
+      "remarks": "Gapproof runs without a separate OSCAL assessment plan; the referenced resource describes the scan configuration."
+    },
+    "results": [
+      {
+        "uuid": "206b5d78-30b5-5de7-8ec7-3bac7ec07f1b",
+        "title": "Gapproof air-gap readiness scan of demo/fixed-rag:1.0",
+        "description": "Static and runtime checks of demo/fixed-rag:1.0 by Gapproof v0.2.0-test: egress, phone-home configuration, crypto inventory, model artefacts and agent tool paths, as enabled for this run.",
+        "start": "2026-11-09T10:00:00Z",
+        "end": "2026-11-09T10:10:00Z",
+        "props": [
+          {
+            "name": "subject-digest",
+            "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+            "value": "sha256:abababababababababababababababababababababababababababababababab"
+          },
+          {
+            "name": "agr-level",
+            "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+            "value": "AGR-1"
+          }
+        ],
+        "reviewed-controls": {
+          "control-selections": [
+            {
+              "include-controls": [
+                {
+                  "control-id": "ac-3"
+                },
+                {
+                  "control-id": "ac-4"
+                },
+                {
+                  "control-id": "ac-6"
+                },
+                {
+                  "control-id": "cm-7"
+                },
+                {
+                  "control-id": "cm-8"
+                },
+                {
+                  "control-id": "sc-12"
+                },
+                {
+                  "control-id": "sc-13"
+                },
+                {
+                  "control-id": "sc-7"
+                },
+                {
+                  "control-id": "si-3"
+                },
+                {
+                  "control-id": "si-7"
+                },
+                {
+                  "control-id": "sr-3"
+                },
+                {
+                  "control-id": "sr-4"
+                }
+              ]
+            }
+          ],
+          "remarks": "NIST SP 800-53 rev. 5 controls that Gapproof's checks inform (docs/02_SPEC.md §3.6). Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+        },
+        "observations": [
+          {
+            "uuid": "b26d63f8-2aaa-56b7-830e-9a9ecf44c6ec",
+            "title": "read_file reaches http_post",
+            "description": "read_file reaches http_post",
+            "props": [
+              {
+                "name": "finding-id",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "AG-0001"
+              },
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "AGENT-INV01-EXFIL"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "collected": "2026-11-09T10:00:00Z"
+          },
+          {
+            "uuid": "97427627-8477-5bb7-9a38-c8ac47da63e4",
+            "title": "Egress attempt to api.openai.com",
+            "description": "The target tried to reach a public host.\nIt was blocked.",
+            "props": [
+              {
+                "name": "finding-id",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "EG-0001"
+              },
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "EGRESS-ATTEMPT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "dns api.openai.com",
+                "props": [
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "dns api.openai.com"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Disable the client."
+          },
+          {
+            "uuid": "5f357e4c-f861-5824-9b59-ea6c5c4495eb",
+            "title": "Chroma telemetry on",
+            "description": "Chroma telemetry on",
+            "props": [
+              {
+                "name": "finding-id",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "PH-0001"
+              },
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "PH-CHROMA-TELEMETRY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path app/settings.py; sha256 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "app/settings.py"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z"
+          },
+          {
+            "uuid": "61f295b4-6b9c-59c6-9e08-19e4394bcc50",
+            "title": "Chat template looks like a template-injection payload",
+            "description": "The model's Jinja chat template reaches Python internals (dunder attributes, os/subprocess, eval). Some runtimes render templates in an unsandboxed environment, which turns this into code execution (CVE-2024-34359 class).",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-CHAT-TEMPLATE-SUSPICIOUS"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path gguf/ssti.gguf; sha256 f2449fc4730c93e3272d2b654d1801db17995c030c35ef7d8bee1508a4f63687; tokenizer.chat_template: __init__",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "gguf/ssti.gguf"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "f2449fc4730c93e3272d2b654d1801db17995c030c35ef7d8bee1508a4f63687"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "tokenizer.chat_template: __init__"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Replace the chat template with a reviewed one and render templates in a sandboxed Jinja environment."
+          },
+          {
+            "uuid": "28180d20-43d5-5109-9b6a-d75ee3c46c62",
+            "title": "Model file format can't be scanned yet",
+            "description": "This file is a format that can run code on load, but Gapproof can't parse this variant yet, so it can't be shown safe.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path gguf/v1.gguf; sha256 43a802114c8fd4da5e98545781edb9330c2203bdd506863ac9c1f55f64864595; gguf: unsupported version 1",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "gguf/v1.gguf"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "43a802114c8fd4da5e98545781edb9330c2203bdd506863ac9c1f55f64864595"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "gguf: unsupported version 1"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert to safetensors or GGUF, or document the file as an accepted risk."
+          },
+          {
+            "uuid": "534ed88f-9e6f-5e41-9358-e87e8ac75480",
+            "title": "Model config requires remote code",
+            "description": "The Hugging Face config declares auto_map, so loading it with trust_remote_code=True imports and runs Python modules shipped with the model.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-REMOTE-CODE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path hf/remote_code/config.json; sha256 cce528b39e77fe07a4346e4c5d50e1e1c8b8d25cfed9419c57d2095ac323b2b4; auto_map AutoModel=modeling_custom.CustomModel",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "hf/remote_code/config.json"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "cce528b39e77fe07a4346e4c5d50e1e1c8b8d25cfed9419c57d2095ac323b2b4"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "auto_map AutoModel=modeling_custom.CustomModel"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Vendor the model code into your own source tree, remove auto_map, and load with trust_remote_code=False."
+          },
+          {
+            "uuid": "1620d89d-fe0e-5878-8cf3-6c8b0815e0dc",
+            "title": "Chat template looks like a template-injection payload",
+            "description": "The model's Jinja chat template reaches Python internals (dunder attributes, os/subprocess, eval). Some runtimes render templates in an unsandboxed environment, which turns this into code execution (CVE-2024-34359 class).",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-CHAT-TEMPLATE-SUSPICIOUS"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path hf/remote_code/tokenizer_config.json; sha256 ca85a8f0bfa128c00a59fe7e5377aff44d9bcebef6b04a1afad880852b420b36; chat_template: __class__",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "hf/remote_code/tokenizer_config.json"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "ca85a8f0bfa128c00a59fe7e5377aff44d9bcebef6b04a1afad880852b420b36"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "chat_template: __class__"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Replace the chat template with a reviewed one and render templates in a sandboxed Jinja environment."
+          },
+          {
+            "uuid": "96d2fc39-5001-5470-9c81-4ced101556ae",
+            "title": "Keras model contains a Lambda layer",
+            "description": "Lambda layers store serialized Python bytecode that runs when the model is loaded (CVE-2024-3660 class).",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-LAMBDA"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path keras/lambda.h5; offset 2009; sha256 0ad3dc08f75b7faec1771c7dbef8eec2f6be57a7426b0baa5aba6565d4c27d53; class_name Lambda in model_config",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "keras/lambda.h5"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "2009"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "0ad3dc08f75b7faec1771c7dbef8eec2f6be57a7426b0baa5aba6565d4c27d53"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "class_name Lambda in model_config"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Replace Lambda layers with registered custom layers defined in your source code, and load with safe_mode=True."
+          },
+          {
+            "uuid": "1eb7e52b-4a79-5400-8af0-3ab68868f0a0",
+            "title": "Keras model contains a Lambda layer",
+            "description": "Lambda layers store serialized Python bytecode that runs when the model is loaded (CVE-2024-3660 class).",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-LAMBDA"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path keras/lambda.keras; member config.json; sha256 f6aa73274315cdb50a77cf9305d09666e86538bba0f2f01e443c2cf1b61f541a; class_name Lambda",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "keras/lambda.keras"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "config.json"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "f6aa73274315cdb50a77cf9305d09666e86538bba0f2f01e443c2cf1b61f541a"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "class_name Lambda"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Replace Lambda layers with registered custom layers defined in your source code, and load with safe_mode=True."
+          },
+          {
+            "uuid": "6b08db12-5cfd-59da-b1ac-31915c19c3b0",
+            "title": "Keras config references a non-Keras module",
+            "description": "The model config asks the loader to import objects from a module outside Keras. Config-driven imports have been used to bypass safe_mode (CVE-2025-1550 class).",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-UNSAFE-MODULE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path keras/module_bypass.keras; member config.json; sha256 197d60e773c76b28d065878e8ca61960014a1554d4af6315aa9cf2380e30278c; module builtins",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "keras/module_bypass.keras"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "config.json"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "197d60e773c76b28d065878e8ca61960014a1554d4af6315aa9cf2380e30278c"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "module builtins"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Rebuild the model so its config only references Keras objects and your own registered classes."
+          },
+          {
+            "uuid": "c29b9ae7-9801-5fff-9531-c9fc3c3c1dd8",
+            "title": "NumPy array stores Python objects",
+            "description": "An object-dtype .npy needs np.load(allow_pickle=True), which unpickles its payload. Any imports in that payload are reported separately.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-NUMPY-OBJECT-ARRAY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path numpy/object.npy; offset 128; sha256 6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42; dtype object: payload is a pickle",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "numpy/object.npy"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "128"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "dtype object: payload is a pickle"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Store numeric arrays only (no object dtype), or move the data to safetensors."
+          },
+          {
+            "uuid": "74d1b136-c885-5059-a180-4a1f0741cc45",
+            "title": "Model file runs code when loaded",
+            "description": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path numpy/object.npy; offset 149; sha256 6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42; STACK_GLOBAL builtins.print",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "numpy/object.npy"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "149"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "STACK_GLOBAL builtins.print"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced."
+          },
+          {
+            "uuid": "8280403e-20c6-577f-830d-08e9b03b16ca",
+            "title": "ONNX model reads data from outside its directory",
+            "description": "An ONNX tensor's external_data location is absolute or climbs out of the model directory, so loading the model reads an arbitrary file from the host.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path onnx/escape.onnx; sha256 d805ae769cb55e655fbebf6b056095ac7f08d0bfdb75aa86b6cc296a0abce44f; tensor \"w2\" location=../../../etc/shadow",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "onnx/escape.onnx"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "d805ae769cb55e655fbebf6b056095ac7f08d0bfdb75aa86b6cc296a0abce44f"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "tensor \"w2\" location=../../../etc/shadow"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Re-export the model with external data stored beside it (relative paths only)."
+          },
+          {
+            "uuid": "db599ed7-eef9-55d6-8425-07d733413ba4",
+            "title": "Model file could not be verified",
+            "description": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path onnx/garbage.onnx; sha256 b4fabc7e6e75fa4b523cc55f51aa54ab1aa4309c92cc44fcf623ddef756f5391; protobuf: unsupported wire type 7",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "onnx/garbage.onnx"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "b4fabc7e6e75fa4b523cc55f51aa54ab1aa4309c92cc44fcf623ddef756f5391"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "protobuf: unsupported wire type 7"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk."
+          },
+          {
+            "uuid": "e684a732-93ab-52b5-91f4-42f866f34844",
+            "title": "ONNX external data file is missing",
+            "description": "The model references an external data file that isn't in the scanned filesystem, so its weights aren't accounted for in the AI-BOM.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-MISSING"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path onnx/missing.onnx; sha256 3eb03d774e8e7bac07ada1689374b20a418483e315b56b8c2ff0ab1401438d15; tensor \"w\" location=not_shipped.data",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "onnx/missing.onnx"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "3eb03d774e8e7bac07ada1689374b20a418483e315b56b8c2ff0ab1401438d15"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "tensor \"w\" location=not_shipped.data"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Ship the external data file in the image, or point --models at its location."
+          },
+          {
+            "uuid": "d6c31e54-10af-570d-9e46-43062de7538d",
+            "title": "Model archive is structurally suspicious",
+            "description": "The archive has properties that make different readers see different content (for example duplicate member names). Scanners and loaders may disagree about what is inside.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ARCHIVE-ANOMALY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/duplicate_member.pt; member archive/data.pkl; sha256 974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101; duplicate zip member name",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/duplicate_member.pt"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "archive/data.pkl"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "duplicate zip member name"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Re-save the model with the framework's own serializer and rescan."
+          },
+          {
+            "uuid": "57ab38ef-c885-5913-818e-e07fbbdd5849",
+            "title": "Model file runs code when loaded",
+            "description": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/duplicate_member.pt; member archive/data.pkl; offset 21; sha256 974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101; STACK_GLOBAL builtins.print",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/duplicate_member.pt"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "archive/data.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "21"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "STACK_GLOBAL builtins.print"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced."
+          },
+          {
+            "uuid": "bfd938cf-39b5-56b5-b2b4-70c6cc0c6721",
+            "title": "Model file hides what it imports",
+            "description": "This pickle builds an import from values Gapproof can't resolve statically (computed STACK_GLOBAL operands or the copyreg extension registry). Legitimate serializers don't do this; obfuscated payloads do.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-UNRESOLVED-IMPORT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/ext_registry.pkl; offset 2; sha256 c595bc8497a523c324585ada0204e2c53f192d8ef4af8d56fc761d13bd7b88d8; EXT1 with non-static operands",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/ext_registry.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "2"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "c595bc8497a523c324585ada0204e2c53f192d8ef4af8d56fc761d13bd7b88d8"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "EXT1 with non-static operands"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Treat the file as hostile and replace it with a safetensors export from a trusted source."
+          },
+          {
+            "uuid": "031135d3-983f-581c-a6c1-77f58a06d653",
+            "title": "Model file format can't be scanned yet",
+            "description": "This file is a format that can run code on load, but Gapproof can't parse this variant yet, so it can't be shown safe.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/model.joblib; sha256 dfe3156358126e8a594b45d8332a9f39f24ce85df5c859dd9b71e68cd09a828e; compressed joblib archive",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/model.joblib"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "dfe3156358126e8a594b45d8332a9f39f24ce85df5c859dd9b71e68cd09a828e"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "compressed joblib archive"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert to safetensors or GGUF, or document the file as an accepted risk."
+          },
+          {
+            "uuid": "ddd6fc2a-e483-58af-ab59-bf1e53c48fc3",
+            "title": "Model file runs code when loaded",
+            "description": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/print_payload.pkl; offset 21; sha256 e1c0156f0749b355434f8640e3fc51325ceb1d07683427adfb5b3907a9cd3d0c; STACK_GLOBAL builtins.print",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/print_payload.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "21"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "e1c0156f0749b355434f8640e3fc51325ceb1d07683427adfb5b3907a9cd3d0c"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "STACK_GLOBAL builtins.print"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced."
+          },
+          {
+            "uuid": "0f57f2fc-ec3e-56a0-b0e3-d428db297c32",
+            "title": "Model file runs code when loaded",
+            "description": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/print_payload.pt; member archive/data.pkl; offset 21; sha256 ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042; STACK_GLOBAL builtins.print",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/print_payload.pt"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "archive/data.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "21"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "STACK_GLOBAL builtins.print"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced."
+          },
+          {
+            "uuid": "a0edc386-1856-5291-a074-45e2b4dd5d34",
+            "title": "Model file runs code when loaded",
+            "description": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/stack_global_os_system.pkl; offset 22; sha256 1ed2e7cc45dde26e04658783331442aea4c1b50f14819e0fe029fde9cd7fef69; STACK_GLOBAL os.system",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/stack_global_os_system.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "22"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "1ed2e7cc45dde26e04658783331442aea4c1b50f14819e0fe029fde9cd7fef69"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "STACK_GLOBAL os.system"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced."
+          },
+          {
+            "uuid": "a45fda1d-07c1-523d-898c-90b1658c5a27",
+            "title": "TorchScript archive contains code",
+            "description": "This PyTorch archive contains TorchScript code (code/ entries) that torch.jit.load compiles and runs when the model is loaded.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-TORCHSCRIPT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/torchscript.pt; member m/code/__torch__/model.py; sha256 5e5a2c50d13f761e2855d4ee865321f7239cfbd77a1d7d2823adaa02dcfe0718; TorchScript code member",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/torchscript.pt"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "m/code/__torch__/model.py"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "5e5a2c50d13f761e2855d4ee865321f7239cfbd77a1d7d2823adaa02dcfe0718"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "TorchScript code member"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Ship plain weights (safetensors) plus the model code in your image, or review and pin the TorchScript code as part of the release."
+          },
+          {
+            "uuid": "9c4ee5ee-fe12-55b9-85bc-7bde466873b2",
+            "title": "Model file could not be verified",
+            "description": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/truncated.pkl; offset 12; sha256 873269cea0a95e9db26c588a3476c35cf945c123956a50b5e566afbebd878f92; pickle: unexpected end of data before STOP: truncated at offset 12",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/truncated.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "12"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "873269cea0a95e9db26c588a3476c35cf945c123956a50b5e566afbebd878f92"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle: unexpected end of data before STOP: truncated at offset 12"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk."
+          },
+          {
+            "uuid": "dffc728a-7c47-5ad3-9b62-e28b812d5d40",
+            "title": "Model file hides what it imports",
+            "description": "This pickle builds an import from values Gapproof can't resolve statically (computed STACK_GLOBAL operands or the copyreg extension registry). Legitimate serializers don't do this; obfuscated payloads do.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-UNRESOLVED-IMPORT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/unresolved_global.pkl; offset 7; sha256 2f6993207ddcdf35b1cd062e30e8f266605945a4f25a3ae5e758205b8d2f1b6a; STACK_GLOBAL with non-static operands",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/unresolved_global.pkl"
+                  },
+                  {
+                    "name": "offset",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "7"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "2f6993207ddcdf35b1cd062e30e8f266605945a4f25a3ae5e758205b8d2f1b6a"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "STACK_GLOBAL with non-static operands"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Treat the file as hostile and replace it with a safetensors export from a trusted source."
+          },
+          {
+            "uuid": "419a47fb-2ee1-5ecd-9d64-b763bfcf53dc",
+            "title": "Model file could not be verified",
+            "description": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path pickle/zip_bomb.pt; member archive/data.pkl; sha256 bee00525118046dfec7e50680a0362f97eb0b3ab7fff871526368411ad52f953; possible zip bomb: decompression ratio above 100",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "pickle/zip_bomb.pt"
+                  },
+                  {
+                    "name": "member",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "archive/data.pkl"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "bee00525118046dfec7e50680a0362f97eb0b3ab7fff871526368411ad52f953"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "possible zip bomb: decompression ratio above 100"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk."
+          },
+          {
+            "uuid": "477950ab-983a-5504-aa67-d5af37928d9d",
+            "title": "Model file could not be verified",
+            "description": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path safetensors/truncated.safetensors; sha256 8e747086dcde3910ef00b05e9adc7d5a14210fb3a8368661e629d2f0dc8032ee; safetensors: tensors need 20 data bytes but the file has 6 (truncated)",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "safetensors/truncated.safetensors"
+                  },
+                  {
+                    "name": "sha256",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "8e747086dcde3910ef00b05e9adc7d5a14210fb3a8368661e629d2f0dc8032ee"
+                  },
+                  {
+                    "name": "detail",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "safetensors: tensors need 20 data bytes but the file has 6 (truncated)"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z",
+            "remarks": "Fix: Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk."
+          },
+          {
+            "uuid": "137f4872-e40d-55b6-9586-b7a926c6619e",
+            "title": "Unvalidated OpenSSL",
+            "description": "Unvalidated OpenSSL",
+            "props": [
+              {
+                "name": "finding-id",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "CR-0001"
+              },
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "CRYPTO-UNVALIDATED-MODULE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "waived"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "description": "path usr/lib/libssl.so.3",
+                "props": [
+                  {
+                    "name": "path",
+                    "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                    "value": "usr/lib/libssl.so.3"
+                  }
+                ]
+              }
+            ],
+            "collected": "2026-11-09T10:00:00Z"
+          }
+        ],
+        "findings": [
+          {
+            "uuid": "3c178293-92a4-5844-b921-95b5a4356c87",
+            "title": "read_file reaches http_post (AC-3)",
+            "description": "Gapproof rule AGENT-INV01-EXFIL is informatively mapped to NIST SP 800-53 AC-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "AGENT-INV01-EXFIL"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "ac-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "b26d63f8-2aaa-56b7-830e-9a9ecf44c6ec"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "bbede60f-f477-5dd5-9eda-15f904582260",
+            "title": "read_file reaches http_post (AC-4)",
+            "description": "Gapproof rule AGENT-INV01-EXFIL is informatively mapped to NIST SP 800-53 AC-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "AGENT-INV01-EXFIL"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "ac-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "b26d63f8-2aaa-56b7-830e-9a9ecf44c6ec"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "f09accef-1b3b-5a46-ac6b-e9e4365d4098",
+            "title": "read_file reaches http_post (AC-6)",
+            "description": "Gapproof rule AGENT-INV01-EXFIL is informatively mapped to NIST SP 800-53 AC-6.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "AGENT-INV01-EXFIL"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "ac-6",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "b26d63f8-2aaa-56b7-830e-9a9ecf44c6ec"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "2c21664c-d314-57ed-8474-dfb510f23de2",
+            "title": "Egress attempt to api.openai.com (AC-4)",
+            "description": "Gapproof rule EGRESS-ATTEMPT is informatively mapped to NIST SP 800-53 AC-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "EGRESS-ATTEMPT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "ac-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "97427627-8477-5bb7-9a38-c8ac47da63e4"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "db93918e-6148-5870-831d-1bde964656df",
+            "title": "Egress attempt to api.openai.com (SC-7)",
+            "description": "Gapproof rule EGRESS-ATTEMPT is informatively mapped to NIST SP 800-53 SC-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "EGRESS-ATTEMPT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sc-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "97427627-8477-5bb7-9a38-c8ac47da63e4"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "f74f3ea6-a23c-5545-84a8-0e54b85fb75c",
+            "title": "Chroma telemetry on (CM-7)",
+            "description": "Gapproof rule PH-CHROMA-TELEMETRY is informatively mapped to NIST SP 800-53 CM-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "PH-CHROMA-TELEMETRY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "5f357e4c-f861-5824-9b59-ea6c5c4495eb"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "9a1d3b25-07f0-5808-8bf7-68c5c677fdff",
+            "title": "Chat template looks like a template-injection payload (SI-3)",
+            "description": "Gapproof rule MODEL-CHAT-TEMPLATE-SUSPICIOUS is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-CHAT-TEMPLATE-SUSPICIOUS"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "61f295b4-6b9c-59c6-9e08-19e4394bcc50"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "d50c3ad5-2597-568f-99c6-78ffb6cc8bd4",
+            "title": "Chat template looks like a template-injection payload (SI-7)",
+            "description": "Gapproof rule MODEL-CHAT-TEMPLATE-SUSPICIOUS is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-CHAT-TEMPLATE-SUSPICIOUS"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "61f295b4-6b9c-59c6-9e08-19e4394bcc50"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "3e94638c-8939-5c9a-b45f-04fb230abac1",
+            "title": "Model file format can't be scanned yet (CM-8)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "28180d20-43d5-5109-9b6a-d75ee3c46c62"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "b09b985b-76c8-5331-a584-bc2735aec9af",
+            "title": "Model file format can't be scanned yet (SI-7)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "28180d20-43d5-5109-9b6a-d75ee3c46c62"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "1cdcd727-b1aa-5155-a997-f52bb4b8cdd0",
+            "title": "Model file format can't be scanned yet (SR-3)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "28180d20-43d5-5109-9b6a-d75ee3c46c62"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "ab894c43-bb12-50dd-b52a-b4ab63c6a0c9",
+            "title": "Model file format can't be scanned yet (SR-4)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "28180d20-43d5-5109-9b6a-d75ee3c46c62"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "72be8afa-f3cf-5e6b-b863-f67fdb93e539",
+            "title": "Model config requires remote code (CM-7)",
+            "description": "Gapproof rule MODEL-REMOTE-CODE is informatively mapped to NIST SP 800-53 CM-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-REMOTE-CODE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "534ed88f-9e6f-5e41-9358-e87e8ac75480"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "17aa773c-a4f6-59a8-9154-48c883370897",
+            "title": "Model config requires remote code (SI-3)",
+            "description": "Gapproof rule MODEL-REMOTE-CODE is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-REMOTE-CODE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "534ed88f-9e6f-5e41-9358-e87e8ac75480"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "f2f1d832-b2c8-58a4-b4f8-742f5b1b057b",
+            "title": "Model config requires remote code (SI-7)",
+            "description": "Gapproof rule MODEL-REMOTE-CODE is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-REMOTE-CODE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "534ed88f-9e6f-5e41-9358-e87e8ac75480"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "6c55e879-0d58-5aff-8640-add7bc894917",
+            "title": "Chat template looks like a template-injection payload (SI-3)",
+            "description": "Gapproof rule MODEL-CHAT-TEMPLATE-SUSPICIOUS is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-CHAT-TEMPLATE-SUSPICIOUS"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "1620d89d-fe0e-5878-8cf3-6c8b0815e0dc"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "d10006fe-fd25-5e60-9013-744759582b48",
+            "title": "Chat template looks like a template-injection payload (SI-7)",
+            "description": "Gapproof rule MODEL-CHAT-TEMPLATE-SUSPICIOUS is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-CHAT-TEMPLATE-SUSPICIOUS"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "1620d89d-fe0e-5878-8cf3-6c8b0815e0dc"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "7e1a3820-8501-5791-bdff-f3dcd2564b37",
+            "title": "Keras model contains a Lambda layer (SI-3)",
+            "description": "Gapproof rule MODEL-KERAS-LAMBDA is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-LAMBDA"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "96d2fc39-5001-5470-9c81-4ced101556ae"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "e6c13429-a754-5ebc-b32a-c6ab8e6fe4d6",
+            "title": "Keras model contains a Lambda layer (SI-7)",
+            "description": "Gapproof rule MODEL-KERAS-LAMBDA is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-LAMBDA"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "96d2fc39-5001-5470-9c81-4ced101556ae"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "06d2c6fa-260c-5bf2-90cb-e23d9179c9e1",
+            "title": "Keras model contains a Lambda layer (SI-3)",
+            "description": "Gapproof rule MODEL-KERAS-LAMBDA is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-LAMBDA"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "1eb7e52b-4a79-5400-8af0-3ab68868f0a0"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "1bf7a7c9-e1da-512e-829a-67150ada0098",
+            "title": "Keras model contains a Lambda layer (SI-7)",
+            "description": "Gapproof rule MODEL-KERAS-LAMBDA is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-LAMBDA"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "1eb7e52b-4a79-5400-8af0-3ab68868f0a0"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "e1423126-b8c5-5826-ae88-b68d7f1d0ccc",
+            "title": "Keras config references a non-Keras module (SI-3)",
+            "description": "Gapproof rule MODEL-KERAS-UNSAFE-MODULE is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-UNSAFE-MODULE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "6b08db12-5cfd-59da-b1ac-31915c19c3b0"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "3c8895d2-fcf8-52f5-a1b2-d63a56e8b7f3",
+            "title": "Keras config references a non-Keras module (SI-7)",
+            "description": "Gapproof rule MODEL-KERAS-UNSAFE-MODULE is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-KERAS-UNSAFE-MODULE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "6b08db12-5cfd-59da-b1ac-31915c19c3b0"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "6224044b-3df2-5764-89fb-c6986006ffb1",
+            "title": "NumPy array stores Python objects (SI-3)",
+            "description": "Gapproof rule MODEL-NUMPY-OBJECT-ARRAY is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-NUMPY-OBJECT-ARRAY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "c29b9ae7-9801-5fff-9531-c9fc3c3c1dd8"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "e5610016-d5de-58af-93ae-e7d7d7d08ef3",
+            "title": "NumPy array stores Python objects (SI-7)",
+            "description": "Gapproof rule MODEL-NUMPY-OBJECT-ARRAY is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-NUMPY-OBJECT-ARRAY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "c29b9ae7-9801-5fff-9531-c9fc3c3c1dd8"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "c1ddcc79-7859-57f4-8f11-a6cfa52788f7",
+            "title": "Model file runs code when loaded (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "74d1b136-c885-5059-a180-4a1f0741cc45"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "b692fc2e-27ee-571c-8c60-0a22076e6ad7",
+            "title": "Model file runs code when loaded (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "74d1b136-c885-5059-a180-4a1f0741cc45"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "eaa98352-de59-5418-a8aa-fc0712c3a963",
+            "title": "ONNX model reads data from outside its directory (AC-3)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-ESCAPE is informatively mapped to NIST SP 800-53 AC-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "ac-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "8280403e-20c6-577f-830d-08e9b03b16ca"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "30a4470d-cbde-5227-a1eb-bd3c5f3dc8a1",
+            "title": "ONNX model reads data from outside its directory (CM-8)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-ESCAPE is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "8280403e-20c6-577f-830d-08e9b03b16ca"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "afde1a8a-280b-5b5f-ba70-4bf07a03fc78",
+            "title": "ONNX model reads data from outside its directory (SI-7)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-ESCAPE is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "8280403e-20c6-577f-830d-08e9b03b16ca"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "e0e51819-1d33-5db5-9d43-050d1722257b",
+            "title": "ONNX model reads data from outside its directory (SR-3)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-ESCAPE is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "8280403e-20c6-577f-830d-08e9b03b16ca"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "59b7083c-db71-5d52-b91d-28bcf6cf198f",
+            "title": "ONNX model reads data from outside its directory (SR-4)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-ESCAPE is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "8280403e-20c6-577f-830d-08e9b03b16ca"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "b880d043-c328-5b24-b9ea-cb0f7d4d9be3",
+            "title": "Model file could not be verified (CM-8)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "db599ed7-eef9-55d6-8425-07d733413ba4"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "1bc963ab-477e-5dcb-b870-f868c4669035",
+            "title": "Model file could not be verified (SI-7)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "db599ed7-eef9-55d6-8425-07d733413ba4"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "ea1b1374-5398-5884-a2cb-0d9f0c2bfb31",
+            "title": "Model file could not be verified (SR-3)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "db599ed7-eef9-55d6-8425-07d733413ba4"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "74cd5e27-55ba-5776-8641-9c1c609656ef",
+            "title": "Model file could not be verified (SR-4)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "db599ed7-eef9-55d6-8425-07d733413ba4"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "ba50f0e6-7723-502b-9221-1000aa57689e",
+            "title": "ONNX external data file is missing (CM-8)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-MISSING is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-MISSING"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "e684a732-93ab-52b5-91f4-42f866f34844"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "f4b4c9bf-4f65-52fb-bd42-aec1b35c1b00",
+            "title": "ONNX external data file is missing (SR-3)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-MISSING is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-MISSING"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "e684a732-93ab-52b5-91f4-42f866f34844"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "5041b280-306c-5bff-ad31-b757111011b0",
+            "title": "ONNX external data file is missing (SR-4)",
+            "description": "Gapproof rule MODEL-ONNX-EXTERNAL-DATA-MISSING is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ONNX-EXTERNAL-DATA-MISSING"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "medium"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "e684a732-93ab-52b5-91f4-42f866f34844"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "7e2b27ae-cf8a-54bc-b2c1-a88aabef943a",
+            "title": "Model archive is structurally suspicious (CM-8)",
+            "description": "Gapproof rule MODEL-ARCHIVE-ANOMALY is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ARCHIVE-ANOMALY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "d6c31e54-10af-570d-9e46-43062de7538d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "0c74fe47-4532-505a-a23c-d12c94a0a8c4",
+            "title": "Model archive is structurally suspicious (SI-7)",
+            "description": "Gapproof rule MODEL-ARCHIVE-ANOMALY is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ARCHIVE-ANOMALY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "d6c31e54-10af-570d-9e46-43062de7538d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "95a715f4-2d9b-55b6-9939-a39632e31788",
+            "title": "Model archive is structurally suspicious (SR-3)",
+            "description": "Gapproof rule MODEL-ARCHIVE-ANOMALY is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ARCHIVE-ANOMALY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "d6c31e54-10af-570d-9e46-43062de7538d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "181d6c44-d9b7-5711-9e52-71e9a00a5826",
+            "title": "Model archive is structurally suspicious (SR-4)",
+            "description": "Gapproof rule MODEL-ARCHIVE-ANOMALY is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-ARCHIVE-ANOMALY"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "d6c31e54-10af-570d-9e46-43062de7538d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "bbe2fd2d-613f-5006-ba3e-d19f6c6c2030",
+            "title": "Model file runs code when loaded (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "57ab38ef-c885-5913-818e-e07fbbdd5849"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "a1679674-0e42-5e7a-abb1-080292a1bbfc",
+            "title": "Model file runs code when loaded (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "57ab38ef-c885-5913-818e-e07fbbdd5849"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "14750199-c4ba-5afe-85df-771b9a7e09af",
+            "title": "Model file hides what it imports (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-UNRESOLVED-IMPORT is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-UNRESOLVED-IMPORT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "bfd938cf-39b5-56b5-b2b4-70c6cc0c6721"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "20219981-6da4-57bb-99ad-e4ffd0ae9fd2",
+            "title": "Model file hides what it imports (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-UNRESOLVED-IMPORT is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-UNRESOLVED-IMPORT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "bfd938cf-39b5-56b5-b2b4-70c6cc0c6721"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "30759a68-ff48-59e1-8b69-6956f3197fb9",
+            "title": "Model file format can't be scanned yet (CM-8)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "031135d3-983f-581c-a6c1-77f58a06d653"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "459b77e6-2346-5094-bd2c-5269dae53af7",
+            "title": "Model file format can't be scanned yet (SI-7)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "031135d3-983f-581c-a6c1-77f58a06d653"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "032ce2d9-2d1f-5cf3-874b-3562f9ccae22",
+            "title": "Model file format can't be scanned yet (SR-3)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "031135d3-983f-581c-a6c1-77f58a06d653"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "7c73be8f-da25-533c-b594-b6de197c1e38",
+            "title": "Model file format can't be scanned yet (SR-4)",
+            "description": "Gapproof rule MODEL-UNSCANNED-FORMAT is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-UNSCANNED-FORMAT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "031135d3-983f-581c-a6c1-77f58a06d653"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "c52868cc-3e6e-5752-b3a0-af88b5121066",
+            "title": "Model file runs code when loaded (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "ddd6fc2a-e483-58af-ab59-bf1e53c48fc3"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "9008a3c2-70f2-5404-a8b2-33804fd7476f",
+            "title": "Model file runs code when loaded (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "ddd6fc2a-e483-58af-ab59-bf1e53c48fc3"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "2703d08b-cb70-5994-80d2-df973a57cf51",
+            "title": "Model file runs code when loaded (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "0f57f2fc-ec3e-56a0-b0e3-d428db297c32"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "7f9ccf61-87ce-5fda-9b89-31953f233d05",
+            "title": "Model file runs code when loaded (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "0f57f2fc-ec3e-56a0-b0e3-d428db297c32"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "24b4e5c4-849e-58dc-aa9b-fe5fe4437f03",
+            "title": "Model file runs code when loaded (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "a0edc386-1856-5291-a074-45e2b4dd5d34"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "7d250dcc-4b8f-5505-8231-0fdbf68ede1d",
+            "title": "Model file runs code when loaded (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-CODE-EXEC is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-CODE-EXEC"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "critical"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "a0edc386-1856-5291-a074-45e2b4dd5d34"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "eaddaadb-1701-5447-9de9-5b07cc3bfa44",
+            "title": "TorchScript archive contains code (SI-3)",
+            "description": "Gapproof rule MODEL-TORCHSCRIPT is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-TORCHSCRIPT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "a45fda1d-07c1-523d-898c-90b1658c5a27"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "f9559b96-201b-56b6-b6c7-2dfec7e7e7c7",
+            "title": "TorchScript archive contains code (SI-7)",
+            "description": "Gapproof rule MODEL-TORCHSCRIPT is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-TORCHSCRIPT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "a45fda1d-07c1-523d-898c-90b1658c5a27"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "3948ee78-8d3f-5f91-a425-d978ab696353",
+            "title": "Model file could not be verified (CM-8)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "9c4ee5ee-fe12-55b9-85bc-7bde466873b2"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "492145eb-dca4-56b6-9d8f-b3e40f6b83a0",
+            "title": "Model file could not be verified (SI-7)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "9c4ee5ee-fe12-55b9-85bc-7bde466873b2"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "4211be43-fb2f-5f00-ba66-8104ffa0d78f",
+            "title": "Model file could not be verified (SR-3)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "9c4ee5ee-fe12-55b9-85bc-7bde466873b2"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "0602e626-0470-5355-aeda-e8931de9cae2",
+            "title": "Model file could not be verified (SR-4)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "9c4ee5ee-fe12-55b9-85bc-7bde466873b2"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "85e4c005-ebf1-5e9b-a4b8-a8a8c1ef82eb",
+            "title": "Model file hides what it imports (SI-3)",
+            "description": "Gapproof rule MODEL-PICKLE-UNRESOLVED-IMPORT is informatively mapped to NIST SP 800-53 SI-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-UNRESOLVED-IMPORT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "dffc728a-7c47-5ad3-9b62-e28b812d5d40"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "6b63ed6b-158c-5a06-a2f6-f7846e4035aa",
+            "title": "Model file hides what it imports (SI-7)",
+            "description": "Gapproof rule MODEL-PICKLE-UNRESOLVED-IMPORT is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PICKLE-UNRESOLVED-IMPORT"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "dffc728a-7c47-5ad3-9b62-e28b812d5d40"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "289642a8-eb9c-52da-b788-0610bff2f3ed",
+            "title": "Model file could not be verified (CM-8)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "419a47fb-2ee1-5ecd-9d64-b763bfcf53dc"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "51520168-1b8f-574b-9692-530ce6ad26a6",
+            "title": "Model file could not be verified (SI-7)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "419a47fb-2ee1-5ecd-9d64-b763bfcf53dc"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "f587e764-ab95-5ece-a4c3-63bb7d05c37a",
+            "title": "Model file could not be verified (SR-3)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "419a47fb-2ee1-5ecd-9d64-b763bfcf53dc"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "ded8ef92-7957-59ca-905e-7e192dd1b5ad",
+            "title": "Model file could not be verified (SR-4)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "419a47fb-2ee1-5ecd-9d64-b763bfcf53dc"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "89d4ac4b-2c62-53ed-a416-f51e0cb400b9",
+            "title": "Model file could not be verified (CM-8)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 CM-8.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "cm-8",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "477950ab-983a-5504-aa67-d5af37928d9d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "9a5507b7-164d-5c50-92d4-413082fcad52",
+            "title": "Model file could not be verified (SI-7)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SI-7.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "si-7",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "477950ab-983a-5504-aa67-d5af37928d9d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "a34805f0-0127-54e1-b26a-17e7366dfa62",
+            "title": "Model file could not be verified (SR-3)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-3.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-3",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "477950ab-983a-5504-aa67-d5af37928d9d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "1c46f245-4363-5586-b55d-3f44cc524925",
+            "title": "Model file could not be verified (SR-4)",
+            "description": "Gapproof rule MODEL-PARSE-FAILED is informatively mapped to NIST SP 800-53 SR-4.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "MODEL-PARSE-FAILED"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "open"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sr-4",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "477950ab-983a-5504-aa67-d5af37928d9d"
+              }
+            ],
+            "remarks": "Open finding. Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "0fda3ca6-2778-555a-8ac8-01afb721ce91",
+            "title": "Unvalidated OpenSSL (SC-12)",
+            "description": "Gapproof rule CRYPTO-UNVALIDATED-MODULE is informatively mapped to NIST SP 800-53 SC-12.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "CRYPTO-UNVALIDATED-MODULE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "waived"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sc-12",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "other"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "137f4872-e40d-55b6-9586-b7a926c6619e"
+              }
+            ],
+            "remarks": "Finding status: waived (accepted risk is recorded, not resolved). Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          },
+          {
+            "uuid": "8cc25d41-3caf-5fcf-bd65-fae08cfeb53d",
+            "title": "Unvalidated OpenSSL (SC-13)",
+            "description": "Gapproof rule CRYPTO-UNVALIDATED-MODULE is informatively mapped to NIST SP 800-53 SC-13.",
+            "props": [
+              {
+                "name": "rule",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "CRYPTO-UNVALIDATED-MODULE"
+              },
+              {
+                "name": "severity",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "high"
+              },
+              {
+                "name": "status",
+                "ns": "https://github.com/uddeshya-world/gapproof/ns/oscal",
+                "value": "waived"
+              }
+            ],
+            "target": {
+              "type": "objective-id",
+              "target-id": "sc-13",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "other"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "137f4872-e40d-55b6-9586-b7a926c6619e"
+              }
+            ],
+            "remarks": "Finding status: waived (accepted risk is recorded, not resolved). Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+          }
+        ],
+        "remarks": "Control mappings are informative, not a determination of compliance. Gapproof reports an inventory and findings; it does not grant an ATO, certify FIPS 140-3 or accredit a system."
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "a0738dae-9bf2-5f0b-a894-e7be7ba65396",
+          "title": "Gapproof scan configuration",
+          "description": "The checks are those of Gapproof v0.2.0-test with the modules and options recorded in summary.json and evidence.json of the same evidence bundle."
+        }
+      ]
+    }
+  }
+}

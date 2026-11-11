@@ -43,10 +43,33 @@ func TestNoEgress(t *testing.T) {
 		image = "gcr.io/distroless/static-debian12:nonroot" // no shell, no libc: proves the binary is static
 	}
 
+	// A signed bundle plus matching and non-matching images, mounted
+	// read-only at /work, so verify runs end to end with no network.
+	work := t.TempDir()
+	img, digest := testImage(t, "v1")
+	other, _ := testImage(t, "v2")
+	for src, dst := range map[string]string{img: "img.tar", other: "other.tar"} {
+		raw, _ := os.ReadFile(src)
+		os.WriteFile(filepath.Join(work, dst), raw, 0o644)
+	}
+	ev := filepath.Join(t.TempDir(), "ev")
+	os.Mkdir(ev, 0o755)
+	os.WriteFile(filepath.Join(ev, "summary.json"), []byte(`{"agr":{"level":"AGR-2"}}`), 0o644)
+	if c, out := runCLI(t, "keygen", "--out", filepath.Join(work, "k")); c != exitOK {
+		t.Fatal(out)
+	}
+	if c, out := runCLI(t, "sign", "--in", ev, "--key", filepath.Join(work, "k.key"), "--artifact-digest", digest, "--bundle", filepath.Join(work, "b.tar")); c != exitOK {
+		t.Fatal(out)
+	}
+
 	cases := []struct {
 		args []string
 		want int
 	}{
+		{[]string{"keygen", "--help"}, exitOK},
+		{[]string{"sign", "--help"}, exitOK},
+		{[]string{"verify", "/work/b.tar", "--pub", "/work/k.pub", "--artifact", "/work/img.tar"}, exitOK},
+		{[]string{"verify", "/work/b.tar", "--pub", "/work/k.pub", "--artifact", "/work/other.tar"}, exitBelowThreshold},
 		{[]string{"version"}, exitOK},
 		{[]string{"--help"}, exitOK},
 		{[]string{"scan", "--help"}, exitOK},
@@ -64,7 +87,9 @@ func TestNoEgress(t *testing.T) {
 			"--read-only",
 			"--cap-drop", "ALL",
 			"--security-opt", "no-new-privileges",
+			"--tmpfs", "/tmp", // verify --artifact extracts the image to a temp dir
 			"-v", bin + ":/gapproof:ro",
+			"-v", work + ":/work:ro",
 			image, "/gapproof",
 		}, tc.args...)
 		out, err := exec.Command(engine, args...).CombinedOutput()

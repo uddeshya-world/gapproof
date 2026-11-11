@@ -1,0 +1,1017 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:29e83280-8d85-59cd-8fc3-647757ef6fa6",
+  "version": 1,
+  "metadata": {
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "gapproof",
+          "version": "v0.2.0-test"
+        }
+      ]
+    },
+    "component": {
+      "bom-ref": "subject",
+      "type": "container",
+      "name": "demo/fixed-rag:1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "abababababababababababababababababababababababababababababababab"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:image:config_digest",
+          "value": "sha256:abababababababababababababababababababababababababababababababab"
+        },
+        {
+          "name": "gapproof:image:image_id",
+          "value": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "gapproof:disclaimer",
+        "value": "Inventory produced by static analysis. It is not a certification, an ATO or a FIPS 140-3 validation; licences are as declared in the model files."
+      }
+    ]
+  },
+  "components": [
+    {
+      "bom-ref": "file:gguf/ssti.gguf",
+      "type": "machine-learning-model",
+      "name": "tiny-test",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f2449fc4730c93e3272d2b654d1801db17995c030c35ef7d8bee1508a4f63687"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:architecture",
+          "value": "llama"
+        },
+        {
+          "name": "gapproof:format",
+          "value": "gguf"
+        },
+        {
+          "name": "gapproof:parameters",
+          "value": "32"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "gguf/ssti.gguf"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "409"
+        },
+        {
+          "name": "gapproof:tensors",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:gguf/tiny.gguf",
+      "type": "machine-learning-model",
+      "name": "tiny-test",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "811177ee29ccfd2c2fcab0074850cd726ad528c354f7162797502569f7ecaa7a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:architecture",
+          "value": "llama"
+        },
+        {
+          "name": "gapproof:format",
+          "value": "gguf"
+        },
+        {
+          "name": "gapproof:parameters",
+          "value": "32"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "gguf/tiny.gguf"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "407"
+        },
+        {
+          "name": "gapproof:tensors",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:gguf/v1.gguf",
+      "type": "machine-learning-model",
+      "name": "v1.gguf",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "43a802114c8fd4da5e98545781edb9330c2203bdd506863ac9c1f55f64864595"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "gguf"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "unscanned-format"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "gguf/v1.gguf"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:hf/remote_code/config.json",
+      "type": "file",
+      "name": "config.json",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "cce528b39e77fe07a4346e4c5d50e1e1c8b8d25cfed9419c57d2095ac323b2b4"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:architecture",
+          "value": "custom"
+        },
+        {
+          "name": "gapproof:format",
+          "value": "hf-config"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "hf/remote_code/config.json"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "78"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:hf/remote_code/tokenizer_config.json",
+      "type": "file",
+      "name": "tokenizer_config.json",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ca85a8f0bfa128c00a59fe7e5377aff44d9bcebef6b04a1afad880852b420b36"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "hf-tokenizer-config"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "hf/remote_code/tokenizer_config.json"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "88"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:keras/lambda.h5",
+      "type": "machine-learning-model",
+      "name": "lambda.h5",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0ad3dc08f75b7faec1771c7dbef8eec2f6be57a7426b0baa5aba6565d4c27d53"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "keras-h5"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "keras/lambda.h5"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "2146"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:keras/lambda.keras",
+      "type": "machine-learning-model",
+      "name": "lambda.keras",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f6aa73274315cdb50a77cf9305d09666e86538bba0f2f01e443c2cf1b61f541a"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "keras"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "keras/lambda.keras"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "401"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:keras/module_bypass.keras",
+      "type": "machine-learning-model",
+      "name": "module_bypass.keras",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "197d60e773c76b28d065878e8ca61960014a1554d4af6315aa9cf2380e30278c"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "keras"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "keras/module_bypass.keras"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "229"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:numpy/object.npy",
+      "type": "data",
+      "name": "object.npy",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "npy"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "numpy/object.npy"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "builtins.print"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "206"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:onnx/escape.onnx",
+      "type": "machine-learning-model",
+      "name": "escape.onnx",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d805ae769cb55e655fbebf6b056095ac7f08d0bfdb75aa86b6cc296a0abce44f"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "onnx"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "onnx/escape.onnx"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "112"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:onnx/garbage.onnx",
+      "type": "machine-learning-model",
+      "name": "garbage.onnx",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b4fabc7e6e75fa4b523cc55f51aa54ab1aa4309c92cc44fcf623ddef756f5391"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "onnx"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parse-failed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "onnx/garbage.onnx"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:onnx/missing.onnx",
+      "type": "machine-learning-model",
+      "name": "missing.onnx",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3eb03d774e8e7bac07ada1689374b20a418483e315b56b8c2ff0ab1401438d15"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "onnx"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "onnx/missing.onnx"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "48"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:onnx/weights.data",
+      "type": "data",
+      "name": "weights.data",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "onnx-external-data"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "onnx/weights.data"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "16"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/benign_state_dict.pt",
+      "type": "machine-learning-model",
+      "name": "benign_state_dict.pt",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "59d9fc8ec28421b282d4f896dbdf7283efaf322b72b5904f700c580e0789b40d"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pytorch-zip"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/benign_state_dict.pt"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "collections.OrderedDict,torch.FloatStorage,torch._utils._rebuild_tensor_v2"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "554"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/duplicate_member.pt",
+      "type": "machine-learning-model",
+      "name": "duplicate_member.pt",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pytorch-zip"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/duplicate_member.pt"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "builtins.print,collections.OrderedDict,torch.FloatStorage,torch._utils._rebuild_tensor_v2"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "489"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/ext_registry.pkl",
+      "type": "machine-learning-model",
+      "name": "ext_registry.pkl",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c595bc8497a523c324585ada0204e2c53f192d8ef4af8d56fc761d13bd7b88d8"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pickle"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/ext_registry.pkl"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "<unresolved EXT1>"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/legacy_torch.pt",
+      "type": "machine-learning-model",
+      "name": "legacy_torch.pt",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "962e253a7a69f3e6bc3de00dd0a8aba9cbf63a41c8bab0c49afdc9c0a7e0df96"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pickle"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/legacy_torch.pt"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "collections.OrderedDict,torch.FloatStorage,torch._utils._rebuild_tensor_v2"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "209"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/model.joblib",
+      "type": "machine-learning-model",
+      "name": "model.joblib",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "dfe3156358126e8a594b45d8332a9f39f24ce85df5c859dd9b71e68cd09a828e"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "joblib-compressed"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "unscanned-format"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/model.joblib"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "5"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/print_payload.pkl",
+      "type": "machine-learning-model",
+      "name": "print_payload.pkl",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e1c0156f0749b355434f8640e3fc51325ceb1d07683427adfb5b3907a9cd3d0c"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pickle"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/print_payload.pkl"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "builtins.print"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "78"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/print_payload.pt",
+      "type": "machine-learning-model",
+      "name": "print_payload.pt",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pytorch-zip"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/print_payload.pt"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "builtins.print"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "505"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/stack_global_os_system.pkl",
+      "type": "machine-learning-model",
+      "name": "stack_global_os_system.pkl",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1ed2e7cc45dde26e04658783331442aea4c1b50f14819e0fe029fde9cd7fef69"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pickle"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/stack_global_os_system.pkl"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "os.system"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "49"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/torchscript.pt",
+      "type": "machine-learning-model",
+      "name": "torchscript.pt",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "5e5a2c50d13f761e2855d4ee865321f7239cfbd77a1d7d2823adaa02dcfe0718"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "torchscript"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/torchscript.pt"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "collections.OrderedDict,torch.FloatStorage,torch._utils._rebuild_tensor_v2"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "585"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/truncated.pkl",
+      "type": "machine-learning-model",
+      "name": "truncated.pkl",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "873269cea0a95e9db26c588a3476c35cf945c123956a50b5e566afbebd878f92"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pickle"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parse-failed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/truncated.pkl"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "12"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/unresolved_global.pkl",
+      "type": "machine-learning-model",
+      "name": "unresolved_global.pkl",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2f6993207ddcdf35b1cd062e30e8f266605945a4f25a3ae5e758205b8d2f1b6a"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pickle"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/unresolved_global.pkl"
+        },
+        {
+          "name": "gapproof:pickle_imports",
+          "value": "<unresolved STACK_GLOBAL>"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "9"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:pickle/zip_bomb.pt",
+      "type": "machine-learning-model",
+      "name": "zip_bomb.pt",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bee00525118046dfec7e50680a0362f97eb0b3ab7fff871526368411ad52f953"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:format",
+          "value": "pytorch-zip"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parse-failed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "pickle/zip_bomb.pt"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "66771"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:safetensors/hf_ok/config.json",
+      "type": "file",
+      "name": "config.json",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "fa6f2b12f72ded5ce76df1c5e022691a0272813f554e5f14a608645858480ca7"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:architecture",
+          "value": "LlamaForCausalLM"
+        },
+        {
+          "name": "gapproof:format",
+          "value": "hf-config"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "safetensors/hf_ok/config.json"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "59"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:safetensors/hf_ok/model.safetensors",
+      "type": "machine-learning-model",
+      "name": "model.safetensors",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8a2ff35c8036313d45c14bcae3d0197ae574625bfb0be0a6db011445ecdc8b0e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:dtypes",
+          "value": "BF16,F32"
+        },
+        {
+          "name": "gapproof:format",
+          "value": "safetensors"
+        },
+        {
+          "name": "gapproof:parameters",
+          "value": "6"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parsed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "safetensors/hf_ok/model.safetensors"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "180"
+        },
+        {
+          "name": "gapproof:tensors",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "bom-ref": "file:safetensors/truncated.safetensors",
+      "type": "machine-learning-model",
+      "name": "truncated.safetensors",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8e747086dcde3910ef00b05e9adc7d5a14210fb3a8368661e629d2f0dc8032ee"
+        }
+      ],
+      "properties": [
+        {
+          "name": "gapproof:dtypes",
+          "value": "BF16,F32"
+        },
+        {
+          "name": "gapproof:format",
+          "value": "safetensors"
+        },
+        {
+          "name": "gapproof:parameters",
+          "value": "6"
+        },
+        {
+          "name": "gapproof:parse_status",
+          "value": "parse-failed"
+        },
+        {
+          "name": "gapproof:path",
+          "value": "safetensors/truncated.safetensors"
+        },
+        {
+          "name": "gapproof:size",
+          "value": "166"
+        },
+        {
+          "name": "gapproof:tensors",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "subject",
+      "dependsOn": [
+        "file:gguf/ssti.gguf",
+        "file:gguf/tiny.gguf",
+        "file:gguf/v1.gguf",
+        "file:hf/remote_code/config.json",
+        "file:hf/remote_code/tokenizer_config.json",
+        "file:keras/lambda.h5",
+        "file:keras/lambda.keras",
+        "file:keras/module_bypass.keras",
+        "file:numpy/object.npy",
+        "file:onnx/escape.onnx",
+        "file:onnx/garbage.onnx",
+        "file:onnx/missing.onnx",
+        "file:onnx/weights.data",
+        "file:pickle/benign_state_dict.pt",
+        "file:pickle/duplicate_member.pt",
+        "file:pickle/ext_registry.pkl",
+        "file:pickle/legacy_torch.pt",
+        "file:pickle/model.joblib",
+        "file:pickle/print_payload.pkl",
+        "file:pickle/print_payload.pt",
+        "file:pickle/stack_global_os_system.pkl",
+        "file:pickle/torchscript.pt",
+        "file:pickle/truncated.pkl",
+        "file:pickle/unresolved_global.pkl",
+        "file:pickle/zip_bomb.pt",
+        "file:safetensors/hf_ok/config.json",
+        "file:safetensors/hf_ok/model.safetensors",
+        "file:safetensors/truncated.safetensors"
+      ]
+    }
+  ]
+}
