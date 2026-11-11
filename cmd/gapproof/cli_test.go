@@ -39,10 +39,7 @@ func TestExitCodes(t *testing.T) {
 		{"scan rootfs stub", []string{"scan", "--rootfs", "r", "--skip", "egress", "--out", "o"}, exitInternal, "not implemented yet"},
 		{"replay stub", []string{"scan", "--replay", "e", "--only", "egress"}, exitInternal, "arrives in M4"},
 		{"report stub", []string{"report", "--in", "e"}, exitInternal, "arrives in M4"},
-		{"sign stub", []string{"sign", "--in", "e", "--key", "k"}, exitInternal, "arrives in M6"},
-		{"verify stub", []string{"verify", "b.tar", "--pub", "p"}, exitInternal, "arrives in M6"},
 		{"diff stub", []string{"diff", "a", "b"}, exitInternal, "arrives in M7"},
-		{"keygen stub", []string{"keygen", "--out", "k"}, exitInternal, "arrives in M6"},
 		{"rules list", []string{"rules", "list"}, exitOK, "PH-CHROMA-TELEMETRY"},
 		{"rules list snapshot date", []string{"rules", "list"}, exitOK, "CMVP snapshot dated 20"},
 		{"rules list json", []string{"rules", "list", "--json"}, exitOK, `"cmvp_snapshot_date"`},
@@ -62,6 +59,9 @@ func TestExitCodes(t *testing.T) {
 		{"verify needs pub", []string{"verify", "b.tar"}, exitUsage, "--pub is required"},
 		{"diff needs two", []string{"diff", "a"}, exitUsage, "accepts 2 arg"},
 		{"keygen needs out", []string{"keygen"}, exitUsage, "--out is required"},
+		{"sign missing dir", []string{"sign", "--in", "/nonexistent", "--key", "k"}, exitUsage, "not an evidence directory"},
+		{"sign missing key", []string{"sign", "--in", ".", "--key", "/nonexistent.key"}, exitUsage, "--key:"},
+		{"verify missing pub", []string{"verify", "b.tar", "--pub", "/nonexistent.pub"}, exitUsage, "--pub:"},
 		{"rules test args", []string{"rules", "test", "PH-X"}, exitUsage, "accepts 2 arg"},
 	}
 	for _, tc := range tests {

@@ -1,0 +1,654 @@
+{
+  "artifacts": [
+    {
+      "path": "gguf/ssti.gguf",
+      "format": "gguf",
+      "size": 409,
+      "sha256": "f2449fc4730c93e3272d2b654d1801db17995c030c35ef7d8bee1508a4f63687",
+      "license": "apache-2.0",
+      "architecture": "llama",
+      "name": "tiny-test",
+      "tensors": 1,
+      "parameters": 32,
+      "metadata": {
+        "general.architecture": "llama",
+        "general.license": "apache-2.0",
+        "general.name": "tiny-test"
+      }
+    },
+    {
+      "path": "gguf/tiny.gguf",
+      "format": "gguf",
+      "size": 407,
+      "sha256": "811177ee29ccfd2c2fcab0074850cd726ad528c354f7162797502569f7ecaa7a",
+      "license": "apache-2.0",
+      "architecture": "llama",
+      "name": "tiny-test",
+      "tensors": 1,
+      "parameters": 32,
+      "metadata": {
+        "general.architecture": "llama",
+        "general.license": "apache-2.0",
+        "general.name": "tiny-test"
+      }
+    },
+    {
+      "path": "gguf/v1.gguf",
+      "format": "gguf",
+      "size": 8,
+      "sha256": "43a802114c8fd4da5e98545781edb9330c2203bdd506863ac9c1f55f64864595"
+    },
+    {
+      "path": "hf/remote_code/config.json",
+      "format": "hf-config",
+      "size": 78,
+      "sha256": "cce528b39e77fe07a4346e4c5d50e1e1c8b8d25cfed9419c57d2095ac323b2b4",
+      "architecture": "custom"
+    },
+    {
+      "path": "hf/remote_code/tokenizer_config.json",
+      "format": "hf-tokenizer-config",
+      "size": 88,
+      "sha256": "ca85a8f0bfa128c00a59fe7e5377aff44d9bcebef6b04a1afad880852b420b36"
+    },
+    {
+      "path": "keras/lambda.h5",
+      "format": "keras-h5",
+      "size": 2146,
+      "sha256": "0ad3dc08f75b7faec1771c7dbef8eec2f6be57a7426b0baa5aba6565d4c27d53"
+    },
+    {
+      "path": "keras/lambda.keras",
+      "format": "keras",
+      "size": 401,
+      "sha256": "f6aa73274315cdb50a77cf9305d09666e86538bba0f2f01e443c2cf1b61f541a"
+    },
+    {
+      "path": "keras/module_bypass.keras",
+      "format": "keras",
+      "size": 229,
+      "sha256": "197d60e773c76b28d065878e8ca61960014a1554d4af6315aa9cf2380e30278c"
+    },
+    {
+      "path": "numpy/object.npy",
+      "format": "npy",
+      "size": 206,
+      "sha256": "6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42",
+      "imports": [
+        "builtins.print"
+      ]
+    },
+    {
+      "path": "onnx/escape.onnx",
+      "format": "onnx",
+      "size": 112,
+      "sha256": "d805ae769cb55e655fbebf6b056095ac7f08d0bfdb75aa86b6cc296a0abce44f"
+    },
+    {
+      "path": "onnx/garbage.onnx",
+      "format": "onnx",
+      "size": 3,
+      "sha256": "b4fabc7e6e75fa4b523cc55f51aa54ab1aa4309c92cc44fcf623ddef756f5391"
+    },
+    {
+      "path": "onnx/missing.onnx",
+      "format": "onnx",
+      "size": 48,
+      "sha256": "3eb03d774e8e7bac07ada1689374b20a418483e315b56b8c2ff0ab1401438d15"
+    },
+    {
+      "path": "onnx/weights.data",
+      "format": "onnx-external-data",
+      "size": 16,
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    {
+      "path": "pickle/benign_state_dict.pt",
+      "format": "pytorch-zip",
+      "size": 554,
+      "sha256": "59d9fc8ec28421b282d4f896dbdf7283efaf322b72b5904f700c580e0789b40d",
+      "imports": [
+        "collections.OrderedDict",
+        "torch.FloatStorage",
+        "torch._utils._rebuild_tensor_v2"
+      ]
+    },
+    {
+      "path": "pickle/duplicate_member.pt",
+      "format": "pytorch-zip",
+      "size": 489,
+      "sha256": "974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101",
+      "imports": [
+        "builtins.print",
+        "collections.OrderedDict",
+        "torch.FloatStorage",
+        "torch._utils._rebuild_tensor_v2"
+      ]
+    },
+    {
+      "path": "pickle/ext_registry.pkl",
+      "format": "pickle",
+      "size": 5,
+      "sha256": "c595bc8497a523c324585ada0204e2c53f192d8ef4af8d56fc761d13bd7b88d8",
+      "imports": [
+        "\u003cunresolved EXT1\u003e"
+      ]
+    },
+    {
+      "path": "pickle/legacy_torch.pt",
+      "format": "pickle",
+      "size": 209,
+      "sha256": "962e253a7a69f3e6bc3de00dd0a8aba9cbf63a41c8bab0c49afdc9c0a7e0df96",
+      "imports": [
+        "collections.OrderedDict",
+        "torch.FloatStorage",
+        "torch._utils._rebuild_tensor_v2"
+      ]
+    },
+    {
+      "path": "pickle/model.joblib",
+      "format": "joblib-compressed",
+      "size": 5,
+      "sha256": "dfe3156358126e8a594b45d8332a9f39f24ce85df5c859dd9b71e68cd09a828e"
+    },
+    {
+      "path": "pickle/print_payload.pkl",
+      "format": "pickle",
+      "size": 78,
+      "sha256": "e1c0156f0749b355434f8640e3fc51325ceb1d07683427adfb5b3907a9cd3d0c",
+      "imports": [
+        "builtins.print"
+      ]
+    },
+    {
+      "path": "pickle/print_payload.pt",
+      "format": "pytorch-zip",
+      "size": 505,
+      "sha256": "ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042",
+      "imports": [
+        "builtins.print"
+      ]
+    },
+    {
+      "path": "pickle/stack_global_os_system.pkl",
+      "format": "pickle",
+      "size": 49,
+      "sha256": "1ed2e7cc45dde26e04658783331442aea4c1b50f14819e0fe029fde9cd7fef69",
+      "imports": [
+        "os.system"
+      ]
+    },
+    {
+      "path": "pickle/torchscript.pt",
+      "format": "torchscript",
+      "size": 585,
+      "sha256": "5e5a2c50d13f761e2855d4ee865321f7239cfbd77a1d7d2823adaa02dcfe0718",
+      "imports": [
+        "collections.OrderedDict",
+        "torch.FloatStorage",
+        "torch._utils._rebuild_tensor_v2"
+      ]
+    },
+    {
+      "path": "pickle/truncated.pkl",
+      "format": "pickle",
+      "size": 12,
+      "sha256": "873269cea0a95e9db26c588a3476c35cf945c123956a50b5e566afbebd878f92"
+    },
+    {
+      "path": "pickle/unresolved_global.pkl",
+      "format": "pickle",
+      "size": 9,
+      "sha256": "2f6993207ddcdf35b1cd062e30e8f266605945a4f25a3ae5e758205b8d2f1b6a",
+      "imports": [
+        "\u003cunresolved STACK_GLOBAL\u003e"
+      ]
+    },
+    {
+      "path": "pickle/zip_bomb.pt",
+      "format": "pytorch-zip",
+      "size": 66771,
+      "sha256": "bee00525118046dfec7e50680a0362f97eb0b3ab7fff871526368411ad52f953"
+    },
+    {
+      "path": "safetensors/hf_ok/config.json",
+      "format": "hf-config",
+      "size": 59,
+      "sha256": "fa6f2b12f72ded5ce76df1c5e022691a0272813f554e5f14a608645858480ca7",
+      "license": "apache-2.0",
+      "architecture": "LlamaForCausalLM"
+    },
+    {
+      "path": "safetensors/hf_ok/model.safetensors",
+      "format": "safetensors",
+      "size": 180,
+      "sha256": "8a2ff35c8036313d45c14bcae3d0197ae574625bfb0be0a6db011445ecdc8b0e",
+      "license": "apache-2.0",
+      "tensors": 2,
+      "parameters": 6,
+      "dtypes": [
+        "BF16",
+        "F32"
+      ],
+      "metadata": {
+        "format": "pt"
+      }
+    },
+    {
+      "path": "safetensors/truncated.safetensors",
+      "format": "safetensors",
+      "size": 166,
+      "sha256": "8e747086dcde3910ef00b05e9adc7d5a14210fb3a8368661e629d2f0dc8032ee",
+      "tensors": 2,
+      "parameters": 6,
+      "dtypes": [
+        "BF16",
+        "F32"
+      ],
+      "metadata": {
+        "format": "pt"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "rule": "MODEL-CHAT-TEMPLATE-SUSPICIOUS",
+      "severity": "high",
+      "title": "Chat template looks like a template-injection payload",
+      "explanation": "The model's Jinja chat template reaches Python internals (dunder attributes, os/subprocess, eval). Some runtimes render templates in an unsandboxed environment, which turns this into code execution (CVE-2024-34359 class).",
+      "evidence": {
+        "path": "gguf/ssti.gguf",
+        "sha256": "f2449fc4730c93e3272d2b654d1801db17995c030c35ef7d8bee1508a4f63687",
+        "detail": "tokenizer.chat_template: __init__"
+      },
+      "fix": "Replace the chat template with a reviewed one and render templates in a sandboxed Jinja environment.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-UNSCANNED-FORMAT",
+      "severity": "high",
+      "title": "Model file format can't be scanned yet",
+      "explanation": "This file is a format that can run code on load, but Gapproof can't parse this variant yet, so it can't be shown safe.",
+      "evidence": {
+        "path": "gguf/v1.gguf",
+        "sha256": "43a802114c8fd4da5e98545781edb9330c2203bdd506863ac9c1f55f64864595",
+        "detail": "gguf: unsupported version 1"
+      },
+      "fix": "Convert to safetensors or GGUF, or document the file as an accepted risk.",
+      "controls": [
+        "CM-8",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-REMOTE-CODE",
+      "severity": "high",
+      "title": "Model config requires remote code",
+      "explanation": "The Hugging Face config declares auto_map, so loading it with trust_remote_code=True imports and runs Python modules shipped with the model.",
+      "evidence": {
+        "path": "hf/remote_code/config.json",
+        "sha256": "cce528b39e77fe07a4346e4c5d50e1e1c8b8d25cfed9419c57d2095ac323b2b4",
+        "detail": "auto_map AutoModel=modeling_custom.CustomModel"
+      },
+      "fix": "Vendor the model code into your own source tree, remove auto_map, and load with trust_remote_code=False.",
+      "controls": [
+        "CM-7",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-CHAT-TEMPLATE-SUSPICIOUS",
+      "severity": "high",
+      "title": "Chat template looks like a template-injection payload",
+      "explanation": "The model's Jinja chat template reaches Python internals (dunder attributes, os/subprocess, eval). Some runtimes render templates in an unsandboxed environment, which turns this into code execution (CVE-2024-34359 class).",
+      "evidence": {
+        "path": "hf/remote_code/tokenizer_config.json",
+        "sha256": "ca85a8f0bfa128c00a59fe7e5377aff44d9bcebef6b04a1afad880852b420b36",
+        "detail": "chat_template: __class__"
+      },
+      "fix": "Replace the chat template with a reviewed one and render templates in a sandboxed Jinja environment.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-KERAS-LAMBDA",
+      "severity": "critical",
+      "title": "Keras model contains a Lambda layer",
+      "explanation": "Lambda layers store serialized Python bytecode that runs when the model is loaded (CVE-2024-3660 class).",
+      "evidence": {
+        "path": "keras/lambda.h5",
+        "sha256": "0ad3dc08f75b7faec1771c7dbef8eec2f6be57a7426b0baa5aba6565d4c27d53",
+        "offset": 2009,
+        "detail": "class_name Lambda in model_config"
+      },
+      "fix": "Replace Lambda layers with registered custom layers defined in your source code, and load with safe_mode=True.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-KERAS-LAMBDA",
+      "severity": "critical",
+      "title": "Keras model contains a Lambda layer",
+      "explanation": "Lambda layers store serialized Python bytecode that runs when the model is loaded (CVE-2024-3660 class).",
+      "evidence": {
+        "path": "keras/lambda.keras",
+        "member": "config.json",
+        "sha256": "f6aa73274315cdb50a77cf9305d09666e86538bba0f2f01e443c2cf1b61f541a",
+        "detail": "class_name Lambda"
+      },
+      "fix": "Replace Lambda layers with registered custom layers defined in your source code, and load with safe_mode=True.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-KERAS-UNSAFE-MODULE",
+      "severity": "high",
+      "title": "Keras config references a non-Keras module",
+      "explanation": "The model config asks the loader to import objects from a module outside Keras. Config-driven imports have been used to bypass safe_mode (CVE-2025-1550 class).",
+      "evidence": {
+        "path": "keras/module_bypass.keras",
+        "member": "config.json",
+        "sha256": "197d60e773c76b28d065878e8ca61960014a1554d4af6315aa9cf2380e30278c",
+        "detail": "module builtins"
+      },
+      "fix": "Rebuild the model so its config only references Keras objects and your own registered classes.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-NUMPY-OBJECT-ARRAY",
+      "severity": "medium",
+      "title": "NumPy array stores Python objects",
+      "explanation": "An object-dtype .npy needs np.load(allow_pickle=True), which unpickles its payload. Any imports in that payload are reported separately.",
+      "evidence": {
+        "path": "numpy/object.npy",
+        "sha256": "6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42",
+        "offset": 128,
+        "detail": "dtype object: payload is a pickle"
+      },
+      "fix": "Store numeric arrays only (no object dtype), or move the data to safetensors.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Model file runs code when loaded",
+      "explanation": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+      "evidence": {
+        "path": "numpy/object.npy",
+        "sha256": "6c66629a9c906250989620952d5af232a09acf12ccd5d80865c4231735757a42",
+        "offset": 149,
+        "detail": "STACK_GLOBAL builtins.print"
+      },
+      "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE",
+      "severity": "high",
+      "title": "ONNX model reads data from outside its directory",
+      "explanation": "An ONNX tensor's external_data location is absolute or climbs out of the model directory, so loading the model reads an arbitrary file from the host.",
+      "evidence": {
+        "path": "onnx/escape.onnx",
+        "sha256": "d805ae769cb55e655fbebf6b056095ac7f08d0bfdb75aa86b6cc296a0abce44f",
+        "detail": "tensor \"w2\" location=../../../etc/shadow"
+      },
+      "fix": "Re-export the model with external data stored beside it (relative paths only).",
+      "controls": [
+        "AC-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PARSE-FAILED",
+      "severity": "high",
+      "title": "Model file could not be verified",
+      "explanation": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+      "evidence": {
+        "path": "onnx/garbage.onnx",
+        "sha256": "b4fabc7e6e75fa4b523cc55f51aa54ab1aa4309c92cc44fcf623ddef756f5391",
+        "detail": "protobuf: unsupported wire type 7"
+      },
+      "fix": "Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk.",
+      "controls": [
+        "CM-8",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-ONNX-EXTERNAL-DATA-MISSING",
+      "severity": "medium",
+      "title": "ONNX external data file is missing",
+      "explanation": "The model references an external data file that isn't in the scanned filesystem, so its weights aren't accounted for in the AI-BOM.",
+      "evidence": {
+        "path": "onnx/missing.onnx",
+        "sha256": "3eb03d774e8e7bac07ada1689374b20a418483e315b56b8c2ff0ab1401438d15",
+        "detail": "tensor \"w\" location=not_shipped.data"
+      },
+      "fix": "Ship the external data file in the image, or point --models at its location.",
+      "controls": [
+        "CM-8"
+      ]
+    },
+    {
+      "rule": "MODEL-ARCHIVE-ANOMALY",
+      "severity": "high",
+      "title": "Model archive is structurally suspicious",
+      "explanation": "The archive has properties that make different readers see different content (for example duplicate member names). Scanners and loaders may disagree about what is inside.",
+      "evidence": {
+        "path": "pickle/duplicate_member.pt",
+        "member": "archive/data.pkl",
+        "sha256": "974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101",
+        "detail": "duplicate zip member name"
+      },
+      "fix": "Re-save the model with the framework's own serializer and rescan.",
+      "controls": [
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Model file runs code when loaded",
+      "explanation": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+      "evidence": {
+        "path": "pickle/duplicate_member.pt",
+        "member": "archive/data.pkl",
+        "sha256": "974479314af1a0af03fdaafe095b1f60ea3b4e92c61a5e4eb732ddd2d850d101",
+        "offset": 21,
+        "detail": "STACK_GLOBAL builtins.print"
+      },
+      "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-UNRESOLVED-IMPORT",
+      "severity": "high",
+      "title": "Model file hides what it imports",
+      "explanation": "This pickle builds an import from values Gapproof can't resolve statically (computed STACK_GLOBAL operands or the copyreg extension registry). Legitimate serializers don't do this; obfuscated payloads do.",
+      "evidence": {
+        "path": "pickle/ext_registry.pkl",
+        "sha256": "c595bc8497a523c324585ada0204e2c53f192d8ef4af8d56fc761d13bd7b88d8",
+        "offset": 2,
+        "detail": "EXT1 with non-static operands"
+      },
+      "fix": "Treat the file as hostile and replace it with a safetensors export from a trusted source.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-UNSCANNED-FORMAT",
+      "severity": "high",
+      "title": "Model file format can't be scanned yet",
+      "explanation": "This file is a format that can run code on load, but Gapproof can't parse this variant yet, so it can't be shown safe.",
+      "evidence": {
+        "path": "pickle/model.joblib",
+        "sha256": "dfe3156358126e8a594b45d8332a9f39f24ce85df5c859dd9b71e68cd09a828e",
+        "detail": "compressed joblib archive"
+      },
+      "fix": "Convert to safetensors or GGUF, or document the file as an accepted risk.",
+      "controls": [
+        "CM-8",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Model file runs code when loaded",
+      "explanation": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+      "evidence": {
+        "path": "pickle/print_payload.pkl",
+        "sha256": "e1c0156f0749b355434f8640e3fc51325ceb1d07683427adfb5b3907a9cd3d0c",
+        "offset": 21,
+        "detail": "STACK_GLOBAL builtins.print"
+      },
+      "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Model file runs code when loaded",
+      "explanation": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+      "evidence": {
+        "path": "pickle/print_payload.pt",
+        "member": "archive/data.pkl",
+        "sha256": "ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042",
+        "offset": 21,
+        "detail": "STACK_GLOBAL builtins.print"
+      },
+      "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Model file runs code when loaded",
+      "explanation": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+      "evidence": {
+        "path": "pickle/stack_global_os_system.pkl",
+        "sha256": "1ed2e7cc45dde26e04658783331442aea4c1b50f14819e0fe029fde9cd7fef69",
+        "offset": 22,
+        "detail": "STACK_GLOBAL os.system"
+      },
+      "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-TORCHSCRIPT",
+      "severity": "high",
+      "title": "TorchScript archive contains code",
+      "explanation": "This PyTorch archive contains TorchScript code (code/ entries) that torch.jit.load compiles and runs when the model is loaded.",
+      "evidence": {
+        "path": "pickle/torchscript.pt",
+        "member": "m/code/__torch__/model.py",
+        "sha256": "5e5a2c50d13f761e2855d4ee865321f7239cfbd77a1d7d2823adaa02dcfe0718",
+        "detail": "TorchScript code member"
+      },
+      "fix": "Ship plain weights (safetensors) plus the model code in your image, or review and pin the TorchScript code as part of the release.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PARSE-FAILED",
+      "severity": "high",
+      "title": "Model file could not be verified",
+      "explanation": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+      "evidence": {
+        "path": "pickle/truncated.pkl",
+        "sha256": "873269cea0a95e9db26c588a3476c35cf945c123956a50b5e566afbebd878f92",
+        "offset": 12,
+        "detail": "pickle: unexpected end of data before STOP: truncated at offset 12"
+      },
+      "fix": "Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk.",
+      "controls": [
+        "CM-8",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-UNRESOLVED-IMPORT",
+      "severity": "high",
+      "title": "Model file hides what it imports",
+      "explanation": "This pickle builds an import from values Gapproof can't resolve statically (computed STACK_GLOBAL operands or the copyreg extension registry). Legitimate serializers don't do this; obfuscated payloads do.",
+      "evidence": {
+        "path": "pickle/unresolved_global.pkl",
+        "sha256": "2f6993207ddcdf35b1cd062e30e8f266605945a4f25a3ae5e758205b8d2f1b6a",
+        "offset": 7,
+        "detail": "STACK_GLOBAL with non-static operands"
+      },
+      "fix": "Treat the file as hostile and replace it with a safetensors export from a trusted source.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PARSE-FAILED",
+      "severity": "high",
+      "title": "Model file could not be verified",
+      "explanation": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+      "evidence": {
+        "path": "pickle/zip_bomb.pt",
+        "member": "archive/data.pkl",
+        "sha256": "bee00525118046dfec7e50680a0362f97eb0b3ab7fff871526368411ad52f953",
+        "detail": "possible zip bomb: decompression ratio above 100"
+      },
+      "fix": "Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk.",
+      "controls": [
+        "CM-8",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PARSE-FAILED",
+      "severity": "high",
+      "title": "Model file could not be verified",
+      "explanation": "Gapproof couldn't fully parse this model file (corrupt, truncated, over a safety limit, or deliberately malformed). It fails closed: an unverifiable model file is a finding, not a skip.",
+      "evidence": {
+        "path": "safetensors/truncated.safetensors",
+        "sha256": "8e747086dcde3910ef00b05e9adc7d5a14210fb3a8368661e629d2f0dc8032ee",
+        "detail": "safetensors: tensors need 20 data bytes but the file has 6 (truncated)"
+      },
+      "fix": "Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk.",
+      "controls": [
+        "CM-8",
+        "SI-7"
+      ]
+    }
+  ]
+}
