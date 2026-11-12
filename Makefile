@@ -25,7 +25,7 @@ STATICCHECK := honnef.co/go/tools/cmd/staticcheck@v0.8.2
 MAX_BIN_BYTES := 26214400
 BIN := bin/gapproof
 
-.PHONY: build test lint e2e size clean harness
+.PHONY: build test lint e2e size clean harness demo demo-images demo-scan demo-e2e
 
 build: ## static binary in FIPS 140-3 module mode
 	CGO_ENABLED=0 GOFIPS140=$(GOFIPS140) go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/gapproof
@@ -66,6 +66,34 @@ release-harness: ## release: build + pin the harness for amd64 and arm64 into re
 	  echo "HARNESS_LAYERS_$$a=$$2" >> release-assets/harness.env; \
 	done
 	cd release-assets && sha256sum gapproof-harness-*.oci.tar > harness-checksums.sha256
+
+# Demo targets (spec §4). Building the images uses the network (pip); the
+# scans never do: images are saved locally and run with all egress blocked.
+DEMO_OBSERVE ?= 3m
+DEMO_ARCH    ?= $(shell go env GOARCH)
+DEMO_TAG     ?= dev
+DEMO_SCAN     = ./$(BIN) scan --observe $(DEMO_OBSERVE)
+
+demo: harness ## build both demo images, then scan them into evidence/{leaky,fixed}-rag (< 15 min)
+	@$(MAKE) --no-print-directory build   # second make so the fresh harness pin is baked in
+	./$(BIN) harness load $(HARNESS_TAR)
+	@$(MAKE) --no-print-directory demo-images demo-scan
+
+demo-images:
+	$(ENGINE) build -t gapproof-demo/leaky-rag:$(DEMO_TAG) demo/leaky-rag
+	$(ENGINE) build -t gapproof-demo/fixed-rag:$(DEMO_TAG) demo/fixed-rag
+
+demo-scan:
+	rm -rf evidence/leaky-rag evidence/fixed-rag && mkdir -p evidence
+	$(DEMO_SCAN) --image gapproof-demo/leaky-rag:$(DEMO_TAG) --workload demo/leaky-rag/workload.sh \
+	  --agents demo/leaky-rag/agents.yaml --out evidence/leaky-rag
+	$(DEMO_SCAN) --image gapproof-demo/fixed-rag:$(DEMO_TAG) --workload demo/fixed-rag/workload.sh \
+	  --agents demo/fixed-rag/agents.yaml --scope demo/fixed-rag/gapproof.scope.yaml \
+	  --waivers demo/fixed-rag/gapproof.waivers.$(DEMO_ARCH).yaml --out evidence/fixed-rag
+
+demo-e2e: ## after `make demo`: assert levels + findings, rescan both and require byte-identical evidence.json
+	GAPPROOF_DEMO_E2E=1 DEMO_OBSERVE=$(DEMO_OBSERVE) DEMO_ARCH=$(DEMO_ARCH) DEMO_TAG=$(DEMO_TAG) \
+	  go test -count=1 -timeout 30m -run TestDemoApps -v ./cmd/gapproof
 
 clean:
 	rm -rf bin dist release-assets

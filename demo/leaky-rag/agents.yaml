@@ -1,0 +1,10 @@
+# leaky-rag demo: one analyst agent, no gates.
+agents:
+  - name: analyst
+    tools: [read_file, search_docs, http_post, run_python]
+    handoffs: []
+tools:
+  read_file:   { reads: [sensitive] }
+  search_docs: { reads: [sensitive] }
+  http_post:   { sinks: [boundary_crossing], targets: ["notes.internal"] }
+  run_python:  { sinks: [exec, boundary_crossing] }

@@ -1,0 +1,4 @@
+# fixed-rag declares no internal names: it needs nothing outside its own container.
+scope_version: 1
+internal_names: []
+internal_cidrs: []
