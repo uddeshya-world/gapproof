@@ -29,11 +29,16 @@ type Options struct {
 	ZipRatio             float64 // decompressed:compressed, per member
 	ZipRatioFloor        int64   // ratio only enforced past this many bytes
 	MaxZipEntries        int
+	MaxZipTotalBytes     int64 // decompressed bytes read from all members of one zip (overlapping-member bombs)
 	MaxJSONBytes         int64 // HF configs, Keras config.json
 	MaxGGUFMetadata      int64 // bytes of GGUF header + metadata + tensor infos
+	MaxONNXFields        int   // protobuf fields visited in one ONNX file (work budget)
+	MaxPickleOps         int   // opcodes walked in one pickle stream (work budget)
+	MaxImports           int   // distinct pickle imports recorded per file (memory budget)
 }
 
-// DefaultOptions are safe for real models.
+// DefaultOptions are safe for real models. Every budget counts bytes, fields
+// or opcodes, never wall-clock time, so results stay deterministic (rule 6).
 func DefaultOptions() Options {
 	return Options{
 		MaxSafetensorsHeader: 100 << 20,
@@ -41,8 +46,12 @@ func DefaultOptions() Options {
 		ZipRatio:             100,
 		ZipRatioFloor:        16 << 20,
 		MaxZipEntries:        100_000,
+		MaxZipTotalBytes:     1 << 30,
 		MaxJSONBytes:         16 << 20,
 		MaxGGUFMetadata:      1 << 30,
+		MaxONNXFields:        16 << 20,
+		MaxPickleOps:         200_000_000,
+		MaxImports:           10_000,
 	}
 }
 
@@ -183,7 +192,7 @@ func (s *scanner) file(p, forceFormat string) error {
 	case "safetensors":
 		st, err := parseSafetensors(f, size, s.opt.MaxSafetensorsHeader)
 		if err != nil {
-			c.add(RuleParseFailed, "", nil, err.Error())
+			c.failed("", nil, err)
 		}
 		a.Tensors, a.Parameters, a.DTypes, a.Metadata = st.tensors, st.parameters, st.dtypes, st.metadata
 	case "gguf":
@@ -205,6 +214,7 @@ func (s *scanner) file(p, forceFormat string) error {
 			return nil // a config.json that isn't a model config
 		}
 	}
+	slices.Sort(a.Imports)
 	s.res.Artifacts = append(s.res.Artifacts, a)
 	return nil
 }
@@ -274,11 +284,31 @@ func hashFile(f *os.File) (string, error) {
 
 // fileCtx carries one artefact's identity into its findings.
 type fileCtx struct {
-	s    *scanner
-	path string
-	sha  string
-	art  *Artifact
-	seen map[string]bool
+	s        *scanner
+	path     string
+	sha      string
+	art      *Artifact
+	seen     map[string]bool
+	imps     map[string]bool // art.Imports as a set
+	zipTotal int64           // decompressed bytes read from this file's zip members
+}
+
+// errLimit marks an error as a hostile-input limit hit (CLAUDE.md rule 3).
+// Its MODEL-PARSE-FAILED detail starts with "limit: ", so an approver can
+// tell a bomb or an over-budget file from plain corruption.
+var errLimit = errors.New("limit")
+
+func limitErrorf(format string, a ...any) error {
+	return fmt.Errorf("%w: %s", errLimit, fmt.Sprintf(format, a...))
+}
+
+// failed records MODEL-PARSE-FAILED for err (fail closed, D-010).
+func (c *fileCtx) failed(member string, off *int64, err error) {
+	d := err.Error()
+	if errors.Is(err, errLimit) {
+		d = "limit: " + strings.Replace(d, "limit: ", "", 1)
+	}
+	c.add(RuleParseFailed, member, off, d)
 }
 
 func (c *fileCtx) add(rule, member string, off *int64, detail string) {
@@ -302,27 +332,30 @@ func (c *fileCtx) add(rule, member string, off *int64, detail string) {
 	})
 }
 
-// imports reports every import a walker collected.
+// imports reports every import a walker collected. Past MaxImports
+// distinct imports in one file it records a limit finding and stops.
 func (c *fileCtx) imports(member string, imps []Import) {
+	if c.imps == nil {
+		c.imps = map[string]bool{}
+	}
 	for _, im := range imps {
+		k := im.String()
+		if !c.imps[k] {
+			if lim := cmp.Or(c.s.opt.MaxImports, defaultWalkLimits.maxImports); len(c.imps) >= lim {
+				c.failed(member, evidence.Off(im.Offset), limitErrorf("more than %d distinct pickle imports in one file", lim))
+				return
+			}
+			c.imps[k] = true
+			c.art.Imports = append(c.art.Imports, k)
+		}
 		if !im.Resolved {
 			c.add(RulePickleUnresolved, member, evidence.Off(im.Offset), im.Opcode+" with non-static operands")
-			c.art.Imports = appendUnique(c.art.Imports, im.String())
 			continue
 		}
-		c.art.Imports = appendUnique(c.art.Imports, im.String())
 		if rule := classifyImport(im.Module, im.Name); rule != "" {
 			c.add(rule, member, evidence.Off(im.Offset), fmt.Sprintf("%s %s.%s", im.Opcode, im.Module, im.Name))
 		}
 	}
-	slices.Sort(c.art.Imports)
-}
-
-func appendUnique(xs []string, x string) []string {
-	if slices.Contains(xs, x) {
-		return xs
-	}
-	return append(xs, x)
 }
 
 // legacyTorchMagic is the first pickle of a pre-1.6 torch.save file.
@@ -341,14 +374,21 @@ func (c *fileCtx) walkPicklesAt(r io.Reader, member string, base int64) {
 		legacy = true
 	}
 	w := newWalker(pr)
+	w.lim.maxOps = cmp.Or(c.s.opt.MaxPickleOps, w.lim.maxOps)
+	w.lim.maxImports = cmp.Or(c.s.opt.MaxImports, w.lim.maxImports)
 	for i := 0; ; i++ {
 		if i > 0 {
 			if legacy && i >= 5 {
 				break
 			}
 			b, err := pr.br.Peek(1)
-			if err != nil || (!legacy && b[0] != 0x80) || i >= 64 {
+			if err != nil || (!legacy && b[0] != 0x80) {
 				break
+			}
+			if i >= maxPickles {
+				// Reported, never silently cut short.
+				c.failed(member, evidence.Off(pr.off), limitErrorf("more than %d consecutive pickles", maxPickles))
+				return
 			}
 		}
 		err := w.one()
@@ -360,18 +400,21 @@ func (c *fileCtx) walkPicklesAt(r io.Reader, member string, base int64) {
 			}
 			var pe *PickleError
 			if errors.As(err, &pe) {
-				c.add(RuleParseFailed, member, evidence.Off(pe.Offset), err.Error())
+				c.failed(member, evidence.Off(pe.Offset), err)
 			} else {
-				c.add(RuleParseFailed, member, nil, err.Error())
+				c.failed(member, nil, err)
 			}
 			return
 		}
 	}
 }
 
+// maxPickles is how many consecutive pickles one stream may hold.
+const maxPickles = 64
+
 func (c *fileCtx) rawPickle(f *os.File) {
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		c.add(RuleParseFailed, "", nil, err.Error())
+		c.failed("", nil, err)
 		return
 	}
 	c.walkPickles(f, "")

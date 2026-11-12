@@ -1,0 +1,11 @@
+# Converted from ../lattice/graded-dsewiki-production.json (mesa-ibi-scanner, Apache-2.0).
+# agent:sandbox-coder L=(2,0,0)      -> its own data as a tool reading `internal` (P=2)
+# svc:public-wiki L=(0,3,2), read + proxy/egress edges
+#                                    -> a tool reading `untrusted` (U=3) that sinks
+#                                       boundary_crossing to an allowlist (E=2)
+agents:
+  - name: sandbox-coder
+    tools: [internal_data, public_wiki]
+tools:
+  internal_data: { reads: [internal] }
+  public_wiki:   { reads: [untrusted], sinks: [boundary_crossing], targets: ["wiki.example.org"] }

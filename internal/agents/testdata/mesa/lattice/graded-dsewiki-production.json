@@ -1,0 +1,56 @@
+{
+  "description": "allowlisted GET-mutable public wiki, internal-data coder, production",
+  "expected": {
+    "closure": {
+      "agent:sandbox-coder": {
+        "E": 2,
+        "P": 2,
+        "U": 3
+      }
+    },
+    "near_miss": [],
+    "violations": [
+      "agent:sandbox-coder"
+    ]
+  },
+  "family": "graded-incident",
+  "id": "graded-dsewiki-production",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:sandbox-coder",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:public-wiki"
+      },
+      {
+        "dst": "agent:sandbox-coder",
+        "flow_type": "proxy/egress",
+        "pdp_gate": false,
+        "src": "svc:public-wiki"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:sandbox-coder",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 2,
+          "U": 0
+        },
+        "zone": "production"
+      },
+      {
+        "id": "svc:public-wiki",
+        "kind": "service",
+        "levels": {
+          "E": 2,
+          "P": 0,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

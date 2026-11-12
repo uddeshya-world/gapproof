@@ -1,8 +1,9 @@
-# Sensitive data crosses two handoffs before reaching a sink; the handoffs
-# also form a cycle (summarizer hands back to retriever).
+# Sensitive data and untrusted mail cross two handoffs before reaching an
+# egress tool; the handoffs also form a cycle (summarizer hands back to
+# retriever). Only notifier holds all three dimensions.
 agents:
   - name: retriever
-    tools: [read_db]
+    tools: [read_db, read_inbox]
     handoffs: [summarizer]
   - name: summarizer
     tools: [summarize]
@@ -11,5 +12,6 @@ agents:
     tools: [send_email]
 tools:
   read_db:    { reads: [sensitive] }
+  read_inbox: { reads: [untrusted] }
   summarize:  {}
   send_email: { sinks: [boundary_crossing] }

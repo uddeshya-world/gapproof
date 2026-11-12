@@ -123,7 +123,7 @@ func TestDiffLicenceGate(t *testing.T) {
 	if c := run([]string{"diff", a, b, "--exit-code"}, &so, &se); c != exitBelowThreshold {
 		t.Errorf("new open findings with --exit-code: exit %d, want 1", c)
 	}
-	if !strings.Contains(so.String(), "+4 new") || !strings.Contains(so.String(), "Pro feature") || strings.Contains(so.String(), "AG-0001") {
+	if !strings.Contains(so.String(), "+1 new") || !strings.Contains(so.String(), "Pro feature") || strings.Contains(so.String(), "AG-0001") {
 		t.Errorf("free diff output:\n%s", so.String())
 	}
 

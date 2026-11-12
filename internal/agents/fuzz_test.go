@@ -19,14 +19,16 @@ func FuzzParseManifest(f *testing.F) {
 		if err != nil {
 			return
 		}
-		if len(r.Paths) > MaxReportedPaths || (r.Violations == 0) != (len(r.Paths) == 0) {
-			t.Fatalf("inconsistent result: %+v", r)
+		if len(r.Verdicts) != r.Agents || len(fs) != r.Violations+r.NearMisses {
+			t.Fatalf("inconsistent result: %+v, %d findings", r, len(fs))
 		}
-		if (r.Violations == 0) != (len(r.CutSet) == 0) {
-			t.Fatalf("cut set %v with %d violations", r.CutSet, r.Violations)
-		}
-		if len(fs) < len(r.Paths) {
-			t.Fatalf("%d findings for %d paths", len(fs), len(r.Paths))
+		for _, v := range r.Verdicts {
+			if v.Violation != (len(v.Missing) == 0) || v.NearMiss != (len(v.Missing) == 1) {
+				t.Fatalf("verdict %+v", v)
+			}
+			if v.Violation && (v.Witness == nil || len(v.Cut) == 0 || v.CutDimension == "") {
+				t.Fatalf("violation without witness or cut: %+v", v)
+			}
 		}
 	})
 }

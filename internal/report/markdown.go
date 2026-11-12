@@ -273,5 +273,5 @@ func mdAgents(w *mdWriter, a *evidence.AgentsSection) {
 	for i, n := range a.Agents {
 		names[i] = mdCode(n)
 	}
-	w.f("Agents: %s. INV-01 violations: %d.\n\n", orNone(strings.Join(names, ", ")), a.Violations)
+	w.f("Agents: %s. INV-01 violations: %d. Near misses: %d. Threshold (P, U, E): (%d, %d, %d), per %s.\n\n", orNone(strings.Join(names, ", ")), a.Violations, a.NearMisses, a.Threshold.P, a.Threshold.U, a.Threshold.E, orNone(a.MESASpec))
 }

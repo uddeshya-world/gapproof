@@ -27,8 +27,10 @@ const (
 
 // Labels.
 const (
-	ReadSensitive    = "sensitive"
-	ReadPublic       = "public"
+	ReadSensitive    = "sensitive" // P=3: regulated/customer data
+	ReadInternal     = "internal"  // P=2: internal data
+	ReadPublic       = "public"    // U=2: anonymous-external input
+	ReadUntrusted    = "untrusted" // U=3: public-writable input (web, email, issues, user content)
 	SinkBoundary     = "boundary_crossing"
 	SinkExec         = "exec"
 	SinkInternal     = "internal"
@@ -36,7 +38,7 @@ const (
 )
 
 var (
-	validReads = map[string]bool{ReadSensitive: true, ReadPublic: true}
+	validReads = map[string]bool{ReadSensitive: true, ReadInternal: true, ReadPublic: true, ReadUntrusted: true}
 	validSinks = map[string]bool{SinkBoundary: true, SinkExec: true, SinkInternal: true}
 	validGates = map[string]bool{GateHumanApprove: true}
 	// MCP tool-name charset; also keeps names safe in YAML, Markdown and
@@ -62,24 +64,17 @@ type Agent struct {
 type Tool struct {
 	Reads   []string `yaml:"reads" json:"reads,omitempty"`
 	Sinks   []string `yaml:"sinks" json:"sinks,omitempty"`
-	Targets []string `yaml:"targets" json:"targets,omitempty"` // informative only
+	Targets []string `yaml:"targets" json:"targets,omitempty"` // non-empty: boundary_crossing is E=2, not 3
 }
-
-// Sensitive reports whether the tool reads sensitive data.
-func (t Tool) Sensitive() bool { return slices.Contains(t.Reads, ReadSensitive) }
-
-// Sink reports whether the tool is an INV-01 sink (boundary crossing or exec).
-func (t Tool) Sink() bool {
-	return slices.Contains(t.Sinks, SinkBoundary) || slices.Contains(t.Sinks, SinkExec)
-}
-
-// Exec reports whether the tool executes code.
-func (t Tool) Exec() bool { return slices.Contains(t.Sinks, SinkExec) }
 
 type rawManifest struct {
 	Agents *[]Agent          `yaml:"agents"`
 	Tools  map[string]Tool   `yaml:"tools"`
 	Gates  map[string]string `yaml:"gates"`
+	// Declared only to give a precise error: a manifest that picks its own
+	// zone or thresholds could make any finding disappear (D-032).
+	Zone       yaml.Node `yaml:"zone"`
+	Thresholds yaml.Node `yaml:"thresholds"`
 }
 
 // ReadManifestFile reads a manifest file, refusing anything over
@@ -118,6 +113,9 @@ func ParseManifest(data []byte) (*Manifest, error) {
 	var extra yaml.Node
 	if err := dec.Decode(&extra); !errors.Is(err, io.EOF) {
 		return nil, errors.New("agents manifest: exactly one YAML document expected")
+	}
+	if raw.Zone.Kind != 0 || raw.Thresholds.Kind != 0 {
+		return nil, errors.New("agents manifest: `zone` and `thresholds` can't be set; INV-01 always uses MESA's production threshold (P=2, U=2, E=2)")
 	}
 	if raw.Agents == nil {
 		return nil, errors.New("agents manifest: `agents:` is required (use `agents: []` to declare no agentic tool use)")

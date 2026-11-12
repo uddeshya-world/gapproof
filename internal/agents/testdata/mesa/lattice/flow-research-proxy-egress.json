@@ -1,0 +1,48 @@
+{
+  "description": "proxy/egress cap into an E=3 agent in research",
+  "expected": {
+    "closure": {
+      "agent:a": {
+        "E": 3,
+        "P": 0,
+        "U": 0
+      }
+    },
+    "near_miss": [],
+    "violations": []
+  },
+  "family": "flow-cap",
+  "id": "flow-research-proxy-egress",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:a",
+        "flow_type": "proxy/egress",
+        "pdp_gate": false,
+        "src": "svc:s"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:a",
+        "kind": "agent",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "research"
+      },
+      {
+        "id": "svc:s",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 3,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

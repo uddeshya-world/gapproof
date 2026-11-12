@@ -1,11 +1,14 @@
-# fixed-rag demo: http_post gated, run_python removed.
+# fixed-rag demo: http_post gated, run_python removed. The analyst still
+# holds private data and untrusted input but has no ungated egress: a near
+# miss on E (info), not a violation.
 agents:
   - name: analyst
-    tools: [read_file, search_docs, http_post]
+    tools: [read_file, search_docs, fetch_url, http_post]
     handoffs: []
 tools:
   read_file:   { reads: [sensitive] }
   search_docs: { reads: [sensitive] }
+  fetch_url:   { reads: [untrusted] }
   http_post:   { sinks: [boundary_crossing], targets: ["notes.internal"] }
 gates:
   http_post: human_approval

@@ -1,0 +1,50 @@
+{
+  "description": "identity-mint cap into an E=3 agent in regulated",
+  "expected": {
+    "closure": {
+      "agent:a": {
+        "E": 3,
+        "P": 3,
+        "U": 0
+      }
+    },
+    "near_miss": [
+      "agent:a"
+    ],
+    "violations": []
+  },
+  "family": "flow-cap",
+  "id": "flow-regulated-identity-mint",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:a",
+        "flow_type": "identity-mint",
+        "pdp_gate": false,
+        "src": "svc:s"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:a",
+        "kind": "agent",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "regulated"
+      },
+      {
+        "id": "svc:s",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 3,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

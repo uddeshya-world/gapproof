@@ -343,7 +343,10 @@ func (s *scanRun) runAgents(data []byte) error {
 		Manifest:         name,
 		ManifestSHA256:   res.ManifestSHA256,
 		DeclaredNoAgents: res.NoAgents,
+		MESASpec:         res.MESASpec,
+		Threshold:        evidence.INV01Threshold{P: res.Threshold[agents.DimP], U: res.Threshold[agents.DimU], E: res.Threshold[agents.DimE]},
 		Violations:       res.Violations,
+		NearMisses:       res.NearMisses,
 	}
 	if m, err := agents.ParseManifest(data); err == nil {
 		for _, a := range m.Agents {

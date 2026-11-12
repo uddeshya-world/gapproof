@@ -133,25 +133,28 @@ Walk the extracted rootfs (read-only):
 - Output: a **CycloneDX 1.6 AI-BOM** (`aibom.cdx.json`), with `machine-learning-model` components, hashes and licences.
 
 ### 3.5 Agent containment (`internal/agents`), Gapproof Contain
-Port the INV-01 engine from MESA. **Before porting, read MESA's own definition and use it; the following is the working assumption.**
+Port of MESA's INV-01 (mesa-ibi-scanner 0.4.0 `docs/LATTICE.md`, D-032).
 - Input v0.1: `agents.yaml`
   ```yaml
   agents:
     - name: analyst
-      tools: [read_file, search_docs, http_post, run_python]
+      tools: [read_file, search_docs, fetch_url, http_post, run_python]
       handoffs: [reporter]
   tools:
     read_file:   { reads: [sensitive] }
     search_docs: { reads: [sensitive] }
+    fetch_url:   { reads: [untrusted] }
     http_post:   { sinks: [boundary_crossing], targets: ["notes.internal"] }
     run_python:  { sinks: [exec, boundary_crossing] }
   gates:
     http_post: human_approval   # optional
   ```
+  `zone` and `thresholds` are rejected: the threshold is fixed.
 - Input v0.2: raw MCP `tools/list` JSON dumps. Auto-label with heuristics (name/description/schema keywords), with low confidence; a human confirms the labels in `agents.yaml`.
-- Graph: nodes = tools; edges = possible data flow (any tool output can feed any tool input within one agent; handoffs connect agents).
-- **INV-01 (working form):** no path from a node with `reads: sensitive` to a node with `sinks: boundary_crossing|exec` unless every such path passes a `human_approval` gate.
-- Output: each violating path as an ordered list plus a minimal cut set ("gate `http_post` or remove `run_python` from `analyst`").
+- **Levels.** Each vertex has `L = (P, U, E)`, each 0-3 (privilege, untrusted input, egress). `reads`: `sensitive` P=3, `internal` P=2, `public` U=2, `untrusted` U=3. `sinks`: `boundary_crossing` E=3 (E=2 with a non-empty `targets` allowlist), `internal` E=1, `exec` E=3.
+- **Graph.** An agent is a vertex with L=(0,0,0); each (agent, tool) is a vertex with the tool's levels. A tool feeds its agent along a `read` edge (cap 3,3,0) when it reads and a `proxy/egress` edge (cap 0,0,3) when it sinks. A handoff A to B is a `read` edge. A `human_approval` gate removes that tool's edges in every agent.
+- **INV-01.** With gated edges removed, take the least fixpoint `Cl(v) = L(v) join (join of min(Cl(u), cap(e)) over edges u to v)`. An agent violates when `Cl >= (2,2,2)` on every component (MESA's `production` zone). One component short is a near miss (info, never affects AGR).
+- **Output.** One `AGENT-INV01-<agent>` finding per violating agent (high, unwaivable) with the closure, a witness path per dimension (shortest, ties by vertex id) and the minimal edge cut on one dimension (ties P, U, E), worded "gate `x` in `a`" or "remove `x` from `a`". Near misses are `AGENT-NEARMISS-<agent>`. The evidence records the threshold and the MESA spec version.
 
 ### 3.6 Evidence, AGR, signing (`internal/evidence`)
 Output directory:

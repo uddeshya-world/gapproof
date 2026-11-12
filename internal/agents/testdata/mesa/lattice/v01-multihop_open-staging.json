@@ -1,0 +1,73 @@
+{
+  "description": "v0.1 fixture multihop_open promoted, staging; verdict from the v0.1 engine",
+  "expected": {
+    "violations": [
+      "agent:target"
+    ]
+  },
+  "family": "boolean-era",
+  "id": "v01-multihop_open-staging",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:relay",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:untrusted-feed"
+      },
+      {
+        "dst": "svc:board",
+        "flow_type": "write",
+        "pdp_gate": false,
+        "src": "agent:relay"
+      },
+      {
+        "dst": "agent:target",
+        "flow_type": "write",
+        "pdp_gate": false,
+        "src": "svc:board"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:relay",
+        "kind": "agent",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "staging"
+      },
+      {
+        "id": "agent:target",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 3,
+          "U": 0
+        },
+        "zone": "staging"
+      },
+      {
+        "id": "svc:board",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 0
+        }
+      },
+      {
+        "id": "svc:untrusted-feed",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

@@ -37,7 +37,7 @@ func parseSafetensors(r io.ReaderAt, size, maxHeader int64) (tensorStats, error)
 	}
 	n := binary.LittleEndian.Uint64(lenb[:])
 	if n > uint64(maxHeader) {
-		return st, fmt.Errorf("safetensors: header length %d exceeds limit %d", n, maxHeader)
+		return st, limitErrorf("safetensors: header length %d exceeds limit %d", n, maxHeader)
 	}
 	if int64(n) > size-8 {
 		return st, fmt.Errorf("safetensors: header length %d exceeds file size %d (truncated)", n, size)

@@ -1,0 +1,11 @@
+# Converted from ../lattice/graded-hf-synthetic-production.json (mesa-ibi-scanner, Apache-2.0).
+# agent:eval-worker L=(1,0,0): synthetic/test data (P=1). agents.yaml has no P=1
+# label (D-032 maps only internal=2 and sensitive=3), so the synthetic data is
+# not declared at all, which gives the same closure on P as far as the
+# threshold is concerned (P < 2): a near miss on P.
+# svc:artifact-registry L=(0,3,3), read + proxy/egress -> `untrusted` + open boundary_crossing
+agents:
+  - name: eval-worker
+    tools: [artifact_registry]
+tools:
+  artifact_registry: { reads: [untrusted], sinks: [boundary_crossing] }

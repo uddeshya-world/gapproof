@@ -41,24 +41,36 @@ type ggufInfo struct {
 
 type ggufReader struct {
 	r      *bufio.Reader
+	left   int64 // bytes left in the file: nothing larger is ever allocated
 	budget int64 // bytes we're still willing to read
 }
 
-func (g *ggufReader) read(n int64) ([]byte, error) {
-	if n > g.budget {
-		return nil, fmt.Errorf("gguf: metadata exceeds the %d-byte read limit", g.budget)
+// take accounts for n bytes about to be read.
+func (g *ggufReader) take(n int64) error {
+	if n > g.left {
+		return fmt.Errorf("gguf: %d-byte field runs past the end of the file: %w", n, io.ErrUnexpectedEOF)
 	}
+	if n > g.budget {
+		return limitErrorf("gguf: metadata exceeds the read limit")
+	}
+	g.left -= n
 	g.budget -= n
+	return nil
+}
+
+func (g *ggufReader) read(n int64) ([]byte, error) {
+	if err := g.take(n); err != nil {
+		return nil, err
+	}
 	b := make([]byte, n)
 	_, err := io.ReadFull(g.r, b)
 	return b, err
 }
 
 func (g *ggufReader) skip(n int64) error {
-	if n > g.budget {
-		return fmt.Errorf("gguf: metadata exceeds the read limit")
+	if err := g.take(n); err != nil {
+		return err
 	}
-	g.budget -= n
 	_, err := io.CopyN(io.Discard, g.r, n)
 	return err
 }
@@ -86,7 +98,7 @@ func (g *ggufReader) str(keep bool, max int64) (string, error) {
 		return "", err
 	}
 	if n > uint64(math.MaxInt64) || int64(n) > max {
-		return "", fmt.Errorf("gguf: string length %d too large", n)
+		return "", limitErrorf("gguf: string length %d too large", n)
 	}
 	if !keep {
 		return "", g.skip(int64(n))
@@ -108,9 +120,10 @@ func ggufKeep(key string) bool {
 	return strings.HasPrefix(key, "general.") || strings.HasPrefix(key, "tokenizer.chat_template")
 }
 
-// parseGGUF reads the header, key/value metadata and tensor infos.
-func parseGGUF(r io.Reader, budget int64) (ggufInfo, error) {
-	g := &ggufReader{r: bufio.NewReaderSize(r, 64<<10), budget: budget}
+// parseGGUF reads the header, key/value metadata and tensor infos from a
+// file of size bytes.
+func parseGGUF(r io.Reader, size, budget int64) (ggufInfo, error) {
+	g := &ggufReader{r: bufio.NewReaderSize(r, 64<<10), left: size, budget: budget}
 	info := ggufInfo{kv: map[string]string{}}
 	magic, err := g.read(4)
 	if err != nil || string(magic) != "GGUF" {
@@ -131,7 +144,7 @@ func parseGGUF(r io.Reader, budget int64) (ggufInfo, error) {
 		return info, err
 	}
 	if nt > ggufMaxTensors || nkv > ggufMaxKV {
-		return info, fmt.Errorf("gguf: implausible counts (%d tensors, %d keys)", nt, nkv)
+		return info, limitErrorf("gguf: implausible counts (%d tensors, %d keys)", nt, nkv)
 	}
 	for range nkv {
 		key, err := g.str(true, 1<<16)
@@ -191,7 +204,7 @@ func (g *ggufReader) value(typ uint32, keep bool, depth int) (string, error) {
 		return g.str(keep, ggufMaxString)
 	case ggufArray:
 		if depth >= ggufMaxNesting {
-			return "", errors.New("arrays nested too deeply")
+			return "", limitErrorf("arrays nested more than %d deep", ggufMaxNesting)
 		}
 		et, err := g.u32()
 		if err != nil {
@@ -202,7 +215,7 @@ func (g *ggufReader) value(typ uint32, keep bool, depth int) (string, error) {
 			return "", err
 		}
 		if n > ggufMaxArray {
-			return "", fmt.Errorf("array of %d elements too large", n)
+			return "", limitErrorf("array of %d elements too large", n)
 		}
 		if es, ok := ggufFixed[et]; ok {
 			return "", g.skip(int64(n) * es)

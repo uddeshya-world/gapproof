@@ -1,0 +1,9 @@
+# Converted from ../lattice/boundary-production-E-below.json (mesa-ibi-scanner, Apache-2.0).
+# svc:s L=(2,2,0) -read-> agent:a  -> a tool reading `internal` (P=2) and `public` (U=2)
+# agent:a L=(0,0,1)                -> a mesh-internal sink (E=1): a near miss on E
+agents:
+  - name: a
+    tools: [s, save]
+tools:
+  s:    { reads: [internal, public] }
+  save: { sinks: [internal] }

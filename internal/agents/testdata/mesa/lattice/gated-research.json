@@ -1,0 +1,48 @@
+{
+  "description": "the only inbound edge is PDP-gated, research",
+  "expected": {
+    "closure": {
+      "agent:a": {
+        "E": 3,
+        "P": 0,
+        "U": 0
+      }
+    },
+    "near_miss": [],
+    "violations": []
+  },
+  "family": "gated",
+  "id": "gated-research",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:a",
+        "flow_type": "read",
+        "pdp_gate": true,
+        "src": "svc:s"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:a",
+        "kind": "agent",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "research"
+      },
+      {
+        "id": "svc:s",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 3,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

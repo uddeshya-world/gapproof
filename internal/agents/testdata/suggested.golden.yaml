@@ -17,9 +17,9 @@ agents:
       - "slack_post_message"
     handoffs: [] # TODO: agents this one hands off to
 tools:
-  "fetch": { sinks: [boundary_crossing] } # low confidence: sinks boundary_crossing (fetch, url)
-  "get_time": {} # low confidence: no keyword matched; confirm it reads nothing sensitive and sinks nothing
-  "list_directory": {} # low confidence: no keyword matched; confirm it reads nothing sensitive and sinks nothing
+  "fetch": { reads: [untrusted], sinks: [boundary_crossing] } # low confidence: reads untrusted (fetch); sinks boundary_crossing (fetch, url)
+  "get_time": {} # low confidence: no keyword matched; confirm it reads nothing private or untrusted and sinks nothing
+  "list_directory": {} # low confidence: no keyword matched; confirm it reads nothing private or untrusted and sinks nothing
   "read_file": { reads: [sensitive] } # low confidence: reads sensitive (file, read)
   "run_python": { sinks: [exec] } # low confidence: sinks exec (code, execute, python, run)
   "searchFiles": { reads: [sensitive] } # low confidence: reads sensitive (files, search)

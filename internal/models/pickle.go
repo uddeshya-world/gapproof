@@ -33,14 +33,20 @@ func (i Import) String() string {
 }
 
 type walkLimits struct {
-	maxOps    int
-	maxStack  int
-	maxMemo   int
-	maxLine   int
-	maxLength int64 // largest length-prefixed argument we'll skip over
+	maxOps     int
+	maxStack   int
+	maxMemo    int
+	maxLine    int
+	maxLength  int64 // largest length-prefixed argument we'll skip over
+	maxImports int   // distinct imports kept per stream
 }
 
-var defaultWalkLimits = walkLimits{maxOps: 200_000_000, maxStack: 1_000_000, maxMemo: 1_000_000, maxLine: 64 << 10, maxLength: 1 << 40}
+var defaultWalkLimits = walkLimits{maxOps: 200_000_000, maxStack: 1_000_000, maxMemo: 1_000_000, maxLine: 64 << 10, maxLength: 1 << 40, maxImports: 10_000}
+
+// limitErr is a PickleError for a hostile-input limit (detail "limit: ...").
+func limitErr(at int64, msg string) *PickleError {
+	return &PickleError{Offset: at, Msg: msg, Err: errLimit}
+}
 
 // PickleError is a malformed or over-limit pickle. Callers turn it into a
 // MODEL-PARSE-FAILED finding (fail closed).
@@ -111,7 +117,7 @@ func (p *preader) line(max int) (string, error) {
 			return sb.String(), nil
 		}
 		if sb.Len() >= max {
-			return "", errors.New("line too long")
+			return "", limitErrorf("line longer than %d bytes", max)
 		}
 		sb.WriteByte(b)
 	}
@@ -123,11 +129,14 @@ type walker struct {
 	stack   []pval
 	memo    map[int64]pval
 	imports []Import
+	seen    map[Import]bool // imports already recorded (Offset zeroed): the first offset wins
 	proto   int
 	ops     int
 }
 
-func newWalker(r *preader) *walker { return &walker{r: r, lim: defaultWalkLimits} }
+func newWalker(r *preader) *walker {
+	return &walker{r: r, lim: defaultWalkLimits, seen: map[Import]bool{}}
+}
 
 // one walks a single pickle up to and including its STOP opcode.
 func (w *walker) one() error {
@@ -142,7 +151,7 @@ func (w *walker) one() error {
 		}
 		w.ops++
 		if w.ops > w.lim.maxOps {
-			return &PickleError{Offset: at, Msg: "too many opcodes"}
+			return limitErr(at, "too many opcodes")
 		}
 		if err := w.step(op, at); err != nil {
 			if err == errStop {
@@ -155,7 +164,10 @@ func (w *walker) one() error {
 			return w.fail(at, fmt.Sprintf("opcode 0x%02x", op), err)
 		}
 		if len(w.stack) > w.lim.maxStack {
-			return &PickleError{Offset: at, Msg: "stack too deep"}
+			return limitErr(at, "stack too deep")
+		}
+		if len(w.seen) > w.lim.maxImports {
+			return limitErr(at, fmt.Sprintf("more than %d distinct imports", w.lim.maxImports))
 		}
 	}
 }
@@ -200,8 +212,18 @@ func (w *walker) popMark(at int64) ([]pval, error) {
 	return nil, &PickleError{Offset: at, Msg: "MARK not found"}
 }
 
+// record keeps the first occurrence of each distinct import. Repeats add
+// nothing to the findings (they're deduplicated, first offset wins), and
+// keeping them would let a pickle of repeated GLOBAL/POP opcodes grow memory
+// without bound.
 func (w *walker) record(at int64, opcode, module, name string, resolved bool) {
-	w.imports = append(w.imports, Import{Module: module, Name: name, Offset: at, Opcode: opcode, Resolved: resolved})
+	im := Import{Module: module, Name: name, Opcode: opcode, Resolved: resolved}
+	if w.seen[im] {
+		return
+	}
+	w.seen[im] = true
+	im.Offset = at
+	w.imports = append(w.imports, im)
 }
 
 func (w *walker) u32() (uint32, error) {
@@ -223,7 +245,7 @@ func (w *walker) u64() (uint64, error) {
 // str reads n bytes as a string operand, keeping it only if short.
 func (w *walker) str(at int64, n uint64) (pval, error) {
 	if n > uint64(w.lim.maxLength) {
-		return pval{}, &PickleError{Offset: at, Msg: fmt.Sprintf("argument length %d too large", n)}
+		return pval{}, limitErr(at, fmt.Sprintf("argument length %d too large", n))
 	}
 	if n > keepString {
 		return pval{kind: vOther}, w.r.skip(int64(n))
@@ -237,7 +259,7 @@ func (w *walker) str(at int64, n uint64) (pval, error) {
 
 func (w *walker) skipLen(at int64, n uint64) error {
 	if n > uint64(w.lim.maxLength) {
-		return &PickleError{Offset: at, Msg: fmt.Sprintf("argument length %d too large", n)}
+		return limitErr(at, fmt.Sprintf("argument length %d too large", n))
 	}
 	return w.r.skip(int64(n))
 }
@@ -256,7 +278,7 @@ func (w *walker) memoPut(at int64, idx int64) error {
 		return &PickleError{Offset: at, Msg: "PUT on empty stack"}
 	}
 	if len(w.memo) >= w.lim.maxMemo {
-		return &PickleError{Offset: at, Msg: "memo too large"}
+		return limitErr(at, "memo too large")
 	}
 	w.memo[idx] = w.stack[len(w.stack)-1]
 	return nil

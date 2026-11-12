@@ -1,0 +1,9 @@
+# Converted from ../lattice/boundary-production-at.json (mesa-ibi-scanner, Apache-2.0).
+# svc:s L=(2,2,0) -read-> agent:a  -> a tool reading `internal` (P=2) and `public` (U=2)
+# agent:a L=(0,0,2)                -> an allowlisted boundary_crossing sink (E=2)
+agents:
+  - name: a
+    tools: [s, egress]
+tools:
+  s:      { reads: [internal, public] }
+  egress: { sinks: [boundary_crossing], targets: ["api.example.com"] }

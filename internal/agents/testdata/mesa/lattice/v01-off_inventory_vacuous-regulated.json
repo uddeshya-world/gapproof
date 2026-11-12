@@ -1,0 +1,40 @@
+{
+  "description": "v0.1 fixture off_inventory_vacuous promoted, regulated; verdict from the v0.1 engine",
+  "expected": {
+    "violations": []
+  },
+  "family": "boolean-era",
+  "id": "v01-off_inventory_vacuous-regulated",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:sandbox",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:approved-docs"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:sandbox",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 3,
+          "U": 0
+        },
+        "zone": "regulated"
+      },
+      {
+        "id": "svc:approved-docs",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 0
+        }
+      }
+    ]
+  }
+}

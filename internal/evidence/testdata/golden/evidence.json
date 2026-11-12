@@ -207,7 +207,14 @@
     "manifest_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
     "declared_no_agents": true,
     "agents": [],
-    "inv01_violations": 0
+    "mesa_spec": "mesa-ibi-scanner 0.4.0 LATTICE (b9cb325)",
+    "inv01_threshold": {
+      "P": 2,
+      "U": 2,
+      "E": 2
+    },
+    "inv01_violations": 0,
+    "inv01_near_misses": 0
   },
   "findings": [
     {

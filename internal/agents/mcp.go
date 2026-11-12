@@ -26,6 +26,15 @@ var (
 	kwBoundary = set("http", "https", "post", "send", "email", "mail", "upload", "webhook", "webhooks", "url", "uri", "slack", "smtp", "publish")
 	kwExec     = set("exec", "execute", "run", "shell", "python", "eval", "code", "command", "bash", "script", "subprocess", "terminal")
 	kwFetchObj = set("url", "uri", "web", "page", "http", "https")
+	// Content anyone outside can write: web pages, mail, issues, comments,
+	// chat and other user-generated content (MESA U=3, public-writable).
+	kwUntrusted = set("web", "webpage", "website", "browse", "browser", "scrape", "crawl", "html", "rss", "feed",
+		"inbox", "issue", "issues", "comment", "comments", "ticket", "tickets", "review", "reviews",
+		"forum", "tweet", "tweets", "reddit", "messages", "chat", "ugc")
+	// Words that make a tool a reader of what it names, so "send_email" stays
+	// a sink while "read_email" also reads untrusted mail.
+	kwReadVerb = set("read", "get", "list", "search", "fetch", "fetches", "receive", "inbox", "browse", "scrape", "crawl")
+	kwMailish  = set("email", "emails", "mail", "message", "slack")
 )
 
 func set(xs ...string) map[string]bool {
@@ -150,7 +159,7 @@ func SuggestManifest(dumps ...[]byte) ([]byte, error) {
 		if len(s.tool.Sinks) > 0 {
 			fields = append(fields, "sinks: ["+strings.Join(s.tool.Sinks, ", ")+"]")
 		}
-		note := "no keyword matched; confirm it reads nothing sensitive and sinks nothing"
+		note := "no keyword matched; confirm it reads nothing private or untrusted and sinks nothing"
 		if len(s.notes) > 1 {
 			note = strings.Join(s.notes[1:], "; ")
 		}
@@ -203,9 +212,21 @@ func label(t mcpTool) toolSuggestion {
 		s.notes = append(s.notes, "reads sensitive ("+strings.Join(h, ", ")+")")
 	}
 	bnd := hit(kwBoundary)
+	unt := hit(kwUntrusted)
 	if toks["fetch"] && len(hit(kwFetchObj)) > 0 {
 		bnd = append(bnd, "fetch")
 		slices.Sort(bnd)
+		unt = append(unt, "fetch")
+	}
+	if m, v := hit(kwMailish), hit(kwReadVerb); len(m) > 0 && len(v) > 0 {
+		unt = append(unt, m...)
+		unt = append(unt, v...)
+	}
+	slices.Sort(unt)
+	unt = slices.Compact(unt)
+	if len(unt) > 0 {
+		s.tool.Reads = append(s.tool.Reads, ReadUntrusted)
+		s.notes = append(s.notes, "reads untrusted ("+strings.Join(unt, ", ")+")")
 	}
 	exe := hit(kwExec)
 	if len(exe) > 0 {

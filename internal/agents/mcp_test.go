@@ -46,7 +46,7 @@ func TestSuggestManifestGolden(t *testing.T) {
 		t.Fatalf("suggested manifest doesn't parse: %v\n%s", err, out)
 	}
 	want := map[string]Tool{
-		"fetch":              {Sinks: []string{SinkBoundary}},
+		"fetch":              {Reads: []string{ReadUntrusted}, Sinks: []string{SinkBoundary}},
 		"get_time":           {},
 		"list_directory":     {},
 		"read_file":          {Reads: []string{ReadSensitive}},
@@ -126,7 +126,12 @@ func TestLabelHeuristics(t *testing.T) {
 		reads, sinks       []string
 	}{
 		{"getSecret", "", "", []string{ReadSensitive}, nil},
-		{"web_fetch", "Fetch a web page", "", nil, []string{SinkBoundary}},
+		{"web_fetch", "Fetch a web page", "", []string{ReadUntrusted}, []string{SinkBoundary}},
+		{"read_email", "Read messages from the inbox", "", []string{ReadSensitive, ReadUntrusted}, []string{SinkBoundary}}, // over-inclusive
+		{"send_email", "Send an email", "", nil, []string{SinkBoundary}},
+		{"get_issue", "Get a GitHub issue and its comments", "", []string{ReadUntrusted}, nil},
+		{"search_docs_and_web", "Search internal documents and the web", "", []string{ReadSensitive, ReadUntrusted}, nil},
+		{"slack_post_message", "Post a message to a channel", "", nil, []string{SinkBoundary}},
 		{"fetch_metrics", "Fetch metrics", "", nil, nil}, // fetch without a URL-ish object
 		{"notify", "", `{"properties": {"webhookUrl": {}}}`, nil, []string{SinkBoundary}},
 		{"bash", "", "", nil, []string{SinkExec}},

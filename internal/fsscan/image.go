@@ -132,11 +132,13 @@ func ExtractImage(ctx context.Context, archive string, lim Limits) (_ *Image, er
 		return nil, &IntegrityError{"layer count", fmt.Sprintf("%d diff_ids in config", len(cfg.RootFS.DiffIDs)), fmt.Sprintf("%d layers in manifest", len(refs.layers))}
 	}
 
-	dir, err := os.MkdirTemp("", "gapproof-rootfs-*")
+	// Everything that can fail before extraction runs before the temp dir
+	// exists, so an early error never leaks it (rule 3: remove it on exit).
+	imageID, err := a.topDigest()
 	if err != nil {
 		return nil, err
 	}
-	imageID, err := a.topDigest()
+	dir, err := os.MkdirTemp("", "gapproof-rootfs-*")
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@
 | M2 Phone-home rules + crypto inventory | ✅ 2026-11-09 (16 rules, real cryptography-wheel image verified) | 2 |
 | M3 Egress harness + sinkhole | ✅ 2026-11-11 (9-attempt probe + host capture clean; Podman untested, D-017) | 2–3 |
 | M4 Evidence, AGR, report, demo apps → **v0.1 (quiet release to design partners)** | 🟡 pipeline, evidence, AGR, reports, replay done; demo apps + `make demo` + headless-Chromium check pending | 3 |
-| M5 Agent containment (MESA port) | 🟡 2026-11-11 built (98.7% cov); INV-01 must be restated against MESA's definition (D-030) | 4–5 |
+| M5 Agent containment (MESA port) | ✅ 2026-11-12 INV-01 ported from MESA's graded lattice (D-032, branch `m5-mesa-inv01`): parity on all 104 MESA lattice fixtures, 99.6% cov | 4–5 |
 | M6 Sign / verify, AI-BOM, OSCAL → **v0.2 public launch** | ✅ 2026-11-11 (schemas validate) | 5–6 |
 | M7 Diff + CI gate (GitHub Action) → Pro beta | 🟡 2026-11-12 built; the action runs only after the first push | 7–8 |
 | M8 Hardening: fuzzing, limits, self-scan | 🟡 SECURITY.md done; models fuzzing in progress; self-scan blocked on one-shot image semantics | 9 |

@@ -254,7 +254,7 @@ Run <span class="mono">{{.B.Run.ID}}</span> on {{.B.Run.RunDate}} · Gapproof {{
 {{- if .DeclaredNoAgents}}
 <p>{{noAgentsLabel}}</p>
 {{- else}}
-<p>Agents: {{range $i, $a := .Agents}}{{if $i}}, {{end}}<span class="mono">{{$a}}</span>{{end}}. INV-01 violations: {{.Violations}}.</p>
+<p>Agents: {{range $i, $a := .Agents}}{{if $i}}, {{end}}<span class="mono">{{$a}}</span>{{end}}. INV-01 violations: {{.Violations}}. Near misses: {{.NearMisses}}. Threshold (P, U, E): ({{.Threshold.P}}, {{.Threshold.U}}, {{.Threshold.E}}), per {{.MESASpec}}.</p>
 {{- end}}
 {{- else}}
 <p>The agents module did not run on a manifest, so the maximum level is AGR-3.</p>

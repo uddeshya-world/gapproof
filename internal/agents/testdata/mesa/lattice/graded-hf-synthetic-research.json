@@ -1,0 +1,56 @@
+{
+  "description": "as graded-hf with synthetic data only (P=1), research",
+  "expected": {
+    "closure": {
+      "agent:eval-worker": {
+        "E": 3,
+        "P": 1,
+        "U": 3
+      }
+    },
+    "near_miss": [
+      "agent:eval-worker"
+    ],
+    "violations": []
+  },
+  "family": "graded-incident",
+  "id": "graded-hf-synthetic-research",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:eval-worker",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:artifact-registry"
+      },
+      {
+        "dst": "agent:eval-worker",
+        "flow_type": "proxy/egress",
+        "pdp_gate": false,
+        "src": "svc:artifact-registry"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:eval-worker",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 1,
+          "U": 0
+        },
+        "zone": "research"
+      },
+      {
+        "id": "svc:artifact-registry",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

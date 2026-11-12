@@ -121,13 +121,25 @@ func (m *ModelsSection) AllHashed() bool {
 	return true
 }
 
-// AgentsSection is the agents module result. Its findings are AGENT-INV01-*.
+// AgentsSection is the agents module result. Its findings are
+// AGENT-INV01-<agent> (violations) and AGENT-NEARMISS-<agent> (info).
 type AgentsSection struct {
-	Manifest         string   `json:"manifest"` // vendor-declared manifest the analysis is based on
-	ManifestSHA256   string   `json:"manifest_sha256"`
-	DeclaredNoAgents bool     `json:"declared_no_agents"` // manifest says agents: []
-	Agents           []string `json:"agents"`
-	Violations       int      `json:"inv01_violations"`
+	Manifest         string         `json:"manifest"` // vendor-declared manifest the analysis is based on
+	ManifestSHA256   string         `json:"manifest_sha256"`
+	DeclaredNoAgents bool           `json:"declared_no_agents"` // manifest says agents: []
+	Agents           []string       `json:"agents"`
+	MESASpec         string         `json:"mesa_spec"`       // the INV-01 definition applied
+	Threshold        INV01Threshold `json:"inv01_threshold"` // fixed, never set by the manifest
+	Violations       int            `json:"inv01_violations"`
+	NearMisses       int            `json:"inv01_near_misses"`
+}
+
+// INV01Threshold is the MESA level vector an agent's closure must reach on
+// every dimension to violate INV-01.
+type INV01Threshold struct {
+	P int `json:"P"`
+	U int `json:"U"`
+	E int `json:"E"`
 }
 
 // RunMeta is the only place timestamps live (rule 6). It's written to

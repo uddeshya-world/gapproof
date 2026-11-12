@@ -1,0 +1,57 @@
+{
+  "description": "v0.1 fixture hf_like promoted, production; verdict from the v0.1 engine",
+  "expected": {
+    "violations": [
+      "agent:eval-worker"
+    ]
+  },
+  "family": "boolean-era",
+  "id": "v01-hf_like-production",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:eval-worker",
+        "flow_type": "write",
+        "pdp_gate": false,
+        "src": "svc:artifact-registry"
+      },
+      {
+        "dst": "agent:eval-worker",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:slack-notify"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:eval-worker",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 3,
+          "U": 0
+        },
+        "zone": "production"
+      },
+      {
+        "id": "svc:artifact-registry",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 3
+        }
+      },
+      {
+        "id": "svc:slack-notify",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 0
+        }
+      }
+    ]
+  }
+}

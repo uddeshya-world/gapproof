@@ -1,0 +1,72 @@
+{
+  "description": "read then goal-message: only U reaches the E=3 agent, research",
+  "expected": {
+    "closure": {
+      "agent:a": {
+        "E": 3,
+        "P": 0,
+        "U": 3
+      },
+      "agent:b": {
+        "E": 0,
+        "P": 3,
+        "U": 3
+      }
+    },
+    "near_miss": [
+      "agent:a",
+      "agent:b"
+    ],
+    "violations": []
+  },
+  "family": "multihop",
+  "id": "multihop-goal-research",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:b",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:s"
+      },
+      {
+        "dst": "agent:a",
+        "flow_type": "goal-message",
+        "pdp_gate": false,
+        "src": "agent:b"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "svc:s",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 3,
+          "U": 3
+        }
+      },
+      {
+        "id": "agent:b",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "research"
+      },
+      {
+        "id": "agent:a",
+        "kind": "agent",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "research"
+      }
+    ]
+  }
+}
