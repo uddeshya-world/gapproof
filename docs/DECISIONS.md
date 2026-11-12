@@ -391,6 +391,8 @@ Without the flag nothing changes: exiting early still fails a long-running targe
 - **DNS resolver trust.** A DNS query is in scope only if the resolver it was sent to is loopback (the container's embedded resolver) or inside a declared `internal_cidrs` entry. Any other private or link-local resolver is out of scope. Teams that use an internal resolver declare its CIDR. Before this, any RFC 1918 address counted, so a query to an undeclared host on a shared network was excused.
 - **Expired waivers keep the exactly-one rule.** A waiver that matches more than one finding is a usage error whether or not it has expired. Expiry is checked after the match count.
 
+**Podman (untested, D-017).** Under Podman the target's resolver is whatever its `resolv.conf` names (typically a private bridge address), so DNS lookups of internal names would now count as out of scope until that address's CIDR is declared in `internal_cidrs`. Podman hasn't been run here (not installed on the dev machine); revisit when it is.
+
 **Consequences.** All four changes can turn a previously passing run or load into an error or a lower level, never the reverse. AGR_SPEC keeps its meaning (section 2 already says private CIDRs and names are declared up front); its text is clarified.
 
 ## D-043 (2026-11-12): DCO sign-off, no CLA

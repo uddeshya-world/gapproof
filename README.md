@@ -56,7 +56,7 @@ The scanned image is never pulled, and the harness image is pinned by digest in 
 make build    # static binary at bin/gapproof, FIPS 140-3 module mode, size-gated
 make test     # unit tests
 make lint     # gofmt, go vet, staticcheck
-make harness  # build + pin the egress harness image (needs Docker or Podman)
+make harness  # build + pin the egress harness image (Docker is tested; Podman is untested, see D-017)
 make e2e      # container tests: no-egress, real images, the 9-attempt egress probe
 ```
 
