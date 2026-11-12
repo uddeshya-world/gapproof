@@ -217,3 +217,12 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - **Agents findings.** Only `AGENT-INV01-*` (which gates AGR-4) and info-level agents notes skip the AGR-3 checks. Any other `AGENT-*` finding is unwaivable.
 - **Unknown severities** rank as critical.
 - **Model hashes** must decode as 32 bytes of hex to count as hashed.
+
+## D-034 (2026-11-12): Strict bundle reader; verify --artifact never extracts
+- **Member order:** `MANIFEST.sha256` first, `MANIFEST.sig` second, then the listed files in strictly increasing bytewise order. `sign` (Pack) writes exactly this. The signature is verified before any other member is hashed.
+- **Headers:** regular files only, mode 0644, uid/gid 0. PAX records other than `path` and `size` are refused (so no `GNU.sparse.*`, no xattrs).
+- **Streaming checks:** unlisted, duplicate or out-of-order names are refused as they arrive. A declared size larger than what is left of the file is refused before reading. After the end-of-archive marker there may only be zero bytes.
+- **Old bundles** whose reserved files are not the first two members no longer verify. Re-run `gapproof sign` to repack them.
+- **verify --artifact:** the image's config digest is compared first, and a mismatch is reported before any layer is read. Then each layer is decompressed and hashed only (diff_id, plus the blob digest when named). Nothing is written to disk. Outer image members with `GNU.sparse.*` records are refused by scan as well.
+- **Public keys:** non-canonical encodings (y ≥ p) and the small-order points (libsodium's `has_small_order` list, either sign bit) are refused. With such a key, a forged signature like R = identity, S = 0 would verify.
+- **sign:** `--in` is resolved through symlinks. A manifest that covers no files is never signed. A private key readable by group or other gets a warning. The "bundle inside the evidence directory" check compares resolved directories by identity (`os.SameFile`), so symlinks and case-insensitive filesystems can't get around it.

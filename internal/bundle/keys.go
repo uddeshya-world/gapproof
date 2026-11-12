@@ -17,6 +17,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -106,7 +107,89 @@ func LoadPublicKey(path string) (ed25519.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := checkPublicKey(raw); err != nil {
+		return nil, fmt.Errorf("%w (%s)", err, path)
+	}
 	return ed25519.PublicKey(raw), nil
+}
+
+// smallOrder lists the encodings of the Ed25519 points of small order
+// (orders 1, 2, 4 and 8), including the non-canonical encodings of 0 and 1
+// (y = p and y = p+1). It is libsodium's has_small_order blacklist; the
+// sign bit of byte 31 is ignored when comparing, so the x-sign variants are
+// covered too. A key on this list verifies forged signatures such as
+// R = identity, S = 0 for every message.
+var smallOrder = [7][32]byte{
+	{0x00}, // y = 0: order 4
+	{0x01}, // y = 1: the identity, order 1
+	{0x26, 0xe8, 0x95, 0x8f, 0xc2, 0xb2, 0x27, 0xb0, 0x45, 0xc3, 0xf4, 0x89, 0xf2, 0xef, 0x98, 0xf0,
+		0xd5, 0xdf, 0xac, 0x05, 0xd3, 0xc6, 0x33, 0x39, 0xb1, 0x38, 0x02, 0x88, 0x6d, 0x53, 0xfc, 0x05}, // order 8
+	{0xc7, 0x17, 0x6a, 0x70, 0x3d, 0x4d, 0xd8, 0x4f, 0xba, 0x3c, 0x0b, 0x76, 0x0d, 0x10, 0x67, 0x0f,
+		0x2a, 0x20, 0x53, 0xfa, 0x2c, 0x39, 0xcc, 0xc6, 0x4e, 0xc7, 0xfd, 0x77, 0x92, 0xac, 0x03, 0x7a}, // order 8
+	pMinus(1), // y = p-1 = -1: order 2
+	pMinus(0), // y = p (non-canonical 0): order 4
+	pPlus1(),  // y = p+1 (non-canonical 1): order 1
+}
+
+// pMinus returns the little-endian encoding of p-k, p = 2^255-19, k small.
+func pMinus(k byte) [32]byte {
+	var b [32]byte
+	b[0] = 0xed - k
+	for i := 1; i < 31; i++ {
+		b[i] = 0xff
+	}
+	b[31] = 0x7f
+	return b
+}
+
+func pPlus1() [32]byte {
+	b := pMinus(0)
+	b[0] = 0xee
+	return b
+}
+
+// checkPublicKey rejects non-canonical encodings (y >= p) and points of
+// small order. crypto/ed25519 accepts both, and a small-order key lets
+// anyone forge a signature it verifies.
+func checkPublicKey(raw []byte) error {
+	if len(raw) != ed25519.PublicKeySize {
+		return fmt.Errorf("%w: public key has the wrong size", ErrKey)
+	}
+	var y [32]byte
+	copy(y[:], raw)
+	y[31] &= 0x7f
+	// y >= p iff y is one of p .. 2^255-1: top byte 0x7f, bytes 1..30 0xff,
+	// byte 0 >= 0xed.
+	canonical := y[31] != 0x7f || y[0] < 0xed
+	for i := 1; i < 31 && !canonical; i++ {
+		canonical = y[i] != 0xff
+	}
+	if !canonical {
+		return fmt.Errorf("%w: public key is not a canonical Ed25519 encoding", ErrKey)
+	}
+	for _, s := range smallOrder {
+		if y == s {
+			return fmt.Errorf("%w: public key is a small-order point (it would accept forged signatures)", ErrKey)
+		}
+	}
+	return nil
+}
+
+// PrivateKeyWarning returns a warning when the private key file at path is
+// readable or writable by group or other, or "" when it isn't (or the
+// platform has no Unix permission bits).
+func PrivateKeyWarning(path string) string {
+	if runtime.GOOS == "windows" {
+		return ""
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		return ""
+	}
+	if perm := fi.Mode().Perm(); perm&0o077 != 0 {
+		return fmt.Sprintf("warning: private key %s is accessible by group or other (mode %04o); chmod 600 it", path, perm)
+	}
+	return ""
 }
 
 func readKey(path, header string, size int) ([]byte, error) {
@@ -125,7 +208,8 @@ func readKey(path, header string, size int) ([]byte, error) {
 	lines := strings.Split(strings.TrimRight(string(buf), "\n"), "\n")
 	if len(lines) != 2 || lines[0] != header {
 		if len(lines) > 0 && (lines[0] == privateHeader || lines[0] == publicHeader) {
-			return nil, fmt.Errorf("%w: %s is a %s, want a %s", ErrKey, path, lines[0], header)
+			kind := map[string]string{privateHeader: "private", publicHeader: "public"}
+			return nil, fmt.Errorf("%w: %s is a %s key, but a %s key is needed here", ErrKey, path, kind[lines[0]], kind[header])
 		}
 		return nil, fmt.Errorf("%w: %s is not a %s file", ErrKey, path, header)
 	}
