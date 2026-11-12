@@ -21,7 +21,7 @@ gapproof scan  --replay <evidence-dir> [--only egress|crypto|models|agents] [--r
                                        # re-print a saved run's TTY output; first line says "replay of run <id>" (demos, docs)
 gapproof report  --in <dir> [--format html|md|both]
 gapproof sign    --in <dir> --key <ed25519.key>
-gapproof verify  <bundle.tar> --pub <ed25519.pub> [--artifact <image tar>]   # fully offline
+gapproof verify  <bundle.tar> --pub <ed25519.pub> [--artifact <image tar> [--rescan]]   # fully offline
 gapproof diff    <old-evidence-dir> <new-evidence-dir>                        # Pro (M7)
 gapproof keygen  --out <prefix>
 gapproof sinkhole                     # internal: runs inside the harness sidecar container
@@ -170,12 +170,15 @@ evidence/
   egress.pcapng         # optional (--pcap): NFLOG packets, first 256 bytes
   gapproof.scope.yaml   # copy of the scope file used (if any)
   gapproof.waivers.yaml # copy of the waivers file used (if any)
+  gapproof.agents.yaml  # copy of the --agents manifest used (if any), so `verify --rescan` can reproduce the agents result
   report.html           # self-contained, no external assets, no JS network calls
   report.md
   MANIFEST.sha256       # every file's hash, plus the scanned artefact's digest
   MANIFEST.sig          # Ed25519 over MANIFEST.sha256 (after `gapproof sign`)
 ```
 `verify` re-hashes everything, checks the signature, and (with `--artifact`) checks that the scanned image digest matches the tar the customer received. Offline, always.
+
+`verify --rescan` (requires `--artifact`; D-041) goes one step further so trust does not rest on the vendor's signature alone. Only after the signature, hashes and artifact digest pass, it re-runs the **static** modules (phone-home, crypto, models, agents) on the image tar with the same code `scan` uses, using the scope, waivers and agents manifest copies in the bundle, and diffs the result against the signed `evidence.json`: findings (by rule and evidence identity, then every field), the crypto and model inventories, and the agents/INV-01 result. It prints `rescan: match: static findings reproduced` or the added/removed/changed items and exits 1. The egress harness is dynamic and is not re-run; run metadata, warnings and egress findings are ignored. A match means the static results reproduce on the image you hold, not that the product is compliant with anything.
 
 **Control mapping (informative):** egress → SC-7, AC-4; telemetry config → CM-7; crypto → SC-12, SC-13; model provenance → CM-8, SR-3, SR-4; unsafe deserialization → SI-3, SI-7; agent paths → AC-3, AC-4, AC-6. Pro packs add ISO 27001 Annex A and Indian frameworks.
 

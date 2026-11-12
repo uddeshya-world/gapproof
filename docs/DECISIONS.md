@@ -365,3 +365,18 @@ Without the flag nothing changes: exiting early still fails a long-running targe
 **Why opt-in and not automatic.** Treating any clean exit as success would let a server that quits at startup (for example, on a missing licence or a failed network call it handles "gracefully") look like a passing job. The owner of the image knows which kind it is and has to say so; the report shows it.
 
 **Consequences.** The observation window still runs to its end, so egress after the exit (from other processes in the netns) is still recorded. `TestOneShotTarget` checks all three cases against a real engine in `make e2e`.
+
+## D-041 (2026-11-12): `verify --rescan` re-runs the static modules offline and diffs against the signed evidence
+
+**Context.** Verifying a bundle proves the evidence is unaltered and was signed by the key you hold, and `--artifact` proves it is about the image you received. It does not show the vendor's scan was honest: a vendor can drop a finding and sign the result (review P1 #9a).
+
+**Decision.** `verify <bundle> --pub <key> --artifact <image.tar> --rescan`:
+- `--rescan` without `--artifact` is a usage error. The signature, every file hash and the artifact digest are checked first; the rescan runs only if they pass.
+- The rescan calls the scan's own static code (`scanRun.static`, `scanRun.runAgents`, `Finalize`, `Normalize`), so there is one pipeline, not a copy. It uses the scope and waivers copies from the bundle, with waiver expiry judged on the recorded run date, and only the modules that ran in the signed evidence.
+- The signed bytes are read while the bundle is verified (`bundle.VerifyCapture`), so the rescan compares against exactly what the signature covers. Nothing from the bundle or image is written outside a private temp directory, nothing is executed, and no network is used.
+- `evidence.CompareStatic` diffs findings (identity: rule, path, member, sha256, offset, detail; then id, severity, text, controls, status, waiver), the crypto inventory (modules, FIPS providers, configs, CMVP snapshot date), the model inventory and the agents/INV-01 section. Egress and harness results, run metadata, warnings and timestamps are ignored, and the output says that dynamic results were not re-run.
+- Output is `rescan: match: static findings reproduced (...)` or `rescan: MISMATCH` with at most 40 added/removed/changed lines; exit 1 on a mismatch. We don't say "verified" or "compliant".
+
+**Agents manifest.** The old bundle did not carry the `--agents` file, so the agents result could not be reproduced. `scan` now writes it as `gapproof.agents.yaml` (covered by the manifest). Bundles without it are still rescanned, with agents reported as not compared.
+
+**Limits.** Artefacts from `--models` were never inside the image and are not compared. A rescan with a different gapproof or rule pack version can differ legitimately; on a mismatch the output names both versions. The rescan proves the static results reproduce on the image you hold, nothing about the dynamic ones.

@@ -36,6 +36,7 @@ import (
 const (
 	scopeCopy   = "gapproof.scope.yaml"
 	waiversCopy = "gapproof.waivers.yaml"
+	agentsCopy  = "gapproof.agents.yaml" // the manifest as read (YAML or MCP JSON), so `verify --rescan` can reproduce the agents result
 	reportHTML  = "report.html"
 	reportMD    = "report.md"
 )
@@ -53,6 +54,7 @@ type scanRun struct {
 	im       *fsscan.Image
 	skipped  map[string]bool
 	waivers  *evidence.Waivers
+	agentRaw []byte // the --agents manifest as read, copied into the evidence
 }
 
 func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) (err error) {
@@ -134,7 +136,8 @@ func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) (err error
 	if err := s.static(ctx); err != nil {
 		return err
 	}
-	if err := s.runAgents(agentData); err != nil {
+	s.agentRaw = agentData
+	if err := s.runAgents(displayName(o.agents), agentData); err != nil {
 		return err
 	}
 	// Dynamic module.
@@ -319,7 +322,9 @@ func scanExtraModels(ctx context.Context, dir string) (*models.Result, error) {
 	return res, nil
 }
 
-func (s *scanRun) runAgents(data []byte) error {
+// runAgents analyses an agents manifest under the name recorded in the
+// evidence. `scan` and `verify --rescan` share it.
+func (s *scanRun) runAgents(name string, data []byte) error {
 	switch {
 	case s.skipped["agents"]:
 		s.status("agents", evidence.ModuleSkipped, "--skip agents")
@@ -328,15 +333,14 @@ func (s *scanRun) runAgents(data []byte) error {
 		s.status("agents", evidence.ModuleNotRun, "no --agents manifest (AGR-4 needs one; `agents: []` declares none)")
 		return nil
 	}
-	s.logf("agents: %s", s.o.agents)
-	name := displayName(s.o.agents)
+	s.logf("agents: %s", name)
 	res, fs, err := agents.Analyze(name, data)
 	if err != nil {
 		hint := ""
 		if t := strings.TrimSpace(string(data)); strings.HasPrefix(t, "{") {
 			hint = " (for an MCP tools/list dump, run `gapproof agents import-mcp` and review the suggested agents.yaml)"
 		}
-		return usagef("--agents %s: %v%s", s.o.agents, err, hint)
+		return usagef("--agents %s: %v%s", name, err, hint)
 	}
 	s.ran("agents", res.Statement)
 	s.b.Agents = &evidence.AgentsSection{
@@ -447,6 +451,11 @@ func (s *scanRun) write() error {
 	}
 	if s.o.waivers != "" {
 		if err := os.WriteFile(filepath.Join(out, waiversCopy), s.waivers.Raw, 0o644); err != nil {
+			return err
+		}
+	}
+	if s.agentRaw != nil && s.b.Agents != nil {
+		if err := os.WriteFile(filepath.Join(out, agentsCopy), s.agentRaw, 0o644); err != nil {
 			return err
 		}
 	}

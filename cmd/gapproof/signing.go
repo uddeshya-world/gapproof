@@ -145,7 +145,12 @@ func newVerifyCmd() *cobra.Command {
 			"tar you received is the one that was scanned. Prints one line, e.g.\n\n" +
 			"  AGR-4 · signed by ed25519:3f9a0c1d2e3f4a5b · artifact digest matches\n\n" +
 			"The level is the scan's result; the signature is a property of the bundle,\n" +
-			"not of the product (docs/AGR_SPEC.md §1). Exit 1 if any check fails.",
+			"not of the product (docs/AGR_SPEC.md §1). Exit 1 if any check fails.\n\n" +
+			"With --rescan (requires --artifact), once those checks pass, the static modules\n" +
+			"(phone-home, crypto, models, agents) are re-run offline on the image tar and\n" +
+			"compared with the signed evidence, so trust does not rest on the vendor's\n" +
+			"signature alone. Prints \"rescan: match\" or the differences (exit 1). The egress\n" +
+			"harness is dynamic and is not re-run.",
 		Args: exactArgs(1),
 		RunE: runE(func(cmd *cobra.Command, args []string) error {
 			if err := requireFlags(cmd, "pub"); err != nil {
@@ -153,6 +158,10 @@ func newVerifyCmd() *cobra.Command {
 			}
 			pubPath, _ := cmd.Flags().GetString("pub")
 			artifact, _ := cmd.Flags().GetString("artifact")
+			rescan, _ := cmd.Flags().GetBool("rescan")
+			if rescan && artifact == "" {
+				return usagef("--rescan requires --artifact <image.tar>: the static modules are re-run on the image you received")
+			}
 			pub, err := bundle.LoadPublicKey(pubPath)
 			if err != nil {
 				return usagef("--pub: %v", err)
@@ -160,10 +169,30 @@ func newVerifyCmd() *cobra.Command {
 			if fi, err := os.Stat(args[0]); err != nil || !fi.Mode().IsRegular() {
 				return usagef("%s is not a bundle file", args[0])
 			}
-			res, err := bundle.Verify(cmd.Context(), args[0], pub, artifact)
+			var res bundle.Result
+			var files map[string][]byte
+			if rescan {
+				res, files, err = bundle.VerifyCapture(cmd.Context(), args[0], pub, artifact, rescanFiles)
+			} else {
+				res, err = bundle.Verify(cmd.Context(), args[0], pub, artifact)
+			}
 			switch {
 			case err == nil:
 				fmt.Fprintln(cmd.OutOrStdout(), res.String())
+				if !rescan {
+					return nil
+				}
+				// Signature, hashes and artifact digest passed; only now rescan.
+				rr, err := rescanStatic(cmd.Context(), artifact, files, cmd.ErrOrStderr())
+				if err != nil {
+					return err
+				}
+				for _, l := range rr.lines() {
+					fmt.Fprintln(cmd.OutOrStdout(), l)
+				}
+				if !rr.Match() {
+					return &checkFailedError{"rescan: static results differ from the signed evidence"}
+				}
 				return nil
 			case errors.Is(err, bundle.ErrArtifactMismatch):
 				fmt.Fprintln(cmd.OutOrStdout(), res.String())
@@ -179,5 +208,6 @@ func newVerifyCmd() *cobra.Command {
 	}
 	cmd.Flags().String("pub", "", "Ed25519 public key file")
 	cmd.Flags().String("artifact", "", "image tar the customer received; checks its digest matches the evidence")
+	cmd.Flags().Bool("rescan", false, "after verifying, re-run the static modules offline on --artifact and diff against the signed evidence (egress is not re-run)")
 	return cmd
 }

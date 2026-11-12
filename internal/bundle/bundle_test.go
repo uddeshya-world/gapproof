@@ -327,7 +327,7 @@ func TestHostileTarLimits(t *testing.T) {
 		{"small", limits{maxEntries: 100, maxFileSize: 1 << 20, maxTotal: 1 << 20, maxSmall: 20}, "limit 20"},
 	}
 	for _, tc := range cases {
-		_, err := verify(ctx, b, pub, "", tc.lim)
+		_, _, err := verify(ctx, b, pub, "", nil, tc.lim)
 		if !errors.Is(err, ErrVerification) || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: err = %v", tc.name, err)
 		}

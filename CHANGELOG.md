@@ -8,6 +8,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 Quiet release for design partners (D-001): no announcement.
 
+### Added (verify --rescan, D-041)
+- `gapproof verify --rescan` (requires `--artifact`): after the signature, hashes and artifact digest pass, re-runs the static modules offline on the delivered image tar and diffs the result against the signed evidence (`rescan: match` or the differences, exit 1). Egress is not re-run. `scan` now also copies the `--agents` manifest into the evidence directory (`gapproof.agents.yaml`); bundles made before this can still be rescanned, with the agents result not compared.
+
 ### Added (one-shot targets, D-040)
 - `scan --one-shot` for batch jobs: the target passes AGR-1 liveness by exiting 0 inside the observation window. Still running counts as hung, and a non-zero exit fails. Evidence records `one_shot`, and the reports show the mode.
 
