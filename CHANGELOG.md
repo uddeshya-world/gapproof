@@ -4,6 +4,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed
+- CI: `actions/checkout@v5` and `actions/setup-go@v6` (Node 24). A manual `demo` workflow runs `make demo demo-e2e` on an amd64 runner and uploads the evidence.
+
+## [0.1.0] - 2026-11-12
+
+Quiet release for design partners (D-001): no announcement.
+
+### Added (one-shot targets, D-040)
+- `scan --one-shot` for batch jobs: the target passes AGR-1 liveness by exiting 0 inside the observation window. Still running counts as hung, and a non-zero exit fails. Evidence records `one_shot`, and the reports show the mode.
+
+### Changed (models, D-039)
+- numpy's pre-1.0 `numpy.core._internal._reconstruct` alias is a safe pickle import. Attribute access through it (`__globals__` etc.) stays critical.
+
+### Fixed
+- Image identity: every `index.json` entry pinned to the config digest is accepted as the loaded image's ID, so attested `docker save` archives scan.
+- Egress dedupe folds bare teardown flows into the detailed entry for the same endpoint, which made rescans byte-identical.
+- GNU sparse layer members are rejected.
+- Zip fixture checks compare decompressed members, so CI passes on Go 1.26 and 1.27.
+
 ### Changed (demo follow-ups, D-035…D-038)
 - Models: `builtins.range` and the other side-effect-free value constructors (`int`, `float`, `bool`, `str`, `bytes`, `tuple`, `list`, `dict`, plus the Python 2 `xrange`/`unicode`/`long`) are safe pickle imports. Every other builtin and every dotted name stays critical. There is no path-based exemption for test fixtures (D-035).
 - Phone-home: rules take `python_package_version` (a PEP 440 range that fails closed). `PH-CHROMA-TELEMETRY` is bounded to `<1.5.4`, because upstream made telemetry a no-op and dropped posthog (D-036).

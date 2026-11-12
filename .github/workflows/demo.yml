@@ -1,0 +1,32 @@
+name: demo
+
+# The full demo on a real amd64 host: build both demo images, scan them with the
+# egress harness, assert leaky-rag = AGR-1 and fixed-rag = AGR-4, and require
+# byte-identical rescans. Manual (about 15 min); the evidence is uploaded.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo-amd64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: host
+        run: uname -m && docker version --format '{{.Server.Version}}'
+      - name: make demo (harness, build, demo images, both scans)
+        run: make demo
+      - name: make demo-e2e (levels, finding rules, byte-identical rescans)
+        run: make demo-e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: demo-evidence-amd64
+          path: evidence/
+          if-no-files-found: warn
