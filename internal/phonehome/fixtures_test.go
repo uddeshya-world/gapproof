@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -48,7 +49,18 @@ func withDist(name, version string, extra ...string) map[string]string {
 
 var basePath = "PATH=/usr/local/bin:/usr/bin"
 
-var ruleFixtures = map[string]struct{ pos, neg fixture }{
+type ruleFixture struct{ pos, neg fixture }
+
+// extraNegatives are further negative cases, written to negative-2, -3, ...
+var extraNegatives = map[string][]fixture{
+	// D-036: the version bound and the env opt-out are independent negatives.
+	"PH-CHROMA-TELEMETRY": {
+		{[]string{"ANONYMIZED_TELEMETRY=False"}, withDist("chromadb", "1.5.2")},
+		{nil, withDist("chromadb", "2.0.0")},
+	},
+}
+
+var ruleFixtures = map[string]ruleFixture{
 	"PH-HF-HUB-ONLINE": {
 		fixture{[]string{basePath}, withDist("huggingface_hub", "0.26.2")},
 		fixture{[]string{basePath, "HF_HUB_OFFLINE=1"}, withDist("huggingface_hub", "0.26.2")},
@@ -66,8 +78,9 @@ var ruleFixtures = map[string]struct{ pos, neg fixture }{
 		fixture{nil, withDist("streamlit", "1.40.0", "app/.streamlit/config.toml", "[browser]\ngatherUsageStats = false\n")},
 	},
 	"PH-CHROMA-TELEMETRY": {
-		fixture{nil, withDist("chromadb", "0.5.23")},
-		fixture{[]string{"ANONYMIZED_TELEMETRY=False"}, withDist("chromadb", "0.5.23")},
+		fixture{nil, withDist("chromadb", "1.5.2")},
+		// 1.5.4 dropped posthog; its client is a no-op (D-036).
+		fixture{nil, withDist("chromadb", "1.5.4")},
 	},
 	"PH-UNSTRUCTURED-ANALYTICS": {
 		fixture{nil, withDist("unstructured", "0.16.5")},
@@ -158,6 +171,9 @@ func TestRuleFixtures(t *testing.T) {
 		for id, fx := range ruleFixtures {
 			writeFixture(t, filepath.Join(fixtureRoot, id, "positive"), fx.pos)
 			writeFixture(t, filepath.Join(fixtureRoot, id, "negative"), fx.neg)
+			for i, n := range extraNegatives[id] {
+				writeFixture(t, filepath.Join(fixtureRoot, id, fmt.Sprintf("negative-%d", i+2)), n)
+			}
 		}
 	}
 
@@ -186,6 +202,12 @@ func TestRuleFixtures(t *testing.T) {
 			}
 			if neg := evalFixture(t, r, filepath.Join(fixtureRoot, r.ID, "negative")); string(neg) != "[]\n" {
 				t.Errorf("negative fixture matched:\n%s", neg)
+			}
+			for i := range extraNegatives[r.ID] {
+				d := filepath.Join(fixtureRoot, r.ID, fmt.Sprintf("negative-%d", i+2))
+				if neg := evalFixture(t, r, d); string(neg) != "[]\n" {
+					t.Errorf("%s matched:\n%s", d, neg)
+				}
 			}
 		})
 	}

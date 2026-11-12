@@ -252,3 +252,44 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - numpy's `py2-objarr`/`py3-objarr` fixtures now give only `MODEL-NUMPY-OBJECT-ARRAY` (medium, waivable).
 - `py2-np0-objarr.npy` still gives `MODEL-PICKLE-UNKNOWN-IMPORT` (high, unwaivable) for `numpy.core._internal._reconstruct`. That name isn't verified harmless, so stripping numpy's tests from the image is still the recommended fix.
 - The leaky-rag demo's rule set is unchanged, because its reranker still imports `builtins.print`.
+
+## D-036 (2026-11-12): Phone-home rules can be bounded by package version; PH-CHROMA-TELEMETRY is `<1.5.4`
+**Context.** `PH-CHROMA-TELEMETRY` fired on any installed chromadb unless `ANONYMIZED_TELEMETRY` was off. Upstream removed product telemetry in March 2026, and the rule engine had no way to say "only these versions".
+
+**Upstream evidence (checked 2026-11-12):**
+- chroma-core/chroma PR #6489, "[CLN] Make telemetry a no-op and remove posthog as a dependency", merged 2026-03-03: https://github.com/chroma-core/chroma/pull/6489. The author writes "We do not collect telemetry anymore". The `Posthog` class stays, as a no-op, for config compatibility.
+- PyPI (https://pypi.org/project/chromadb/#history):
+  - 1.5.2 (2026-02-27) requires `posthog<6.0.0,>=2.4.0`.
+  - 1.5.3 (2026-03-07, yanked) and 1.5.4 (2026-03-08) require no posthog, and neither does 1.5.9 (latest, 2026-05-05). This was read from the JSON API's `requires_dist`.
+- Wheel source (the `manylinux x86_64` wheels, read only, never installed):
+  - In 1.5.4, `chromadb/telemetry/product/posthog.py` is a 258-byte class whose `capture()` is `pass`.
+  - In 1.5.2, it imports posthog, sets a project key and calls `posthog.capture`.
+  - `config.py` still defaults to that class with `anonymized_telemetry = True`, which is now inert.
+  - The Rust bindings `.so` contains no `posthog` string in either version.
+- I couldn't load the Chroma docs telemetry page (404). A search snippet says the docs state "as of version 1.5.4" telemetry is no longer collected. That matches the above but is unverified.
+
+**Decision.**
+- **New field.** Rules gain an optional `match.python_package_version`, a PEP 440 range (comma-separated `<`, `<=`, `>`, `>=`, `==`, `!=`; all clauses must hold). It requires `python_package`. `~=`, `===` and `.*` wildcards are rejected at load.
+- **Comparison.** Versions compare in PEP 440's total order (epoch, release with trailing zeros ignored, dev < pre (a < b < rc) < final < post, and local labels). This lives in `internal/phonehome/pep440.go`: no dependency, `math/big` for arbitrarily long numbers, and a 256-byte cap on input.
+- **Fail closed.**
+  - The specifier rule that `<V` excludes pre-releases of V is deliberately not applied, so 1.5.4rc1 matches `<1.5.4`. A pre-release of the fixing version may not contain the fix.
+  - An installed version that isn't PEP 440 counts as in range, and the detail says so.
+- **Evidence.** A version-bounded finding's detail reads `chromadb 1.5.2 installed, in affected range <1.5.4; ...`.
+- **The rule.** `PH-CHROMA-TELEMETRY` is bounded `<1.5.4`, not `<1.5.3`. The yanked 1.5.3 still matches. That's a possible false positive on a yanked release, and the safer side.
+- **Fixtures.**
+  - positive: 1.5.2
+  - negative: 1.5.4
+  - `negative-2`: 1.5.2 with the env opt-out
+  - `negative-3`: 2.0.0
+
+  Rule fixture dirs may now include `negative-N`.
+
+**Why.**
+- An unbounded rule reports telemetry that the shipped code can't send, so approvers learn to ignore phone-home findings.
+- Version ranges are the smallest general tool. Every rule that "stopped phoning home in version X" needs one.
+- A dependency-free subset keeps rule 2 and keeps the code reviewable. It's fuzzed (`FuzzVersion`: order is reflexive and antisymmetric, normalisation round-trips; `FuzzSpec`: specs round-trip, and unparseable versions never count as out of range). The ordering test mirrors packaging's own sequence.
+
+**Consequences.**
+- `rule_pack_version` changes.
+- The demo's leaky-rag pins chromadb 1.5.2, so it still fires there, and its expected rule set is unchanged.
+- An image with chromadb ≥ 1.5.4 and no env opt-out no longer gets `PH-CHROMA-TELEMETRY`. Its OpenTelemetry export is a separate path (`PH-OTLP-PUBLIC-ENDPOINT`).

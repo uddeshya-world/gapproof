@@ -80,22 +80,24 @@ title: ChromaDB anonymized telemetry is on
 severity: high
 confidence: high            # low when the upstream docs couldn't be verified
 explanation: >-
-  chromadb sends anonymized telemetry (PostHog) by default...
+  chromadb before 1.5.4 sends anonymized product telemetry (PostHog) by default...
 match:                      # every condition present must hold
   python_package: chromadb  # string or list: any installed distribution (PEP 503 names)
+  python_package_version: "<1.5.4"  # optional PEP 440 range (<, <=, >, >=, ==, !=; comma = and), D-036
+                                    # unparseable installed versions count as in range (fail closed)
   # env: {VAR: [values]}            any VAR has one of the values ("*" = any non-empty, "!x" = set and not x)
   # env_public_url: [VAR, ...]      any VAR holds a URL/host that isn't private or internal
   # source_regex: '...'             application .py/.js (not site-packages/node_modules/stdlib)
   unless_env:               # any satisfied unless_* suppresses the rule
     ANONYMIZED_TELEMETRY: ["0", "false", "no", "off"]
   # unless_file: {path_regex: '...', content_regex: '...'}
-fix: Set ANONYMIZED_TELEMETRY=False in the image environment.
+fix: Upgrade chromadb to 1.5.4 or later, or set ANONYMIZED_TELEMETRY=False in the image environment.
 controls: [CM-7, SC-7]
 source:
   - https://docs.trychroma.com/telemetry
 ```
 - Rules are decoded strictly (unknown keys fail) and validated on load: ID format and file name, severity, confidence, controls, an https `source`, at least one match condition, compilable regexes.
-- Every rule has `rules/testdata/<ID>/{positive,negative}/` fixtures (`rootfs/` plus an optional `env.txt`) and a golden `expected.json`. The tests fail if a rule lacks them.
+- Every rule has `rules/testdata/<ID>/{positive,negative}/` fixtures (plus optional `negative-2`, `negative-3`, ...) (`rootfs/` plus an optional `env.txt`) and a golden `expected.json`. The tests fail if a rule lacks them.
 - `gapproof rules test <ID> <fixture-dir> [--expect match|none]` runs one rule against a fixture.
 - Evidence anchors: an installed package's `METADATA` (path + sha256), the matching source line (path + sha256 + offset), or `(image config)` with the config digest for environment-only rules.
 

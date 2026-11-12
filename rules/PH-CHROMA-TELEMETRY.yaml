@@ -3,14 +3,19 @@ title: ChromaDB anonymized telemetry is on
 severity: high
 confidence: high
 explanation: >-
-  chromadb sends anonymized telemetry (PostHog) by default. It's off only when
-  ANONYMIZED_TELEMETRY is False in the environment or anonymized_telemetry=False is
-  passed in client Settings.
+  chromadb before 1.5.4 sends anonymized product telemetry (PostHog) by default.
+  It's off only when ANONYMIZED_TELEMETRY is False in the environment or
+  anonymized_telemetry=False is passed in client Settings. From 1.5.3 (yanked;
+  1.5.4 is the first available release) the PostHog client is a no-op and posthog
+  is no longer a dependency, so newer versions don't match.
 match:
   python_package: chromadb
+  python_package_version: "<1.5.4"
   unless_env:
     ANONYMIZED_TELEMETRY: ["0", "false", "no", "off"]
-fix: Set ANONYMIZED_TELEMETRY=False in the image environment.
+fix: Upgrade chromadb to 1.5.4 or later, or set ANONYMIZED_TELEMETRY=False in the image environment.
 controls: [CM-7, SC-7]
 source:
   - https://docs.trychroma.com/telemetry
+  - https://github.com/chroma-core/chroma/pull/6489
+  - https://pypi.org/project/chromadb/1.5.4/
