@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gapproof report: AGR-1</title>
+<style>
+:root { --fg:#1b1f24; --muted:#57606a; --line:#d0d7de; --bg:#ffffff; --soft:#f6f8fa;
+  --crit:#a40e26; --high:#bc4c00; --med:#9a6700; --low:#0969da; --ok:#1a7f37; }
+* { box-sizing: border-box; }
+body { margin:0 auto; max-width:1100px; padding:24px 16px 48px; background:var(--bg); color:var(--fg);
+  font:15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:18px; margin:32px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+h3 { font-size:15px; margin:16px 0 6px; }
+.meta, .muted { color:var(--muted); font-size:13px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12.5px; word-break:break-all; }
+table { width:100%; border-collapse:collapse; margin:8px 0; font-size:13.5px; }
+th, td { text-align:left; vertical-align:top; padding:6px 8px; border:1px solid var(--line); }
+th { background:var(--soft); }
+.badge { display:inline-block; margin:16px 0 8px; padding:10px 18px; border-radius:8px; border:2px solid; font-size:24px; font-weight:700; }
+.lvl-unassessed { color:var(--muted); } .lvl-0 { color:var(--crit); } .lvl-1 { color:var(--high); }
+.lvl-2 { color:var(--med); } .lvl-3 { color:var(--low); } .lvl-4 { color:var(--ok); }
+.sev { font-weight:600; text-transform:uppercase; font-size:12px; }
+.sev-critical { color:var(--crit); } .sev-high { color:var(--high); } .sev-medium { color:var(--med); } .sev-low, .sev-info { color:var(--low); }
+.waived { color:var(--muted); font-style:italic; }
+.box { border:1px solid var(--line); border-radius:6px; padding:10px 14px; margin:8px 0; background:var(--soft); }
+.warn { border-color:var(--med); }
+.finding { border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin:8px 0; }
+dl { display:grid; grid-template-columns:max-content 1fr; gap:2px 12px; margin:4px 0; font-size:13px; }
+dt { color:var(--muted); } dd { margin:0; }
+ol li, ul li { margin:4px 0; }
+@media print {
+  body { max-width:none; padding:0; font-size:11pt; }
+  .badge { border-width:3px; }
+  h2 { break-after:avoid; }
+  .finding, tr, .box { break-inside:avoid; }
+  table, th, td { border-color:#000; }
+}
+</style>
+</head>
+<body>
+<h1>Gapproof air-gap readiness report</h1>
+<div class="meta">
+Target: <span class="mono">leaky-rag.tar</span> · config <span class="mono">sha256:1111111111111111111111111111111111111111111111111111111111111111</span><br>
+Run <span class="mono">run-0001</span> on 2026-11-09 · Gapproof 0.1.0-test · rule pack 2026.11.09 · CMVP snapshot 2026-11-01 · AGR spec 0.2-draft
+</div>
+
+<div class="badge lvl-1">AGR-1 (observed 10m)</div>
+
+<h2 id="accepted-risks">Accepted risks</h2>
+<table>
+<tr><th>Finding</th><th>Rule</th><th>Match</th><th>Justification</th><th>Owner</th><th>Expires</th></tr>
+<tr><td class="mono">CR-0002</td><td class="mono">CRYPTO-UNVALIDATED-MODULE</td><td class="mono">path=site-packages/cryptography/_rust.abi3.so</td><td>TLS to the in-cluster DB only &lt;b&gt;bold&lt;/b&gt;</td><td>security@vendor.example</td><td>2027-03-31</td></tr>
+</table>
+<div class="box warn">Expired waiver #2 (<span class="mono">CRYPTO-UNKNOWN-MODULE path=usr/lib/libnettle.so.8</span>, owner security@vendor.example) ended on 2026-10-01 and was ignored: the finding is open.</div>
+<div class="box warn">Stale waiver #3 (<span class="mono">PH-GRADIO-ANALYTICS path=app/ui.py</span>, owner security@vendor.example) matches no finding.</div>
+<p class="muted">Waivers file sha256 <span class="mono">a1a2761c1ee19134afe592794c5e066f203a4e72a55e487fce6c8d92214040c4</span></p>
+
+<h2 id="fix-first">What to fix first</h2>
+<h3>Blocking the next level</h3>
+<ul>
+<li><strong>AGR-2:</strong> 2 out-of-scope egress attempts <span class="mono">(EG-0001, EG-0002)</span></li>
+</ul>
+<h3>Open critical and high findings</h3>
+<ol>
+<li><span class="mono">MD-0001</span> <span class="sev sev-critical">critical</span> Pickle imports builtins.print<br><span class="muted">Fix:</span> Convert the model to safetensors.</li>
+<li><span class="mono">EG-0001</span> <span class="sev sev-high">high</span> Out-of-scope egress attempt: tcp evil&lt;script&gt;.example (198.18.0.3):80<br><span class="muted">Fix:</span> Disable or remove the code path that contacts tcp evil&lt;script&gt;.example (198.18.0.3):80, or declare the destination in gapproof.scope.yaml if it is truly internal.</li>
+<li><span class="mono">EG-0002</span> <span class="sev sev-high">high</span> Out-of-scope egress attempt: tcp us.i.posthog.com (198.18.0.2):443<br><span class="muted">Fix:</span> Disable or remove the code path that contacts tcp us.i.posthog.com (198.18.0.2):443, or declare the destination in gapproof.scope.yaml if it is truly internal.</li>
+<li><span class="mono">PH-0001</span> <span class="sev sev-high">high</span> &lt;script&gt;alert(&#34;x&#34;)&lt;/script&gt; [click](https://evil.example/x) | ![img](http://evil.example/i.png) www.evil.example<br><span class="muted">Fix:</span> Remove sentry_sdk.init.</li>
+<li><span class="mono">CR-0003</span> <span class="sev sev-high">high</span> nettle 3.9<br><span class="muted">Fix:</span> Remove nettle.</li>
+</ol>
+
+<h2 id="scope">Declared scope</h2>
+<p>Always in scope: <span class="mono">localhost</span> and the target hostname <span class="mono">rag-app</span>.</p>
+<p>Declared internal names (not resolved: judge each one):</p>
+<ul><li class="mono">vectordb</li></ul>
+<p>Declared internal CIDRs (private ranges only):</p>
+<ul><li class="mono">10.20.0.0/16</li></ul>
+<p class="muted">Scope file sha256 <span class="mono">b3cf309770b282e6b8c5a8e9e581acb5bff30844196450b83939dd7d3059acbd</span></p>
+<h2 id="mod-egress">Egress (observed)</h2>
+<p>Module status: <strong>ran</strong></p>
+<dl>
+<dt>Target started and healthy</dt><dd>yes</dd>
+<dt>Workload passed</dt><dd>yes</dd>
+<dt>Observation window</dt><dd>10m</dd>
+</dl>
+<h3>Egress attempts (deduplicated set)</h3>
+<table>
+<tr><th>Kind</th><th>Name</th><th>Destination IP</th><th>Port</th><th>Protocol</th><th>SNI</th><th>HTTP Host</th><th>Scope</th></tr>
+<tr><td>dns</td><td class="mono">vectordb</td><td class="mono"></td><td></td><td></td><td class="mono"></td><td class="mono"></td><td>in scope (declared)</td></tr>
+<tr><td>tcp</td><td class="mono">evil&lt;script&gt;.example</td><td class="mono">198.18.0.3</td><td>80</td><td>http</td><td class="mono"></td><td class="mono">a|b</td><td>OUT OF SCOPE</td></tr>
+<tr><td>tcp</td><td class="mono">us.i.posthog.com</td><td class="mono">198.18.0.2</td><td>443</td><td>tls (h2)</td><td class="mono">us.i.posthog.com</td><td class="mono"></td><td>OUT OF SCOPE</td></tr>
+</table>
+<table>
+<tr><th>ID</th><th>Severity</th><th>Status</th><th>Finding</th><th>Evidence</th><th>Fix</th></tr>
+<tr><td class="mono">EG-0001</td><td><span class="sev sev-high">high</span></td><td>open</td><td>Out-of-scope egress attempt: tcp evil&lt;script&gt;.example (198.18.0.3):80</td><td class="mono"><br>kind=tcp name=&#34;evil&lt;script&gt;.example&#34; ip=198.18.0.3 port=80 proto=http host=&#34;a|b&#34;</td><td>Disable or remove the code path that contacts tcp evil&lt;script&gt;.example (198.18.0.3):80, or declare the destination in gapproof.scope.yaml if it is truly internal.</td></tr>
+<tr><td class="mono">EG-0002</td><td><span class="sev sev-high">high</span></td><td>open</td><td>Out-of-scope egress attempt: tcp us.i.posthog.com (198.18.0.2):443</td><td class="mono"><br>kind=tcp name=us.i.posthog.com ip=198.18.0.2 port=443 proto=tls sni=us.i.posthog.com alpn=h2</td><td>Disable or remove the code path that contacts tcp us.i.posthog.com (198.18.0.2):443, or declare the destination in gapproof.scope.yaml if it is truly internal.</td></tr>
+</table>
+<h2 id="mod-phonehome">Phone-home (static rules)</h2>
+<p>Module status: <strong>ran</strong></p>
+<table>
+<tr><th>ID</th><th>Severity</th><th>Status</th><th>Finding</th><th>Evidence</th><th>Fix</th></tr>
+<tr><td class="mono">PH-0001</td><td><span class="sev sev-high">high</span></td><td>open</td><td>&lt;script&gt;alert(&#34;x&#34;)&lt;/script&gt; [click](https://evil.example/x) | ![img](http://evil.example/i.png) www.evil.example</td><td class="mono">app/main.py@10<br>sentry_sdk.init(`dsn`)</td><td>Remove sentry_sdk.init.</td></tr>
+</table>
+<h2 id="mod-crypto">Crypto inventory</h2>
+<p>Module status: <strong>ran</strong></p>
+<p>CMVP snapshot date: <strong>2026-11-01</strong>. Status is matched against this dated, manually curated snapshot; <span class="mono">validated-snapshot-match</span> means a module matched an active certificate in it, nothing more.</p>
+<table>
+<tr><th>Path</th><th>Library</th><th>Version</th><th>Origin</th><th>CMVP status</th><th>Certificate</th></tr>
+<tr><td class="mono">site-packages/cryptography/_rust.abi3.so</td><td>openssl</td><td>3.4.1</td><td>python-wheel (cryptography)</td><td>unvalidated</td><td></td></tr>
+<tr><td class="mono">usr/lib/libnettle.so.8</td><td>nettle</td><td>3.9</td><td>system</td><td>unknown</td><td></td></tr>
+</table>
+<p>OpenSSL FIPS provider <span class="mono">usr/lib/ossl-modules/fips.so</span> 3.0.9: present but not activated.</p>
+<table>
+<tr><th>ID</th><th>Severity</th><th>Status</th><th>Finding</th><th>Evidence</th><th>Fix</th></tr>
+<tr><td class="mono">CR-0001</td><td><span class="sev sev-medium">medium</span></td><td>open</td><td>hashlib.md5</td><td class="mono">app/cache.py</td><td>Use sha256.</td></tr>
+<tr><td class="mono">CR-0002</td><td><span class="sev sev-high">high</span></td><td class="waived">waived</td><td>Bundled OpenSSL 3.4.1</td><td class="mono">site-packages/cryptography/_rust.abi3.so</td><td>Build against a FIPS-enabled system OpenSSL.</td></tr>
+<tr><td class="mono">CR-0003</td><td><span class="sev sev-high">high</span></td><td>open</td><td>nettle 3.9</td><td class="mono">usr/lib/libnettle.so.8</td><td>Remove nettle.</td></tr>
+</table>
+<h2 id="mod-models">Model artefacts</h2>
+<p>Module status: <strong>ran</strong></p>
+<table>
+<tr><th>Path</th><th>Format</th><th>Size</th><th>SHA-256</th></tr>
+<tr><td class="mono">models/reranker.pt</td><td>pytorch-zip</td><td>3.0 MiB</td><td class="mono">eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td></tr>
+<tr><td class="mono">models/tiny.safetensors</td><td>safetensors</td><td>512 B</td><td class="mono">ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff</td></tr>
+</table>
+<table>
+<tr><th>ID</th><th>Severity</th><th>Status</th><th>Finding</th><th>Evidence</th><th>Fix</th></tr>
+<tr><td class="mono">MD-0001</td><td><span class="sev sev-critical">critical</span></td><td>open</td><td>Pickle imports builtins.print</td><td class="mono">models/reranker.pt!reranker/data.pkl@42<br>STACK_GLOBAL builtins.print</td><td>Convert the model to safetensors.</td></tr>
+</table>
+<h2 id="mod-agents">Agent containment</h2>
+<p>Module status: <strong>ran</strong></p>
+<p><strong>Based on a vendor-declared manifest.</strong> Manifest <span class="mono">agents.yaml</span> (sha256 <span class="mono">9999999999999999999999999999999999999999999999999999999999999999</span>).</p>
+<p>No agentic tool use, vendor-declared.</p>
+<p>No findings.</p>
+<h2 id="mod-other">Other findings</h2>
+<p>Module status: <strong>ran</strong></p>
+<table>
+<tr><th>ID</th><th>Severity</th><th>Status</th><th>Finding</th><th>Evidence</th><th>Fix</th></tr>
+<tr><td class="mono">OT-0001</td><td><span class="sev sev-low">low</span></td><td>open</td><td>unclassified</td><td class="mono"></td><td>n/a</td></tr>
+</table>
+<h2 id="warnings">Warnings</h2>
+<ul><li>waiver #2 (CRYPTO-UNKNOWN-MODULE path=usr/lib/libnettle.so.8) expired on 2026-10-01 and was ignored; the finding is open</li><li>waiver #3 (PH-GRADIO-ANALYTICS path=app/ui.py) is stale: it matches no finding</li></ul>
+
+<h2 id="appendix">Appendix: raw evidence</h2>
+<div class="finding">
+<strong class="mono">EG-0001</strong> <span class="sev sev-high">high</span> Out-of-scope egress attempt: tcp evil&lt;script&gt;.example (198.18.0.3):80
+<dl>
+<dt>Rule</dt><dd class="mono">EGRESS-ATTEMPT</dd>
+<dt>Status</dt><dd>open</dd><dt>Detail</dt><dd class="mono">kind=tcp name=&#34;evil&lt;script&gt;.example&#34; ip=198.18.0.3 port=80 proto=http host=&#34;a|b&#34;</dd>
+<dt>Explanation</dt><dd>With all egress blocked, the target tried to reach a destination that is not declared in the scope file. In an air-gapped network this request fails or leaks. An observed attempt can&#39;t be waived (AGR_SPEC §4).</dd>
+<dt>Fix</dt><dd>Disable or remove the code path that contacts tcp evil&lt;script&gt;.example (198.18.0.3):80, or declare the destination in gapproof.scope.yaml if it is truly internal.</dd>
+<dt>Controls</dt><dd class="mono">SC-7, AC-4 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">EG-0002</strong> <span class="sev sev-high">high</span> Out-of-scope egress attempt: tcp us.i.posthog.com (198.18.0.2):443
+<dl>
+<dt>Rule</dt><dd class="mono">EGRESS-ATTEMPT</dd>
+<dt>Status</dt><dd>open</dd><dt>Detail</dt><dd class="mono">kind=tcp name=us.i.posthog.com ip=198.18.0.2 port=443 proto=tls sni=us.i.posthog.com alpn=h2</dd>
+<dt>Explanation</dt><dd>With all egress blocked, the target tried to reach a destination that is not declared in the scope file. In an air-gapped network this request fails or leaks. An observed attempt can&#39;t be waived (AGR_SPEC §4).</dd>
+<dt>Fix</dt><dd>Disable or remove the code path that contacts tcp us.i.posthog.com (198.18.0.2):443, or declare the destination in gapproof.scope.yaml if it is truly internal.</dd>
+<dt>Controls</dt><dd class="mono">SC-7, AC-4 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">PH-0001</strong> <span class="sev sev-high">high</span> &lt;script&gt;alert(&#34;x&#34;)&lt;/script&gt; [click](https://evil.example/x) | ![img](http://evil.example/i.png) www.evil.example
+<dl>
+<dt>Rule</dt><dd class="mono">PH-SENTRY-DSN</dd>
+<dt>Status</dt><dd>open</dd><dt>Path</dt><dd class="mono">app/main.py</dd><dt>SHA-256</dt><dd class="mono">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</dd><dt>Offset</dt><dd class="mono">10</dd><dt>Detail</dt><dd class="mono">sentry_sdk.init(`dsn`)</dd>
+<dt>Explanation</dt><dd>Sentry sends events to sentry.io. Source: https://docs.sentry.io/</dd>
+<dt>Fix</dt><dd>Remove sentry_sdk.init.
+Second line is not shown in the fix-first list.</dd>
+<dt>Controls</dt><dd class="mono">CM-7, SC-7 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">CR-0001</strong> <span class="sev sev-medium">medium</span> hashlib.md5
+<dl>
+<dt>Rule</dt><dd class="mono">CRYPTO-WEAK-HASH</dd>
+<dt>Status</dt><dd>open</dd><dt>Path</dt><dd class="mono">app/cache.py</dd>
+<dt>Explanation</dt><dd>MD5.</dd>
+<dt>Fix</dt><dd>Use sha256.</dd>
+<dt>Controls</dt><dd class="mono">SC-13 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">CR-0002</strong> <span class="sev sev-high">high</span> Bundled OpenSSL 3.4.1
+<dl>
+<dt>Rule</dt><dd class="mono">CRYPTO-UNVALIDATED-MODULE</dd>
+<dt>Status</dt><dd>waived (waiver #1, owner security@vendor.example, expires 2027-03-31: TLS to the in-cluster DB only &lt;b&gt;bold&lt;/b&gt;)</dd><dt>Path</dt><dd class="mono">site-packages/cryptography/_rust.abi3.so</dd><dt>SHA-256</dt><dd class="mono">bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb</dd>
+<dt>Explanation</dt><dd>Bundled copies are always unvalidated.</dd>
+<dt>Fix</dt><dd>Build against a FIPS-enabled system OpenSSL.</dd>
+<dt>Controls</dt><dd class="mono">SC-13 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">CR-0003</strong> <span class="sev sev-high">high</span> nettle 3.9
+<dl>
+<dt>Rule</dt><dd class="mono">CRYPTO-UNKNOWN-MODULE</dd>
+<dt>Status</dt><dd>open</dd><dt>Path</dt><dd class="mono">usr/lib/libnettle.so.8</dd><dt>SHA-256</dt><dd class="mono">cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc</dd>
+<dt>Explanation</dt><dd>Vendor builds may be validated.</dd>
+<dt>Fix</dt><dd>Remove nettle.</dd>
+<dt>Controls</dt><dd class="mono">SC-13 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">MD-0001</strong> <span class="sev sev-critical">critical</span> Pickle imports builtins.print
+<dl>
+<dt>Rule</dt><dd class="mono">MODEL-PICKLE-CODE-EXEC</dd>
+<dt>Status</dt><dd>open</dd><dt>Path</dt><dd class="mono">models/reranker.pt</dd><dt>Member</dt><dd class="mono">reranker/data.pkl</dd><dt>SHA-256</dt><dd class="mono">eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</dd><dt>Offset</dt><dd class="mono">42</dd><dt>Detail</dt><dd class="mono">STACK_GLOBAL builtins.print</dd>
+<dt>Explanation</dt><dd>Loading this file runs code.</dd>
+<dt>Fix</dt><dd>Convert the model to safetensors.</dd>
+<dt>Controls</dt><dd class="mono">SI-3, SI-7 (informative)</dd>
+</dl>
+</div>
+<div class="finding">
+<strong class="mono">OT-0001</strong> <span class="sev sev-low">low</span> unclassified
+<dl>
+<dt>Rule</dt><dd class="mono">WEIRD-RULE</dd>
+<dt>Status</dt><dd>open</dd>
+<dt>Explanation</dt><dd></dd>
+<dt>Fix</dt><dd>n/a</dd>
+<dt>Controls</dt><dd class="mono"> (informative)</dd>
+</dl>
+</div>
+
+<h2 id="coverage">Coverage</h2>
+<p>The egress harness detects IPv4 packets originated by processes in the target container during the observation window. It does not detect: code paths the workload didn&#39;t exercise (the static phone-home rules cover part of this), IPv6-only behaviour (IPv6 is disabled by design, so a v6-only app shows as failing), or exfiltration through in-scope names the vendor declared. Each in-scope attempt is listed so the approver can judge it.</p>
+
+<h2 id="disclaimer">What this report is not</h2>
+<p>AGR is an inventory-and-findings result. It is not a FIPS 140-3 validation, an ATO, an accreditation or a certification, and it is not a guarantee. Control mappings are informative. This report says what was checked, what was found and what the vendor accepted, so that the people who grant approvals have evidence instead of promises.</p>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,82 @@
+{
+  "schema_version": "gapproof.evidence/0.1",
+  "agr": {
+    "level": "AGR-1",
+    "spec_version": "0.2-draft",
+    "observed_window_s": 180,
+    "blocking": [
+      {
+        "next_level": "AGR-2",
+        "reason": "3 out-of-scope egress attempts",
+        "finding_ids": [
+          "EG-0001",
+          "EG-0002",
+          "EG-0003"
+        ]
+      }
+    ]
+  },
+  "tool_version": "0.1.0-test",
+  "rule_pack_version": "2026.11.09",
+  "cmvp_snapshot_date": "2026-11-01",
+  "target": {
+    "image": "leaky-rag.tar",
+    "config_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "artifact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "hostname": "rag-app"
+  },
+  "counts": {
+    "agents": {
+      "status": "ran",
+      "findings": 0,
+      "open": 0,
+      "waived": 0,
+      "open_by_severity": {}
+    },
+    "crypto": {
+      "status": "ran",
+      "findings": 3,
+      "open": 2,
+      "waived": 1,
+      "open_by_severity": {
+        "high": 1,
+        "medium": 1
+      }
+    },
+    "egress": {
+      "status": "ran",
+      "findings": 3,
+      "open": 3,
+      "waived": 0,
+      "open_by_severity": {
+        "high": 3
+      },
+      "attempts": 5,
+      "out_of_scope": 3
+    },
+    "models": {
+      "status": "ran",
+      "findings": 1,
+      "open": 1,
+      "waived": 0,
+      "open_by_severity": {
+        "critical": 1
+      }
+    },
+    "phonehome": {
+      "status": "ran",
+      "findings": 1,
+      "open": 1,
+      "waived": 0,
+      "open_by_severity": {
+        "high": 1
+      }
+    }
+  },
+  "run": {
+    "id": "run-0001",
+    "run_date": "2026-11-09",
+    "started_at": "2026-11-09T06:30:00Z",
+    "finished_at": "2026-11-09T12:03:30Z"
+  }
+}

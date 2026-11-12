@@ -4,6 +4,56 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (M7: diff, CI gate, offline licence)
+- `gapproof diff <old> <new> [--exit-code]` compares two runs:
+  - the AGR change;
+  - new, resolved and changed findings (matched on rule plus evidence, not on ID);
+  - egress destinations;
+  - model and crypto hash changes.
+
+  The itemised view needs a Pro licence; without one, `diff` shows the level change and counts.
+- `internal/licence`: an offline Ed25519-signed JSON licence (org, expiry, features). The public key is pinned at build time (`LICENCE_PUB`). There is never a network check. An expired or invalid licence degrades to the free features. `gapproof licence` shows the status, and a hidden `licence issue` command signs licences for release tooling.
+- `action/`: the composite `gapproof-scan` GitHub Action. It downloads a checksum-verified release (or uses a local binary), writes the report to the job summary, keeps a single PR comment up to date, and gates on `min-agr`. A CI job runs it against a smoke image and asserts AGR-2.
+- Releases build, pin and ship the harness image per arch (`make release-harness`). goreleaser refuses to build unpinned binaries.
+
+### Added (M4: scan pipeline, evidence, AGR, reports)
+- `gapproof scan` runs every module end to end:
+  - extracts the tar, or saves a local ref (never pulled);
+  - runs inventory, phone-home, crypto, models (plus `--models`) and agents;
+  - then runs the egress harness on the same image. The engine's image ID must match the extracted config digest.
+- `internal/evidence`:
+  - deterministic `evidence.json` and `summary.json`;
+  - AGR computation per AGR_SPEC, with `unassessed`, blocking reasons, `--skip` caps, scope files and waivers (stale and expired handling);
+  - an unwaivable allowlist;
+  - per-module finding IDs.
+- `internal/report`: a self-contained HTML report (no scripts or external assets, print CSS) and a Markdown twin, both with a "fix first" list and the disclaimer.
+- A live TTY summary: a line per module, the egress table, the AGR badge and blocking reasons. `scan --replay <dir> [--only] [--replay-speed]` reprints it from saved evidence.
+- `gapproof report --in <dir>` regenerates the reports. `gapproof agents import-mcp` suggests an `agents.yaml` from MCP `tools/list` dumps.
+- Two live scans of the same image give a byte-identical `evidence.json`. `TestNoEgress` now runs full static scans under `--network none`.
+
+### Added (M6: sign/verify, AI-BOM, OSCAL)
+- `keygen`, `sign` and `verify` (`internal/bundle`):
+  - `MANIFEST.sha256` and `MANIFEST.sig` over every file;
+  - deterministic bundle tars;
+  - `verify --artifact` checks that the image the customer received is the one that was scanned, fully offline.
+- `internal/aibom`: a CycloneDX 1.6 AI-BOM. `internal/oscal`: OSCAL 1.1.2 assessment-results. Both validate against the official schemas in a test-only container.
+
+### Added (M5: agent containment)
+- `internal/agents`: a strict `agents.yaml` loader, an INV-01 path analysis over the tool and handoff graph, and a provably minimal cut set where the graph is small enough (otherwise flagged "not proven minimal"). Also an MCP `tools/list` import that produces low-confidence suggestions.
+
+### Added (M3: egress harness)
+- `internal/sinkhole`, which runs as `gapproof sinkhole` and owns the target's netns:
+  - NFLOG on every new flow, redirects to DNS/TCP/UDP catch-all listeners and a deny-all filter, with no exemptions;
+  - synthetic DNS answers;
+  - TLS SNI and ALPN, the HTTP Host, QUIC Initial SNI (decrypted), and NTP, statsd and syslog classification;
+  - pcapng output.
+- `internal/harness`: Docker/Podman orchestration that never pulls:
+  - an internal network, the sinkhole sidecar, the target sharing its netns, and a driver container running the workload;
+  - a pinned harness image;
+  - targets that request capabilities are refused;
+  - cleanup on cancel.
+- The 9-attempt probe passes, and a host-side capture sees zero packets.
+
 ### Added (M2: phone-home rules + crypto inventory)
 - `rules/`: embedded rule pack of 16 phone-home rules, each with a verified source URL or `confidence: low`, plus positive and negative fixtures and golden output.
 - `rules/cmvp_snapshot.json` (2026-11-09): OpenSSL FIPS provider 3.1.2 (#4985, active), 3.0.8/3.0.9 (#4282, historical since 2026-09-21), Go Cryptographic Module v1.0.0 (#5247, active), v1.26.0 (in process).

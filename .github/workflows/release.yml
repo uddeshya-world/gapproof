@@ -17,6 +17,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - uses: docker/setup-qemu-action@v3 # arm64 harness image on an amd64 runner
+      - name: Build and pin the harness images
+        run: |
+          make release-harness
+          cat release-assets/harness.env >> "$GITHUB_ENV"
       - uses: anchore/sbom-action/download-syft@v0
       - uses: goreleaser/goreleaser-action@v6
         with:
@@ -24,3 +29,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LICENCE_PUB: ${{ vars.GAPPROOF_LICENCE_PUB }} # public key only; empty = free-only build

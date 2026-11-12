@@ -35,7 +35,8 @@ var netAllowed = map[string]string{
 
 // execAllowed: packages permitted to import os/exec.
 var execAllowed = map[string]string{
-	modulePath + "/internal/harness": "drives docker/podman through their CLI (spec §3.1); never runs scanned content",
+	modulePath + "/internal/harness":  "drives docker/podman through their CLI (spec §3.1); never runs scanned content",
+	modulePath + "/internal/sinkhole": "runs ip/iptables once, as root inside its own harness netns, before dropping privileges (spec §3.1)",
 }
 
 func forbiddenAlways(p string) bool {

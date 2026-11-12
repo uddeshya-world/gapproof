@@ -50,6 +50,12 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - The owner works a day job; keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
+- 2026-11-12: **Integration branch `m4-integrate`** (not pushed).
+  - It merges M3, M5 (`m5-agents`), the M4 evidence and report work (`m4-evidence-report`) and M6 (`m6-bundle-aibom-oscal`), plus the scan wiring and M7 (diff, offline licence, `action/`, pinned releases).
+  - A live scan of the probe image gives AGR-1, and two runs produce a byte-identical `evidence.json`. Sign and verify round-trip.
+  - Decisions D-019…D-031.
+  - Pending: the demo apps (agent branch `worktree-agent-a8c54ad221f89222a`, unfinished) and models fuzzing (`worktree-agent-a7478812ec88a4b53`, unfinished).
+- 2026-11-11: **M3 done.** The sinkhole/NFLOG race (an explanation arriving before its NFLOG record) is fixed, and the probe test passed 5 of 5 runs.
 - 2026-11-09 — **M2 done** (branch `m2-phonehome-crypto`). Covers the phone-home rule pack (16 rules with sources and fixtures; `rules list` and `rules test`), the crypto inventory with the CMVP snapshot, and the shared inventory. The real-image e2e confirms the cryptography wheel bundles OpenSSL 3.4.1 statically (review P1 #5 closed). Decisions D-013…D-015.
 - 2026-11-08 — **M1 done** (branch `m1-fsscan-models`, 2 commits). Covers safe image extraction (`internal/fsscan`, verified on a real Docker 29 `docker save`) and the model scanner (`internal/models`, 91% coverage, 30 generated fixtures, a golden `scan.json`). The import policy now enforces rule 3 (no `os/exec`/`plugin` outside the harness) across every package. Decisions D-010…D-012. The scanners aren't wired into `gapproof scan` yet (that's M4).
 - 2026-11-08 — **M0 done** (branch `m0-skeleton`, committed, not pushed). `make lint test build e2e` is green: 94% coverage, a 3.5 MB static binary, FIPS mode on, `TestNoEgress` passing on OrbStack, and `TestNoNetworkImports` mutation-checked. The CI steps also passed in clean `golang:1.26` and `goreleaser check` containers. Decisions D-007…D-009. The name stays Gapproof (Airlock collides with Airlock Digital).
@@ -57,9 +63,13 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - 2026-11-08 — Kit imported into `projects/gapproof` (git init).
 
 ## Open questions / next steps
+- **Owner decision (AGR spec change):** one-shot images (CLIs, batch jobs) can't pass liveness without a workload. Should "exits 0 within the window with egress blocked" count? This blocks the M8 self-scan at AGR-4.
+- Finish the demo apps and `make demo` (assert leaky = AGR-1, fixed = AGR-3, or AGR-4 with agents), the headless-Chromium zero-request check on report.html, and the v0.1 tag (owner).
+- Gotchas:
+  - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
+  - `scan --out` must be a new or empty directory.
+  - The harness e2e needs `bin/gapproof harness load dist/gapproof-harness-*.oci.tar` after every `make harness`.
 - Push to a personal GitHub (keep the repo private until the owner's pre-launch legal check is done) so GitHub Actions runs.
-- Owner OK on the jsonschema test dep for M6 (docs/DEPENDENCIES.md).
-- Next: M3 (egress harness + sinkhole, spec §3.1).
 - Promote the low-confidence rules (Unstructured, OpenAI and Anthropic base URL) after checking upstream source.
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.

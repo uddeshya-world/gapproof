@@ -43,19 +43,52 @@ func TestNoEgress(t *testing.T) {
 		image = "gcr.io/distroless/static-debian12:nonroot" // no shell, no libc: proves the binary is static
 	}
 
+	// A signed bundle plus matching and non-matching images, mounted
+	// read-only at /work, so verify runs end to end with no network.
+	work := t.TempDir()
+	img, digest := testImage(t, "v1")
+	other, _ := testImage(t, "v2")
+	for src, dst := range map[string]string{img: "img.tar", other: "other.tar"} {
+		raw, _ := os.ReadFile(src)
+		os.WriteFile(filepath.Join(work, dst), raw, 0o644)
+	}
+	if err := os.CopyFS(filepath.Join(work, "rootfs"), os.DirFS("../../rules/testdata/PH-CHROMA-TELEMETRY/positive/rootfs")); err != nil {
+		t.Fatal(err)
+	}
+	if raw, err := os.ReadFile("../../internal/agents/testdata/leaky.yaml"); err != nil {
+		t.Fatal(err)
+	} else {
+		os.WriteFile(filepath.Join(work, "agents.yaml"), raw, 0o644)
+	}
+	ev := filepath.Join(t.TempDir(), "ev")
+	os.Mkdir(ev, 0o755)
+	os.WriteFile(filepath.Join(ev, "summary.json"), []byte(`{"agr":{"level":"AGR-2"}}`), 0o644)
+	if c, out := runCLI(t, "keygen", "--out", filepath.Join(work, "k")); c != exitOK {
+		t.Fatal(out)
+	}
+	if c, out := runCLI(t, "sign", "--in", ev, "--key", filepath.Join(work, "k.key"), "--artifact-digest", digest, "--bundle", filepath.Join(work, "b.tar")); c != exitOK {
+		t.Fatal(out)
+	}
+
 	cases := []struct {
 		args []string
 		want int
 	}{
+		{[]string{"keygen", "--help"}, exitOK},
+		{[]string{"sign", "--help"}, exitOK},
+		{[]string{"verify", "/work/b.tar", "--pub", "/work/k.pub", "--artifact", "/work/img.tar"}, exitOK},
+		{[]string{"verify", "/work/b.tar", "--pub", "/work/k.pub", "--artifact", "/work/other.tar"}, exitBelowThreshold},
 		{[]string{"version"}, exitOK},
 		{[]string{"--help"}, exitOK},
 		{[]string{"scan", "--help"}, exitOK},
 		{[]string{"verify", "--help"}, exitOK},
 		{[]string{"report", "--help"}, exitOK},
 		{[]string{"rules", "list", "--help"}, exitOK},
-		{[]string{"rules", "list"}, exitOK},                                                      // embedded rule pack + CMVP snapshot, no network
-		{[]string{"scan", "--out", "/tmp/o"}, exitUsage},                                         // usage path works offline
-		{[]string{"scan", "--rootfs", "/", "--skip", "egress", "--out", "/tmp/o"}, exitInternal}, // stub until M1
+		{[]string{"rules", "list"}, exitOK},              // embedded rule pack + CMVP snapshot, no network
+		{[]string{"scan", "--out", "/tmp/o"}, exitUsage}, // usage path works offline
+		// Full static scans offline (review P1 #6): an image tar and a rootfs.
+		{[]string{"scan", "--image", "/work/img.tar", "--skip", "egress", "--out", "/tmp/o1"}, exitOK},
+		{[]string{"scan", "--rootfs", "/work/rootfs", "--skip", "egress", "--agents", "/work/agents.yaml", "--out", "/tmp/o2"}, exitOK},
 	}
 	for _, tc := range cases {
 		args := append([]string{
@@ -64,7 +97,9 @@ func TestNoEgress(t *testing.T) {
 			"--read-only",
 			"--cap-drop", "ALL",
 			"--security-opt", "no-new-privileges",
+			"--tmpfs", "/tmp", // verify --artifact extracts the image to a temp dir
 			"-v", bin + ":/gapproof:ro",
+			"-v", work + ":/work:ro",
 			image, "/gapproof",
 		}, tc.args...)
 		out, err := exec.Command(engine, args...).CombinedOutput()

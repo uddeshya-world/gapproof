@@ -12,3 +12,5 @@ content/
 .DS_Store
 .env
 *.pem
+.claude/
+release-assets/

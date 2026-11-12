@@ -61,3 +61,127 @@ macOS's default filesystem merges paths that differ only by case. **Decision:** 
 
 ## D-015 (2026-11-09): A shared inventory package
 **Decision:** `internal/inventory` does the one walk the rule modules share: Python distributions (with wheel tags) and application source files, excluding site-packages, node_modules and the stdlib. It's not in the original layout, but it keeps phone-home and crypto from walking twice and from flagging library code as application code.
+
+## D-016 (2026-11-09): The harness netns trusts nothing: no uid or subnet exemptions
+The spec's first draft exempted uid 65532 (the sinkhole) and the run subnet from logging and redirects. That's unsafe on two counts:
+- 65532 is the distroless `nonroot` uid, so a common target would bypass logging, and any root target can `setuid(65532)`.
+- The `--internal` network's gateway is the host. A target that reached it could use a proxy listening on the host.
+
+**Decision:** the sinkhole never originates traffic (its replies are ESTABLISHED), so nothing is exempt. Every NEW non-loopback flow is logged and redirected, including flows to the run subnet and gateway. Driver→target traffic enters via INPUT and its replies are ESTABLISHED, so it is never logged; the probe test asserts this.
+
+Docker's embedded resolver (127.0.0.11) is handled explicitly:
+- its port-53 traffic is redirected to our DNS listener ahead of Docker's `DOCKER_OUTPUT` chain;
+- anything else sent to 127.0.0.11 is logged and dropped, because dockerd would forward it from the host namespace.
+
+Two kernel details surfaced on Docker 29 (nft):
+- REDIRECT of non-loopback traffic needs `net.ipv4.conf.all.route_localnet=1`.
+- The filter hook still sees the pre-NAT output interface, so redirected packets are accepted by listener port on 127.0.0.1 rather than by `-o lo`.
+
+**Consequence:** the M3 probe passes. All 9 attempts are logged with the correct destination and hints, a host-side capture sees zero packets, and the driver's traffic isn't logged.
+
+## D-017 (2026-11-09): Harness image pinned by layer diff_ids; target capability requests are refused
+- **Pinning.** The engine's "image ID" differs between the classic and containerd stores (D-011). The release therefore pins the config digest, checked on `harness load` against the tarball, plus the layer diff_ids, checked on every scan via `image inspect .RootFS.Layers`. Both are store-independent.
+- **Breaking the circularity.** The binary inside the harness image is built without the pin. `make harness` writes `dist/harness.pin` and later `make build`s embed it. Every `run` passes `--pull never`.
+- **Capability requests.** An image can't grant itself capabilities. One whose labels name `NET_ADMIN`/`NET_RAW` (e.g. `cap_add=NET_RAW`) is refused and recorded, never run degraded. The target always runs with `--cap-drop NET_RAW --cap-drop NET_ADMIN`, `no-new-privileges` and memory/pids limits.
+- **Not read-only.** The target is not `--read-only`, because too many real apps write caches. This is listed as a hardening option for M8.
+- **Podman.** Rootless Podman hasn't been smoke-tested: there's no Podman on the dev machine. The CLI calls are engine-neutral; the open risks are `--sysctl` and `container:` network mode under rootless netavark. Tracked for M8/M9.
+
+## D-018 (2026-11-09): Sinkhole outputs: raw flows are the audit trail, listener events are the evidence
+`egress.log.jsonl` carries:
+- one `flow` line per NFLOG record (the original 5-tuple, including repeats);
+- enriched `dns|tcp|udp` lines from the listeners;
+- `icmp|ip` lines straight from NFLOG;
+- `ready` (with the iptables-save digest) and `stats` (which records NFLOG overruns as a coverage gap).
+
+Any TCP/UDP flow that no listener explains is still reported at shutdown, so nothing NFLOG saw goes unlisted. The evidence set (M4) uses only the attempt kinds. The pcapng is written by the sinkhole to an anonymous volume, so it survives `docker stop`, and is copied out before teardown.
+
+## D-019 (2026-11-11): Waiver matching and the unwaivable list
+A waiver matches on `rule` plus `match: {path, member, detail}`. Every field it sets must equal the finding's evidence exactly, and it must set at least one. `expires` is inclusive (UTC). These are usage errors (exit 2), not warnings:
+- two waivers matching one finding
+- identical waivers
+- a waiver for an unwaivable rule
+
+`Waivable` is an allowlist:
+- PH-*
+- CRYPTO-*
+- MODEL-PARSE-FAILED
+- MODEL-UNSCANNED-FORMAT
+- MODEL-ONNX-EXTERNAL-DATA-MISSING
+- MODEL-NUMPY-OBJECT-ARRAY
+
+Every other rule, unknown ones included, is unwaivable.
+
+## D-020 (2026-11-11): Scope semantics
+Every identifier on an attempt must be in scope: the name, the SNI and the HTTP Host. A literal IP must be loopback or inside a declared CIDR. A synthetic 198.18.0.0/15 address is judged by its DNS name. A DNS query is judged by its name, except that a public resolver IP makes it out of scope. Names are compared case-insensitively, ignoring a trailing dot. Non-canonical CIDRs are masked, not rejected.
+
+## D-021 (2026-11-11): Egress findings and finding IDs
+Each out-of-scope entry in the attempt set becomes one EGRESS-ATTEMPT finding (high; SC-7, AC-4). In-scope attempts are listed but aren't findings. Findings sort by module (EG, PH, CR, MD, AG, then OT for unknown rules) and then by a total field order. IDs are numbered per module, e.g. `EG-0001`.
+
+## D-022 (2026-11-11): Which findings AGR-3 checks
+- **Unwaivable check:** covers every finding except AGENT-INV01-* (which gates only AGR-4) and EGRESS-ATTEMPT (which gates AGR-2). This resolves the conflict between AGR_SPEC §1 and §4.
+- **High/critical check:** covers phone-home, crypto, models and unknown-rule findings.
+- **Counts:** the out-of-scope count is the larger of the out-of-scope attempt entries and the EGRESS-ATTEMPT findings. The INV-01 count is the larger of the agents module's count and the number of AGENT-INV01-* findings. Both fail closed.
+
+## D-023 (2026-11-11): Run metadata lives only in summary.json
+The run ID, run date and start/finish times are written only to summary.json, never to evidence.json. `evidence.Load` rejects a schema mismatch and an AGR level that differs between the two files. The run-level struct is `evidence.Bundle`, because `Evidence` is already the per-finding raw evidence.
+
+## D-024 (2026-11-11): Bundle format
+- **`MANIFEST.sha256`:** one `<hex>  <path>` line per file, sorted bytewise, then `artifact sha256:<config digest>` (or `artifact none`). GNU `sha256sum -c` can check it.
+- **`MANIFEST.sig`:** three lines: a header, the signer's fingerprint, and the base64 Ed25519 signature over the exact manifest bytes.
+- **Key files:** a header line plus the base64 seed or public key. The private key is 0600, and keygen never overwrites an existing file.
+- **Fingerprint:** `ed25519:` plus the first 16 hex digits of SHA-256(pub).
+- **Bundle tar:** deterministic: regular files only, sorted, 0644, owner 0:0, epoch mtime.
+
+## D-025 (2026-11-11): sign and verify behaviour
+- **sign:** writes the manifest only if it's absent. A stale manifest is refused unless `--rehash` is passed, so evidence edited after a scan is never signed silently.
+- **verify:** never extracts the bundle to disk. It enforces entry, file-size and total-size limits, and accepts only clean, regular, listed, unique files.
+- **Exit codes:** 0 when verified; 1 for a failed check or an artifact mismatch (the verdict line is still printed); 2 for a bad key or file.
+- **Signer shown:** always the `--pub` key, never the bundle's own claim.
+
+## D-026 (2026-11-11): Deterministic IDs use SHA-256
+The AI-BOM serial number and the OSCAL UUIDs use the version-5 UUID layout, but are built from truncated SHA-256 instead of SHA-1. Gapproof's own crypto therefore stays SHA-256 plus Ed25519. The AI-BOM carries no timestamps. OSCAL's required times come only from the run start and end.
+
+## D-027 (2026-11-11): AI-BOM shape
+- **Subject:** the image is `metadata.component`, type `container`, hashed by its config digest. For `--rootfs` it is type `file` with no hash.
+- **Component types:**
+  - weights: `machine-learning-model`
+  - npy, npz and ONNX external data: `data`
+  - HF configs and tokenizers: `file`
+- **Licences:** an SPDX id only when it comes from a small known map; otherwise the name as free text, never guessed.
+
+## D-028 (2026-11-11): OSCAL assessment-results shape
+- **Structure:** one observation per finding, and one OSCAL finding per (finding, control) pair, with target type `objective-id` (e.g. `sc-7`).
+- **State:** `not-satisfied`, with reason `fail` when the finding is open and `other` when it is waived (an accepted risk is recorded, not resolved).
+- **Controls:** `reviewed-controls` lists the whole spec §3.6 table. `import-ap` points to a back-matter resource. Every document states that the mappings are informative.
+
+## D-029 (2026-11-11): Schema validation is test-only, in a container
+CycloneDX 1.6 and OSCAL 1.1.2 output is validated against the official schemas, vendored in `testdata/schemas` with their source URLs and SHA-256. The validator runs in a pinned `python:3.12-slim` container with `jsonschema==4.23.0` and `regex==2024.11.6`, because `re` can't handle the OSCAL `\p{L}` patterns. This replaces the proposed Go jsonschema dependency, so nothing new is linked.
+
+## D-030 (2026-11-11): Agent containment (INV-01) working form
+INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in the workspace, so this must be restated against it before v0.2.
+
+**Graph semantics:**
+- A node is one tool in one agent.
+- A gate applies to that tool in every agent.
+- A gated node blocks paths through it and into it, but not paths that start at it.
+- A handoff A→B relays to C only through an ungated tool of B.
+- A tool that both reads sensitive data and sinks it is a one-node violation.
+
+**Labels:** `reads: public` and `sinks: internal` are valid and harmless. The only gate kind is `human_approval`.
+
+**Severity:** high, not critical, because these are declared capability paths, not observed ones. They are unwaivable either way.
+
+**Smallest fix (cut set):**
+- Greedy search first, then an exact search over smaller action sets. The exact search is capped at 40 candidates and a work budget; past the cap, the result is flagged "not proven minimal".
+- Ties are broken in this order: gate a boundary sink, remove an exec sink, gate an exec sink, gate another tool, remove another tool.
+
+**MCP import:** `gapproof agents import-mcp` puts every tool in a single agent, with every label commented "low confidence" for a human to review.
+
+## D-031 (2026-11-12): How scan binds and records what it observed
+- **Same image, statically and live.** The egress harness runs exactly the image that was scanned statically. The tar is `load`ed, and the engine's image ID must equal the extracted config digest (or the OCI image ID). A local ref is `save`d first, never pulled.
+- **Synthetic addresses.** A synthetic DNS answer address depends on query order, so it is dropped from an attempt that has a name. It stays in `egress.log.jsonl`. Two live scans of the probe image produced a byte-identical evidence.json.
+- **Fresh `--out`.** `--out` must be new or empty, so `MANIFEST.sha256` never covers a stale file from an earlier run.
+- **Fixed hostname.** The shared netns has the fixed hostname `gapproof-target`, which is always in scope.
+- **Rule-pack version.** `rule_pack_version` is a content hash of the embedded rules plus the CMVP snapshot.
+- **TTY output.** The terminal summary is rendered only from the evidence, so `scan --replay` reprints it exactly.
+- **Lint target.** staticcheck analyses the Linux build, which is the one that ships.

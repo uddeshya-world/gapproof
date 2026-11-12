@@ -42,6 +42,8 @@ func newRootCmd(stdout, stderr io.Writer) *cobra.Command {
 		newDiffCmd(),
 		newKeygenCmd(),
 		newRulesCmd(),
+		newAgentsCmd(),
+		newLicenceCmd(),
 		newHarnessCmd(),
 		newSinkholeCmd(),
 		newVersionCmd(),
@@ -50,7 +52,7 @@ func newRootCmd(stdout, stderr io.Writer) *cobra.Command {
 }
 
 // runE wraps a command body so that untyped errors become internal errors
-// (exit 3). Usage, not-implemented and below-threshold errors pass through.
+// (exit 3). Usage, check-failed, below-threshold and internal errors pass through.
 func runE(fn func(cmd *cobra.Command, args []string) error) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := fn(cmd, args)
@@ -61,7 +63,7 @@ func runE(fn func(cmd *cobra.Command, args []string) error) func(*cobra.Command,
 		var bt *belowThresholdError
 		var cf *checkFailedError
 		var ie *internalError
-		if errors.As(err, &ue) || errors.As(err, &bt) || errors.As(err, &cf) || errors.As(err, &ie) || errors.Is(err, errNotImplemented) {
+		if errors.As(err, &ue) || errors.As(err, &bt) || errors.As(err, &cf) || errors.As(err, &ie) {
 			return err
 		}
 		return &internalError{err}

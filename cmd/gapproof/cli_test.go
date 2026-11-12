@@ -35,14 +35,13 @@ func TestExitCodes(t *testing.T) {
 		{"scan positional arg", []string{"scan", "extra"}, exitUsage, "accepts 0 arg"},
 
 		// valid invocations of stubs (exit 3 until their milestone)
-		{"scan image stub", []string{"scan", "--image", "a.tar", "--out", "o"}, exitInternal, "not implemented yet (arrives in M1–M4"},
-		{"scan rootfs stub", []string{"scan", "--rootfs", "r", "--skip", "egress", "--out", "o"}, exitInternal, "not implemented yet"},
-		{"replay stub", []string{"scan", "--replay", "e", "--only", "egress"}, exitInternal, "arrives in M4"},
-		{"report stub", []string{"report", "--in", "e"}, exitInternal, "arrives in M4"},
-		{"sign stub", []string{"sign", "--in", "e", "--key", "k"}, exitInternal, "arrives in M6"},
-		{"verify stub", []string{"verify", "b.tar", "--pub", "p"}, exitInternal, "arrives in M6"},
-		{"diff stub", []string{"diff", "a", "b"}, exitInternal, "arrives in M7"},
-		{"keygen stub", []string{"keygen", "--out", "k"}, exitInternal, "arrives in M6"},
+		{"scan missing image tar", []string{"scan", "--image", "/nonexistent/a.tar", "--skip", "egress", "--out", "o"}, exitUsage, "no such file"},
+		{"scan missing rootfs", []string{"scan", "--rootfs", "/nonexistent", "--skip", "egress", "--out", "/nonexistent/o"}, exitUsage, "--rootfs"},
+		{"replay missing dir", []string{"scan", "--replay", "/nonexistent", "--only", "egress"}, exitUsage, "--replay"},
+		{"report missing dir", []string{"report", "--in", "/nonexistent"}, exitUsage, "--in"},
+		{"diff missing dirs", []string{"diff", "/nonexistent/a", "/nonexistent/b"}, exitUsage, "evidence.json"},
+		{"licence free", []string{"licence"}, exitOK, "free features only"},
+		{"licence issue needs key", []string{"licence", "issue", "--org", "x", "--expires", "2030-01-01"}, exitUsage, "--key is required"},
 		{"rules list", []string{"rules", "list"}, exitOK, "PH-CHROMA-TELEMETRY"},
 		{"rules list snapshot date", []string{"rules", "list"}, exitOK, "CMVP snapshot dated 20"},
 		{"rules list json", []string{"rules", "list", "--json"}, exitOK, `"cmvp_snapshot_date"`},
@@ -52,8 +51,7 @@ func TestExitCodes(t *testing.T) {
 		{"rules test unknown rule", []string{"rules", "test", "PH-NOPE", "dir"}, exitUsage, "unknown rule"},
 		{"rules test bad fixture", []string{"rules", "test", "PH-CHROMA-TELEMETRY", "/nonexistent"}, exitUsage, "rootfs/"},
 		{"rules test bad expect", []string{"rules", "test", "PH-CHROMA-TELEMETRY", "x", "--expect", "maybe"}, exitUsage, "--expect"},
-		{"harness load stub", []string{"harness", "load", "h.tar"}, exitInternal, "arrives in M3"},
-		{"sinkhole stub", []string{"sinkhole"}, exitInternal, "arrives in M3"},
+		{"harness load missing tar", []string{"harness", "load", "/nonexistent.tar"}, exitUsage, "harness image tarball"},
 
 		// other commands' usage errors
 		{"report needs in", []string{"report"}, exitUsage, "--in is required"},
@@ -63,6 +61,9 @@ func TestExitCodes(t *testing.T) {
 		{"verify needs pub", []string{"verify", "b.tar"}, exitUsage, "--pub is required"},
 		{"diff needs two", []string{"diff", "a"}, exitUsage, "accepts 2 arg"},
 		{"keygen needs out", []string{"keygen"}, exitUsage, "--out is required"},
+		{"sign missing dir", []string{"sign", "--in", "/nonexistent", "--key", "k"}, exitUsage, "not an evidence directory"},
+		{"sign missing key", []string{"sign", "--in", ".", "--key", "/nonexistent.key"}, exitUsage, "--key:"},
+		{"verify missing pub", []string{"verify", "b.tar", "--pub", "/nonexistent.pub"}, exitUsage, "--pub:"},
 		{"rules test args", []string{"rules", "test", "PH-X"}, exitUsage, "accepts 2 arg"},
 	}
 	for _, tc := range tests {

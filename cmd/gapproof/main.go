@@ -51,18 +51,11 @@ func exitCode(err error) int {
 		return exitOK
 	case errors.As(err, &bt), errors.As(err, &cf):
 		return exitBelowThreshold
-	case errors.Is(err, errNotImplemented), errors.As(err, &ie):
+	case errors.As(err, &ie):
 		return exitInternal
 	default:
 		return exitUsage
 	}
-}
-
-// errNotImplemented marks stub commands that land in a later milestone.
-var errNotImplemented = errors.New("not implemented yet")
-
-func notImplemented(milestone string) error {
-	return fmt.Errorf("%w (arrives in %s, see docs/03_BUILD_PLAN.md)", errNotImplemented, milestone)
 }
 
 type usageError struct{ msg string }

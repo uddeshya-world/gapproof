@@ -1,68 +1,66 @@
 # Security policy
 
-Gapproof parses hostile input by design: container image archives, model weights and rule packs that someone else built. We treat bugs in that handling as security bugs, and we want to hear about them.
-
-## Supported versions
-
-| Version | Supported |
-|---|---|
-| Latest minor release (0.x) | Yes: fixes ship in a patch release |
-| Older 0.x releases | No: upgrade to the latest release |
-| Unreleased `main` | Best effort |
-
-After v1.0, the latest minor release and the one before it get security fixes.
+Gapproof parses hostile input (container images, model files, agent manifests)
+and runs untrusted images inside its egress harness. Bugs in either are
+security bugs, and we want to hear about them.
 
 ## Reporting a vulnerability
 
-Report privately through GitHub Security Advisories:
-**https://github.com/uddeshya-world/gapproof/security/advisories/new**
+Report privately through GitHub's **private vulnerability reporting** (a
+GitHub Security Advisory): the repository's *Security* tab → *Report a
+vulnerability*, or directly at
+<https://github.com/uddeshya-world/gapproof/security/advisories/new>. Please
+don't open a public issue, PR or discussion for a suspected vulnerability.
 
-Don't open a public issue, pull request or discussion for a suspected vulnerability.
-
-A useful report includes:
-- the Gapproof version (`gapproof version`) and your OS/architecture;
-- the smallest input that reproduces it (an archive, model file or rule file), or a script that generates one;
-- what happened (crash, hang, a file written outside the extraction root, a finding that should have appeared and didn't) and what you expected.
-
-Please generate inputs as bytes. Don't send real malware, and don't send real model files or images that contain other people's data.
+Include the gapproof version (`gapproof version`), the engine and its version
+(Docker/Podman), and a minimal reproduction. For parser bugs, the smallest
+input file that triggers the bug is ideal. If you find a crash with the fuzzers
+(`go test -fuzz`), attach the corpus entry from `testdata/fuzz/`.
 
 ## What to expect
 
 | Step | Target |
 |---|---|
-| We acknowledge the report | 3 business days |
-| First assessment (accepted or not, severity) | 10 business days |
-| Fix released for critical/high issues | 30 days |
-| Fix released for medium/low issues | 90 days |
+| Acknowledgement | within 5 working days |
+| Initial assessment (valid / severity) | within 10 working days |
+| Fix released | within 90 days of the report, sooner for critical issues |
+| Public advisory | when the fix is released, crediting you unless you prefer otherwise |
 
-We keep you updated in the advisory thread. We coordinate the disclosure date with you, credit you in the advisory and the CHANGELOG unless you'd rather we didn't, and request a CVE where one applies. Gapproof is a small project with no bug bounty.
+If a fix needs longer than 90 days, we'll agree a date with you rather than go
+silent.
 
-## Scope
+## In scope
 
-In scope:
-- **Parsers:** pickle opcode walking, safetensors, GGUF, ONNX, NumPy, Keras, Hugging Face configs, PyTorch and other zip containers, ELF/Go buildinfo inspection, and the YAML rule loader. This covers crashes, hangs, unbounded memory or CPU use, and parser differentials where Gapproof reports a file as clean but the real loader would run code from it.
-- **Fail-open behaviour:** any input that makes Gapproof skip a file silently when it should report it (for example, `MODEL-PARSE-FAILED` is missing for a file it couldn't verify).
-- **Image extraction:** path traversal, symlink or hardlink escape from the extraction root, device-file creation, decompression bombs, and temp directories left behind.
-- **Egress harness escape:** the scanned container reaching a real network, or acting on the host, through the harness or sinkhole.
+- **Parser and extraction escapes:** anything that makes gapproof execute, import or unpickle scanned content, follow a symlink or path out of the extraction root, write outside its temp directory, or ignore a size, entry or ratio limit (zip/tar bombs).
+- **Parser robustness and fail-open:** a crash, hang or unbounded memory/CPU use on any input; any input that makes gapproof skip a model file silently instead of reporting `MODEL-PARSE-FAILED`; or a parser differential where gapproof reports a file clean but the real loader (pickle, torch, numpy, transformers, onnxruntime) would run code from it.
 - **Sinkhole:** connections or DNS lookups that go unlogged, crashes caused by traffic from the target, or the sinkhole forwarding traffic anywhere.
-- **Evidence integrity:** signature or verification bypasses, and non-deterministic output that lets one scan be passed off as another.
-- **Any network call made by Gapproof itself.**
+- **Harness containment:** any way for a scanned image to send a packet off-host, see the host network, avoid being logged by the sinkhole, keep running after the scan, or gain capabilities it wasn't given.
+- **Network calls by gapproof itself:** gapproof must never make one (no telemetry, update checks or licence pings). Any code path that does is a vulnerability.
+- **Evidence integrity:** making `verify` accept a bundle whose files, signature or artifact digest don't match; making a waiver hide a finding it doesn't match; making two runs on the same input produce a different level.
+- **Licence check bypass:** please report this privately too, even though it isn't a safety issue.
 
-Out of scope:
-- Findings in the images or models you scan. Report those to their maintainers.
-- The deliberately vulnerable demo apps under `demo/`.
-- Issues that need an attacker who can already change the Gapproof binary, its embedded rule pack or the pinned harness image on the scanning host.
-- Disagreements over a rule's severity or control mapping. Open a normal issue for those.
+## Out of scope
+
+- Findings *about* an image you scanned. Those are gapproof working as intended; report them to that image's vendor.
+- The levels and control mappings being informative rather than certifications. That is by design, and every report says so.
+- Denial of service through inputs larger than the documented limits, when the limit is enforced and reported.
+- Vulnerabilities in Docker or Podman themselves. Report those upstream (we'll still want to know if gapproof makes them reachable).
 
 ## Gapproof never makes network calls
 
-Gapproof has no telemetry, no update checks and no licence checks, and it never downloads rule packs. A CI test (`TestNoEgress`) runs the binary under deny-all egress on every commit, and an import-policy test rejects network client code outside the sinkhole. The only network activity anywhere in Gapproof is the egress harness: inside an isolated network namespace, it observes and logs the scanned container's traffic, and it never forwards that traffic. A network call made by Gapproof itself is a security bug in scope here.
+Gapproof has no telemetry, update checks or licence pings, and it never fetches
+rule packs. CI runs the binary under deny-all egress (`TestNoEgress`) on every
+commit, and an import-policy test rejects network client code outside the
+sinkhole. The only network activity is the egress harness observing, inside an
+isolated network namespace, what the scanned container tries to do; that
+traffic is logged and never forwarded.
 
 ## Safe harbour
 
-We won't pursue or support legal action against good-faith research that:
-- tests Gapproof itself, on systems and data you own or are allowed to use;
-- avoids privacy violations, data destruction and service disruption;
-- gives us reasonable time to fix the issue before you disclose it publicly.
+Good-faith research on your own machines, against your own images or the demo
+apps in this repo, is welcome. We won't pursue legal action over it. Don't
+test against systems or images you don't own or have permission to test.
 
-If you're unsure whether something is covered, ask in a private advisory before you go ahead.
+## Supported versions
+
+Until v1.0, only the latest release gets fixes.

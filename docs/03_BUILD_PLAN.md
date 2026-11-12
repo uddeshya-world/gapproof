@@ -6,12 +6,12 @@
 | M0 Skeleton + no-egress self-test | ✅ 2026-11-08 (CI jobs verified locally in Linux containers; GitHub Actions runs on first push) | 1 |
 | M1 Safe filesystem + model scanner | ✅ 2026-11-08 (models coverage 91%, real `docker save` verified) | 1–2 |
 | M2 Phone-home rules + crypto inventory | ✅ 2026-11-09 (16 rules, real cryptography-wheel image verified) | 2 |
-| M3 Egress harness + sinkhole | ⬜ | 2–3 |
-| M4 Evidence, AGR, report, demo apps → **v0.1 (quiet release to design partners)** | ⬜ | 3 |
-| M5 Agent containment (MESA port) | ⬜ | 4–5 |
-| M6 Sign / verify, AI-BOM, OSCAL → **v0.2 public launch** | ⬜ | 5–6 |
-| M7 Diff + CI gate (GitHub Action) → Pro beta | ⬜ | 7–8 |
-| M8 Hardening: fuzzing, limits, self-scan | ⬜ | 9 |
+| M3 Egress harness + sinkhole | ✅ 2026-11-11 (9-attempt probe + host capture clean; Podman untested, D-017) | 2–3 |
+| M4 Evidence, AGR, report, demo apps → **v0.1 (quiet release to design partners)** | 🟡 pipeline, evidence, AGR, reports, replay done; demo apps + `make demo` + headless-Chromium check pending | 3 |
+| M5 Agent containment (MESA port) | 🟡 2026-11-11 built (98.7% cov); INV-01 must be restated against MESA's definition (D-030) | 4–5 |
+| M6 Sign / verify, AI-BOM, OSCAL → **v0.2 public launch** | ✅ 2026-11-11 (schemas validate) | 5–6 |
+| M7 Diff + CI gate (GitHub Action) → Pro beta | 🟡 2026-11-12 built; the action runs only after the first push | 7–8 |
+| M8 Hardening: fuzzing, limits, self-scan | 🟡 SECURITY.md done; models fuzzing in progress; self-scan blocked on one-shot image semantics | 9 |
 | M9 Design-partner fixes, docs site, v1.0 | ⬜ | 10–12 |
 
 **Release policy:** v0.1 (M4) is tagged and the repo can be public, but there's **no announcement**: it goes to design partners only. The public launch (video, article, X thread) happens at **v0.2 (M6)**, because the launch content shows agent paths, AGR-4 and signed, offline-verifiable evidence, which only exist after M5 and M6. Never show a feature or number in launch content that the tagged release can't produce.

@@ -1,0 +1,27 @@
+# agents.yaml SUGGESTED by gapproof from 2 MCP tools/list dump(s), 7 tool(s).
+# Every label below is a LOW-CONFIDENCE keyword heuristic. A human must confirm
+# or correct each one, split the tools into the real agents, declare handoffs
+# and gates, and resolve every TODO before this manifest is used as evidence.
+# Gapproof reports results as based on a vendor-declared manifest.
+# NOTE: dump 1: tool with invalid name "bad name\nwith newline" skipped
+# NOTE: dump 2: duplicate tool read_file skipped (first definition kept)
+agents:
+  - name: agent # TODO: one entry per real agent; tools/list has no agent structure
+    tools:
+      - "fetch"
+      - "get_time"
+      - "list_directory"
+      - "read_file"
+      - "run_python"
+      - "searchFiles"
+      - "slack_post_message"
+    handoffs: [] # TODO: agents this one hands off to
+tools:
+  "fetch": { sinks: [boundary_crossing] } # low confidence: sinks boundary_crossing (fetch, url)
+  "get_time": {} # low confidence: no keyword matched; confirm it reads nothing sensitive and sinks nothing
+  "list_directory": {} # low confidence: no keyword matched; confirm it reads nothing sensitive and sinks nothing
+  "read_file": { reads: [sensitive] } # low confidence: reads sensitive (file, read)
+  "run_python": { sinks: [exec] } # low confidence: sinks exec (code, execute, python, run)
+  "searchFiles": { reads: [sensitive] } # low confidence: reads sensitive (files, search)
+  "slack_post_message": { sinks: [boundary_crossing] } # low confidence: sinks boundary_crossing (post, slack)
+gates: {} # TODO: e.g. http_post: human_approval

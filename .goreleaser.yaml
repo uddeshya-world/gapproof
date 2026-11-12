@@ -4,8 +4,13 @@ version: 2
 
 project_name: gapproof
 
+env:
+  - LICENCE_PUB={{ if index .Env "LICENCE_PUB" }}{{ .Env.LICENCE_PUB }}{{ end }}
+
 before:
   hooks:
+    # Refuse to release unpinned binaries (CLAUDE.md rule 2).
+    - sh -c 'test -n "{{ index .Env "HARNESS_CFG_amd64" }}" && test -n "{{ index .Env "HARNESS_CFG_arm64" }}" || { echo "run make release-harness and export release-assets/harness.env first"; exit 1; }'
     - go mod tidy
     - go test -count=1 ./...
 
@@ -20,6 +25,11 @@ builds:
       - -trimpath
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.CommitDate}}
+      # Harness pin per arch (make release-harness → release-assets/harness.env, exported by the workflow).
+      # darwin builds pin the Linux harness of the same arch (it runs in the engine's Linux VM).
+      - -X github.com/uddeshya-world/gapproof/internal/harness.PinnedConfigDigest={{ index .Env (print "HARNESS_CFG_" .Arch) }}
+      - -X github.com/uddeshya-world/gapproof/internal/harness.PinnedLayers={{ index .Env (print "HARNESS_LAYERS_" .Arch) }}
+      - -X github.com/uddeshya-world/gapproof/internal/licence.PublicKey={{ .Env.LICENCE_PUB }}
     mod_timestamp: "{{ .CommitTimestamp }}" # reproducible builds
     goos: [linux, darwin]
     goarch: [amd64, arm64]
@@ -49,4 +59,7 @@ release:
   github:
     owner: uddeshya-world
     name: gapproof
+  extra_files:
+    - glob: ./release-assets/gapproof-harness-*.oci.tar
+    - glob: ./release-assets/harness-checksums.sha256
   draft: true # a human publishes; v0.1 is a quiet release (docs/DECISIONS.md D-001)

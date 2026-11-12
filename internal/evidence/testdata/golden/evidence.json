@@ -1,0 +1,366 @@
+{
+  "schema_version": "gapproof.evidence/0.1",
+  "tool_version": "0.1.0-test",
+  "rule_pack_version": "2026.11.09",
+  "cmvp_snapshot_date": "2026-11-01",
+  "target": {
+    "image": "leaky-rag.tar",
+    "config_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "artifact_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "hostname": "rag-app"
+  },
+  "agr": {
+    "level": "AGR-1",
+    "spec_version": "0.2-draft",
+    "observed_window_s": 180,
+    "blocking": [
+      {
+        "next_level": "AGR-2",
+        "reason": "3 out-of-scope egress attempts",
+        "finding_ids": [
+          "EG-0001",
+          "EG-0002",
+          "EG-0003"
+        ]
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "egress",
+      "status": "ran"
+    },
+    {
+      "name": "phonehome",
+      "status": "ran"
+    },
+    {
+      "name": "crypto",
+      "status": "ran"
+    },
+    {
+      "name": "models",
+      "status": "ran"
+    },
+    {
+      "name": "agents",
+      "status": "ran"
+    }
+  ],
+  "scope": {
+    "sha256": "1657def949dc7236b125dbbd1deaf28ab090a7dd717742676079b0980678f91c",
+    "internal_names": [
+      "*.corp.internal",
+      "vectordb"
+    ],
+    "internal_cidrs": [
+      "10.20.0.0/16"
+    ]
+  },
+  "waivers": {
+    "sha256": "1948b9824db07c2a7c4c0e297c5f412cf9d7deb9e778e70996e214a5f3fa7b4e",
+    "applied": [
+      {
+        "finding_id": "CR-0002",
+        "index": 1,
+        "rule": "CRYPTO-UNVALIDATED-MODULE",
+        "match": {
+          "path": "usr/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so"
+        },
+        "justification": "Used only for TLS to the in-cluster vector DB; customer terminates TLS at their FIPS proxy.",
+        "owner": "security@vendor.example",
+        "expires": "2027-03-31"
+      }
+    ],
+    "stale": [
+      {
+        "index": 3,
+        "rule": "PH-GRADIO-ANALYTICS",
+        "match": {
+          "path": "app/ui.py"
+        },
+        "justification": "UI removed in this release.",
+        "owner": "security@vendor.example",
+        "expires": "2027-03-31"
+      }
+    ],
+    "expired": [
+      {
+        "index": 2,
+        "rule": "CRYPTO-UNKNOWN-MODULE",
+        "match": {
+          "path": "usr/lib/x86_64-linux-gnu/libnettle.so.8"
+        },
+        "justification": "Base image library, not used by the app.",
+        "owner": "security@vendor.example",
+        "expires": "2026-10-01"
+      }
+    ]
+  },
+  "egress": {
+    "harness_failed": false,
+    "target_started": true,
+    "workload_passed": true,
+    "observed_window_s": 180,
+    "attempts": [
+      {
+        "kind": "dns",
+        "name": "us.i.posthog.com",
+        "orig_dst_ip": "127.0.0.11",
+        "port": 53,
+        "proto_hint": "dns",
+        "in_scope": false
+      },
+      {
+        "kind": "dns",
+        "name": "vectordb",
+        "orig_dst_ip": "127.0.0.11",
+        "port": 53,
+        "proto_hint": "dns",
+        "in_scope": true
+      },
+      {
+        "kind": "tcp",
+        "name": "us.i.posthog.com",
+        "orig_dst_ip": "198.18.0.2",
+        "port": 443,
+        "proto_hint": "tls",
+        "sni": "us.i.posthog.com",
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "in_scope": false
+      },
+      {
+        "kind": "tcp",
+        "name": "vectordb",
+        "orig_dst_ip": "198.18.0.1",
+        "port": 8000,
+        "proto_hint": "http",
+        "http_host": "vectordb:8000",
+        "in_scope": true
+      },
+      {
+        "kind": "udp",
+        "name": "huggingface.co",
+        "orig_dst_ip": "8.8.8.8",
+        "port": 53,
+        "proto_hint": "dns",
+        "in_scope": false
+      }
+    ]
+  },
+  "crypto": {
+    "cmvp_snapshot_date": "2026-11-01",
+    "modules": [
+      {
+        "path": "usr/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "library": "openssl",
+        "version": "3.4.1",
+        "origin": "python-wheel",
+        "package": "cryptography",
+        "status": "unvalidated"
+      },
+      {
+        "path": "usr/lib/x86_64-linux-gnu/libnettle.so.8",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "library": "nettle",
+        "version": "3.9",
+        "origin": "system",
+        "status": "unknown"
+      }
+    ],
+    "fips_providers": [],
+    "fips_configs": []
+  },
+  "models": {
+    "artifacts": [
+      {
+        "path": "models/embed.safetensors",
+        "format": "safetensors",
+        "size": 2048,
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "tensors": 3,
+        "dtypes": [
+          "F32"
+        ],
+        "metadata": {
+          "a": "2",
+          "z": "1"
+        }
+      },
+      {
+        "path": "models/reranker.pt",
+        "format": "pytorch-zip",
+        "size": 1024,
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "imports": [
+          "builtins.print"
+        ]
+      }
+    ]
+  },
+  "agents": {
+    "manifest": "agents.yaml",
+    "manifest_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+    "declared_no_agents": true,
+    "agents": [],
+    "inv01_violations": 0
+  },
+  "findings": [
+    {
+      "id": "EG-0001",
+      "rule": "EGRESS-ATTEMPT",
+      "severity": "high",
+      "title": "Out-of-scope egress attempt: dns us.i.posthog.com",
+      "explanation": "With all egress blocked, the target tried to reach a destination that is not declared in the scope file. In an air-gapped network this request fails or leaks. An observed attempt can't be waived (AGR_SPEC §4).",
+      "evidence": {
+        "detail": "kind=dns name=us.i.posthog.com ip=127.0.0.11 port=53 proto=dns"
+      },
+      "fix": "Disable or remove the code path that contacts dns us.i.posthog.com, or declare the destination in gapproof.scope.yaml if it is truly internal.",
+      "controls": [
+        "SC-7",
+        "AC-4"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "EG-0002",
+      "rule": "EGRESS-ATTEMPT",
+      "severity": "high",
+      "title": "Out-of-scope egress attempt: tcp us.i.posthog.com (198.18.0.2):443",
+      "explanation": "With all egress blocked, the target tried to reach a destination that is not declared in the scope file. In an air-gapped network this request fails or leaks. An observed attempt can't be waived (AGR_SPEC §4).",
+      "evidence": {
+        "detail": "kind=tcp name=us.i.posthog.com ip=198.18.0.2 port=443 proto=tls sni=us.i.posthog.com alpn=h2,http/1.1"
+      },
+      "fix": "Disable or remove the code path that contacts tcp us.i.posthog.com (198.18.0.2):443, or declare the destination in gapproof.scope.yaml if it is truly internal.",
+      "controls": [
+        "SC-7",
+        "AC-4"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "EG-0003",
+      "rule": "EGRESS-ATTEMPT",
+      "severity": "high",
+      "title": "Out-of-scope egress attempt: udp huggingface.co (8.8.8.8):53",
+      "explanation": "With all egress blocked, the target tried to reach a destination that is not declared in the scope file. In an air-gapped network this request fails or leaks. An observed attempt can't be waived (AGR_SPEC §4).",
+      "evidence": {
+        "detail": "kind=udp name=huggingface.co ip=8.8.8.8 port=53 proto=dns"
+      },
+      "fix": "Disable or remove the code path that contacts udp huggingface.co (8.8.8.8):53, or declare the destination in gapproof.scope.yaml if it is truly internal.",
+      "controls": [
+        "SC-7",
+        "AC-4"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "PH-0001",
+      "rule": "PH-CHROMA-TELEMETRY",
+      "severity": "high",
+      "title": "ChromaDB anonymized telemetry is on",
+      "explanation": "chromadb sends anonymized telemetry by default.",
+      "evidence": {
+        "path": "usr/lib/python3.12/site-packages/chromadb-0.5.0.dist-info/METADATA",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "fix": "Set ANONYMIZED_TELEMETRY=False in the image environment.",
+      "controls": [
+        "CM-7",
+        "SC-7"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "CR-0001",
+      "rule": "CRYPTO-WEAK-HASH",
+      "severity": "medium",
+      "title": "hashlib.md5 without usedforsecurity=False",
+      "explanation": "MD5 is not an approved hash.",
+      "evidence": {
+        "path": "app/cache.py",
+        "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "offset": 120,
+        "detail": "hashlib.md5("
+      },
+      "fix": "Use hashlib.sha256 or pass usedforsecurity=False.",
+      "controls": [
+        "SC-13"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "CR-0002",
+      "rule": "CRYPTO-UNVALIDATED-MODULE",
+      "severity": "high",
+      "title": "Bundled OpenSSL 3.4.1 (cryptography wheel)",
+      "explanation": "Copies bundled in wheels are always unvalidated.",
+      "evidence": {
+        "path": "usr/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "detail": "OpenSSL 3.4.1 11 Feb 2025"
+      },
+      "fix": "Build cryptography against a FIPS-enabled system OpenSSL.",
+      "controls": [
+        "SC-12",
+        "SC-13"
+      ],
+      "status": "waived",
+      "waiver": {
+        "index": 1,
+        "match": {
+          "path": "usr/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so"
+        },
+        "justification": "Used only for TLS to the in-cluster vector DB; customer terminates TLS at their FIPS proxy.",
+        "owner": "security@vendor.example",
+        "expires": "2027-03-31"
+      }
+    },
+    {
+      "id": "CR-0003",
+      "rule": "CRYPTO-UNKNOWN-MODULE",
+      "severity": "high",
+      "title": "nettle 3.9 \u003cscript\u003ealert(1)\u003c/script\u003e",
+      "explanation": "Vendor builds may be validated.",
+      "evidence": {
+        "path": "usr/lib/x86_64-linux-gnu/libnettle.so.8",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "fix": "Remove nettle or document its status.",
+      "controls": [
+        "SC-13"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "MD-0001",
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Pickle imports builtins.print",
+      "explanation": "Loading this file runs code.",
+      "evidence": {
+        "path": "models/reranker.pt",
+        "member": "reranker/data.pkl",
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "offset": 42,
+        "detail": "STACK_GLOBAL builtins.print"
+      },
+      "fix": "Convert the model to safetensors.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ],
+      "status": "open"
+    }
+  ],
+  "warnings": [
+    "a warning",
+    "waiver #2 (CRYPTO-UNKNOWN-MODULE path=usr/lib/x86_64-linux-gnu/libnettle.so.8) expired on 2026-10-01 and was ignored; the finding is open",
+    "waiver #3 (PH-GRADIO-ANALYTICS path=app/ui.py) is stale: it matches no finding",
+    "z warning"
+  ]
+}
