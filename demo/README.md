@@ -80,6 +80,14 @@ Waiver paths contain the target triple, so there's one file per arch and
 both arches would work too, but the other arch's entries would show as stale
 waiver warnings in every report.
 
+The arm64 file is the one you edit, and it was checked against a real arm64
+scan. The amd64 file is generated from it (`go test ./cmd/gapproof -run
+TestDemoWaiversAmd64 -update-demo-waivers`), and the test fails if the two drift
+apart. `demo/tools/verify_amd64_waivers.sh <empty dir>` checks the amd64 file
+without an amd64 host or Docker. It assembles the amd64 rootfs from the pinned
+base layers and x86_64 wheels, scans it with `--rootfs`, and requires every
+crypto finding waived and no stale waiver (D-038).
+
 `gapproof.scope.yaml` declares no internal names: fixed-rag needs nothing
 outside its own container.
 

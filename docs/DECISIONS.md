@@ -315,3 +315,30 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - The DNS entries still show `127.0.0.11`.
 - The sinkhole runs inside the harness image, so the fix only takes effect after `make harness` and `harness load`, which re-pins the image.
 - Not re-verified in a container here, because a full verification was running on the main checkout. The next `make demo` should show the entry gone (the demo e2e only checks rules and levels).
+
+## D-038 (2026-11-12): amd64 demo waivers are generated from arm64 and checked statically
+**Context.** Waivers match exact paths (D-019), and no glob is supported. Three of fixed-rag's four crypto paths contain the target triple. `gapproof.waivers.amd64.yaml` was hand-derived from the arm64 scan and had never been checked, and there's no amd64 host.
+
+**Decision.**
+- **Generate, don't hand-edit.** `gapproof.waivers.arm64.yaml` stays the source, since it was verified by a real arm64 scan. The amd64 file is generated from it: a "GENERATED" header, then `aarch64-linux-gnu`→`x86_64-linux-gnu` (the Debian multiarch dir and CPython's `EXT_SUFFIX`) and `linux/arm64`→`linux/amd64`. `TestDemoWaiversAmd64` (in `cmd/gapproof`, runs in `go test ./...`) checks four things:
+  - the amd64 file is byte-identical to the generated form (`-update-demo-waivers` regenerates it);
+  - nothing arm-specific survives the substitution;
+  - both files parse, with equal waivers apart from the triple;
+  - the amd64 paths equal a list that was verified by hand. A change to that list fails the test until it's re-verified.
+- **Verify statically, once per change.** `demo/tools/verify_amd64_waivers.sh <dir>` builds an approximate linux/amd64 fixed-rag rootfs from data only:
+  - the pinned `python:3.12-slim` index → amd64 manifest → layers, each checked against its digest;
+  - the x86_64 wheels for `requirements.txt` (`pip download --only-binary`, nothing built or run);
+  - the app files, with numpy's tests removed as the Dockerfile does.
+
+  It then runs `gapproof scan --rootfs --skip egress,agents` with the amd64 waivers, and requires every `CRYPTO-*` finding to be waived with no stale waiver.
+- **Glob waivers: no.** An arch-agnostic file would need glob matching in waivers, which would widen what one accepted risk can cover. That's against D-019's "exact match" for the sake of a demo convenience.
+
+**Verification (2026-11-12).** The script found exactly four crypto findings, all waived, with 0 stale waivers. The models module was clean.
+- The base layer (`sha256:37fb86c2…`) contains `usr/lib/x86_64-linux-gnu/libcrypto.so.3` and `libnettle.so.8.10`.
+- grpcio 1.85.1's cp312 x86_64 wheel ships `grpc/_cython/cygrpc.cpython-312-x86_64-linux-gnu.so`.
+- cryptography 50.0.2's abi3 wheel ships `_rust.abi3.so`.
+
+**Limits.**
+- This isn't a real amd64 image build. Docker's layer application, pip's install-time steps (entry points, `.pyc`, `RECORD`) and the image env aren't reproduced, so the phone-home results differ and aren't checked.
+- Wheel selection follows pip's tag order for `python3.12`/glibc 2.39, so pip may pick a different manylinux variant than the image's pip would. The crypto paths are the same in every variant.
+- A real `make demo` on amd64 is still the final check.

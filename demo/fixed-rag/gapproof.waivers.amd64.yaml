@@ -1,4 +1,6 @@
-# fixed-rag accepted risks, linux/amd64 build. Paths derived from the arm64 scan (target triple swapped); not yet verified on an amd64 host.
+# GENERATED from gapproof.waivers.arm64.yaml by TestDemoWaiversAmd64 (D-038); do not edit.
+# Regenerate: go test ./cmd/gapproof -run TestDemoWaiversAmd64 -update-demo-waivers
+# fixed-rag accepted risks, linux/amd64 build (paths contain the target triple).
 # These are the crypto modules a python:3.12-slim + chromadb image can't drop:
 # the system OpenSSL (no FIPS provider in Debian slim), nettle (pulled in by
 # the base image's GnuTLS), the OpenSSL bundled in the cryptography wheel and
