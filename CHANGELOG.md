@@ -4,9 +4,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
-### Changed
-- CI: `actions/checkout@v5` and `actions/setup-go@v6` (Node 24). A manual `demo` workflow runs `make demo demo-e2e` on an amd64 runner and uploads the evidence.
-
 ## [0.1.0] - 2026-11-12
 
 Quiet release for design partners (D-001): no announcement.
@@ -16,6 +13,12 @@ Quiet release for design partners (D-001): no announcement.
 
 ### Changed (models, D-039)
 - numpy's pre-1.0 `numpy.core._internal._reconstruct` alias is a safe pickle import. Attribute access through it (`__globals__` etc.) stays critical.
+
+### Changed (rule promotion)
+- Phone-home: `PH-ANTHROPIC-SDK-HOSTED`, `PH-OPENAI-SDK-HOSTED` and `PH-UNSTRUCTURED-ANALYTICS` are now high confidence, each checked against upstream source (anthropic-sdk-python v2.8.0, openai-python v3.49.0, unstructured 0.27.37, on 2026-11-12) with permalinks in `source`. `PH-UNSTRUCTURED-ANALYTICS` now treats any non-empty `SCARF_NO_ANALYTICS` or `DO_NOT_TRACK` as opted out, as upstream does.
+
+### Changed (CI)
+- `actions/checkout@v5` and `actions/setup-go@v6` (Node 24). A manual `demo` workflow runs `make demo demo-e2e` on an amd64 runner and uploads the evidence.
 
 ### Fixed
 - Image identity: every `index.json` entry pinned to the config digest is accepted as the loaded image's ID, so attested `docker save` archives scan.
