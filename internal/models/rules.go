@@ -87,7 +87,15 @@ var rules = map[string]ruleInfo{
 // least RulePickleUnknown.
 var safeImports = setOf(
 	"collections.OrderedDict",
+	// Side-effect-free value constructors (D-035). Each one, called on the
+	// values a pickle can build, only returns plain data: never a callable,
+	// never attribute access, never I/O. getattr, eval, exec, __import__,
+	// open, compile, type, object, map, filter, iter, apply-style helpers
+	// and every other builtin stay critical. Dotted names
+	// ("range.__new__") never match: this is an exact-name list.
 	"builtins.set", "builtins.frozenset", "builtins.bytearray", "builtins.slice", "builtins.complex",
+	"builtins.range", "builtins.int", "builtins.float", "builtins.bool", "builtins.str", "builtins.bytes",
+	"builtins.tuple", "builtins.list", "builtins.dict",
 	"_codecs.encode",
 	"torch._utils._rebuild_tensor", "torch._utils._rebuild_tensor_v2", "torch._utils._rebuild_tensor_v3",
 	"torch._utils._rebuild_parameter", "torch._utils._rebuild_parameter_with_state",
@@ -132,7 +140,7 @@ var dunder = regexp.MustCompile(`__[A-Za-z0-9_]+__`)
 
 // classifyImport returns the rule for a resolved import, or "" if it's safe.
 func classifyImport(mod, name string) string {
-	mod = compatModule(mod)
+	mod, name = compatName(mod, name)
 	full := mod + "." + name
 	if safeImports[full] {
 		return ""
@@ -167,6 +175,25 @@ func compatModule(m string) string {
 		return "pickle"
 	}
 	return m
+}
+
+// py2BuiltinNames is the subset of pickle's Python 2 NAME_MAPPING
+// (Lib/_compat_pickle.py) that lands on an allowlisted builtin. Python 3
+// applies it to protocol 0-2 pickles; for protocol 3+ the __builtin__
+// import simply fails. Other renames (reduce -> functools.reduce,
+// intern -> sys.intern, ...) aren't applied, so they stay judged as
+// builtins.* and stay critical.
+var py2BuiltinNames = map[string]string{"xrange": "range", "unicode": "str", "long": "int", "basestring": "str"}
+
+// compatName applies compatModule, plus py2BuiltinNames to Python 2
+// module names only: Python 3 has no builtins.xrange.
+func compatName(mod, name string) (string, string) {
+	if mod == "__builtin__" {
+		if n, ok := py2BuiltinNames[name]; ok {
+			return "builtins", n
+		}
+	}
+	return compatModule(mod), name
 }
 
 func setOf(xs ...string) map[string]bool {

@@ -79,6 +79,16 @@
       ]
     },
     {
+      "path": "numpy/py2_range_objarr.npy",
+      "format": "npy",
+      "size": 174,
+      "sha256": "af8485819b208a0791eccd2fb146c779a7145858bac72227590c4fb32793f447",
+      "imports": [
+        "__builtin__.xrange",
+        "builtins.range"
+      ]
+    },
+    {
       "path": "onnx/escape.onnx",
       "format": "onnx",
       "size": 112,
@@ -167,6 +177,16 @@
       "sha256": "ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042",
       "imports": [
         "builtins.print"
+      ]
+    },
+    {
+      "path": "pickle/range_getattr_chain.pkl",
+      "format": "pickle",
+      "size": 59,
+      "sha256": "14bac27026939c012164130278f84815c1109b06f5a3e4aed68d23ebae6abfcb",
+      "imports": [
+        "builtins.getattr",
+        "builtins.range"
       ]
     },
     {
@@ -401,6 +421,23 @@
       ]
     },
     {
+      "rule": "MODEL-NUMPY-OBJECT-ARRAY",
+      "severity": "medium",
+      "title": "NumPy array stores Python objects",
+      "explanation": "An object-dtype .npy needs np.load(allow_pickle=True), which unpickles its payload. Any imports in that payload are reported separately.",
+      "evidence": {
+        "path": "numpy/py2_range_objarr.npy",
+        "sha256": "af8485819b208a0791eccd2fb146c779a7145858bac72227590c4fb32793f447",
+        "offset": 128,
+        "detail": "dtype object: payload is a pickle"
+      },
+      "fix": "Store numeric arrays only (no object dtype), or move the data to safetensors.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
       "rule": "MODEL-ONNX-EXTERNAL-DATA-ESCAPE",
       "severity": "high",
       "title": "ONNX model reads data from outside its directory",
@@ -542,6 +579,23 @@
         "sha256": "ebe524e097c1f6e2d0d3eea71ef2df42cd6950b0bdebc6db54d0f64f42a85042",
         "offset": 21,
         "detail": "STACK_GLOBAL builtins.print"
+      },
+      "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
+      "controls": [
+        "SI-3",
+        "SI-7"
+      ]
+    },
+    {
+      "rule": "MODEL-PICKLE-CODE-EXEC",
+      "severity": "critical",
+      "title": "Model file runs code when loaded",
+      "explanation": "Loading this pickle (pickle.load, joblib.load, or torch.load with weights_only=False) imports a code-execution primitive. Anyone who can change this file can run arbitrary code on the host that loads it.",
+      "evidence": {
+        "path": "pickle/range_getattr_chain.pkl",
+        "sha256": "14bac27026939c012164130278f84815c1109b06f5a3e4aed68d23ebae6abfcb",
+        "offset": 23,
+        "detail": "STACK_GLOBAL builtins.getattr"
       },
       "fix": "Convert the weights to safetensors (or GGUF) and ship only that file. Don't load this file anywhere until it is replaced.",
       "controls": [

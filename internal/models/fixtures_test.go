@@ -75,6 +75,28 @@ func printPayload() []byte {
 	return p.stop()
 }
 
+// py2RangeObjArr has the shape of numpy's py2-objarr.npy test fixture: a
+// protocol 2 object array holding the xrange type itself (GLOBAL
+// __builtin__ xrange, not called), plus a called range(3). D-035: neither
+// is a finding.
+func py2RangeObjArr() []byte {
+	p := newPk(2)
+	p.op(']').global("__builtin__", "xrange").op('a')
+	p.global("builtins", "range").op('K', 3, 0x85, 'R', 'a')
+	return p.stop()
+}
+
+// rangeGetattrChain tries to launder getattr behind an allowlisted
+// constructor: getattr(range(3), "count"), with getattr reached through
+// memoised STACK_GLOBAL operands. range is fine; getattr stays critical.
+func rangeGetattrChain() []byte {
+	p := newPk(4)
+	p.short("builtins").op(0x94).short("getattr").op(0x94, 0x93, 0x94)
+	p.short("builtins").op(0x94).short("range").op(0x94, 0x93, 'K', 3, 0x85, 'R')
+	p.short("count").op(0x86, 'R')
+	return p.stop()
+}
+
 // osSystemViaMemo reaches os.system through STACK_GLOBAL with operands
 // routed through the memo, which defeats scanners that only look at the
 // preceding string opcodes. Bytes only: never loaded.
@@ -285,7 +307,9 @@ func fixtures(t *testing.T) map[string][]byte {
 		"onnx/missing.onnx": onnxModel([][]byte{onnxExternalTensor("w", "not_shipped.data")}, nil),
 		"onnx/garbage.onnx": {0x0f, 0xff, 0xff},
 
-		"numpy/object.npy": npyObjectFile(printPayload()),
+		"numpy/object.npy":               npyObjectFile(printPayload()),
+		"numpy/py2_range_objarr.npy":     npyObjectFile(py2RangeObjArr()),
+		"pickle/range_getattr_chain.pkl": rangeGetattrChain(),
 		"keras/lambda.keras": zipOf(t, member{"config.json", []byte(`{"module":"keras","class_name":"Sequential","config":{"layers":[{"module":"keras.layers","class_name":"Lambda","config":{"function":{"class_name":"__lambda__","config":{"code":"4wEAAAAA"}}}}]}}`)},
 			member{"metadata.json", []byte(`{"keras_version":"3.6.0"}`)}),
 		"keras/module_bypass.keras": zipOf(t, member{"config.json", []byte(`{"module":"keras.layers","class_name":"Dense","config":{"activation":{"module":"builtins","class_name":"function","config":"exec"}}}`)}),

@@ -48,7 +48,7 @@ is gitignored), carry the tars over, then `docker load` them and run
 | crypto | `CRYPTO-UNVALIDATED-MODULE` ×3, `CRYPTO-UNKNOWN-MODULE` | system OpenSSL, the OpenSSL bundled in the `cryptography` wheel, the BoringSSL bundled in `grpcio`, and nettle |
 | | `CRYPTO-WEAK-HASH` | `hashlib.md5` cache keys in `app/main.py` |
 | models | `MODEL-PICKLE-CODE-EXEC` (critical) | `/app/models/reranker.pt` → `builtins.print` (GLOBAL + REDUCE in `reranker/data.pkl`) |
-| | `MODEL-PICKLE-CODE-EXEC`, `MODEL-PICKLE-UNKNOWN-IMPORT`, `MODEL-NUMPY-OBJECT-ARRAY` | numpy's own test fixtures in site-packages (real images ship these too) |
+| | `MODEL-PICKLE-UNKNOWN-IMPORT`, `MODEL-NUMPY-OBJECT-ARRAY` | numpy's own test fixtures in site-packages (real images ship these too). Their `range`/`xrange` imports are allowlisted (D-035); `numpy.core._internal._reconstruct` in `py2-np0-objarr.npy` is not |
 | agents | `AGENT-INV01-analyst` (high) | `analyst` holds private data (`read_file`, `search_docs`), untrusted input (`fetch_url`) and ungated egress (`http_post`, `run_python`): all three MESA lattice components reach the production threshold (D-032) |
 
 ### fixed-rag (AGR-4)

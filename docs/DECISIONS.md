@@ -234,3 +234,21 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - **verify --artifact:** the image's config digest is compared first, and a mismatch is reported before any layer is read. Then each layer is decompressed and hashed only (diff_id, plus the blob digest when named). Nothing is written to disk. Outer image members with `GNU.sparse.*` records are refused by scan as well.
 - **Public keys:** non-canonical encodings (y ≥ p) and the small-order points (libsodium's `has_small_order` list, either sign bit) are refused. With such a key, a forged signature like R = identity, S = 0 would verify.
 - **sign:** `--in` is resolved through symlinks. A manifest that covers no files is never signed. A private key readable by group or other gets a warning. The "bundle inside the evidence directory" check compares resolved directories by identity (`os.SameFile`), so symlinks and case-insensitive filesystems can't get around it.
+
+## D-035 (2026-11-12): Pickle allowlist covers side-effect-free builtin constructors; no path-based exemption
+**Context.** Every `builtins.*` import that wasn't allowlisted was `MODEL-PICKLE-CODE-EXEC` (critical, unwaivable). numpy wheels ship object-array test fixtures (`numpy/lib/tests/data/py{2,3}-objarr.{npy,npz}`) that store the `range` type itself (`builtins.range`, or `__builtin__.xrange` in the Python 2 files). Each of them capped a scan at a critical that nobody could waive, for an import that can't run code.
+
+**Decision.**
+- **Allowlist (exact names only):** `builtins.` `range`, `int`, `float`, `bool`, `str`, `bytes`, `tuple`, `list`, `dict`, plus the existing `set`, `frozenset`, `bytearray`, `slice` and `complex`. Python 2 names map onto them only from `__builtin__` (as pickle's `_compat_pickle` NAME_MAPPING does for protocol < 3): `xrange`→`range`, `unicode`/`basestring`→`str`, `long`→`int`.
+- **Everything else in `builtins` stays critical,** including `getattr`, `setattr`, `eval`, `exec`, `compile`, `__import__`, `open`, `print`, `input`, `breakpoint`, `type`, `object`, `vars`, `map`, `filter`, `iter`, `apply`, `execfile`, `reduce` and `intern`. So do dotted names (`range.__new__`, `dict.fromkeys`), since pickle protocol 4+ resolves them with attribute walks. Other Python 2 renames (`reduce`→`functools`, `intern`→`sys`) aren't applied, so they're still judged as `builtins.*`.
+- **No path-based handling.** A pickle under `site-packages/*/tests/data/` gets the same rule and severity as any other, and the waivable list is unchanged. The fix for third-party test fixtures is to delete them in the image build, as `demo/fixed-rag` does.
+
+**Why.**
+- *Laundering.* A pickle can only call what it imports (GLOBAL, INST, STACK_GLOBAL or EXT) or what an earlier call returned. Called on the values a pickle can build, each allowlisted constructor returns plain data: never a callable, a module or a bound method. BUILD on those results can't reach `__setstate__` or set attributes on builtin types. So none of them can be turned into a call or attribute primitive, and a REDUCE chain through them stays harmless. Every other import in the same file is still classified on its own: a `getattr` behind `range(3)` is still critical (fixture `pickle/range_getattr_chain.pkl`).
+- *Excluded.* `type`, `object`, `map`, `filter`, `iter`, `sorted`, `min` and `max` are excluded because they create classes or call other callables.
+- *Paths.* The attacker controls the path. A path exemption would hand them a place to park a payload where anything that loads it by name still runs it. A waiver keyed on a test-fixture path would launder the same way.
+
+**Consequences.**
+- numpy's `py2-objarr`/`py3-objarr` fixtures now give only `MODEL-NUMPY-OBJECT-ARRAY` (medium, waivable).
+- `py2-np0-objarr.npy` still gives `MODEL-PICKLE-UNKNOWN-IMPORT` (high, unwaivable) for `numpy.core._internal._reconstruct`. That name isn't verified harmless, so stripping numpy's tests from the image is still the recommended fix.
+- The leaky-rag demo's rule set is unchanged, because its reranker still imports `builtins.print`.
