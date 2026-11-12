@@ -179,6 +179,9 @@ func TestClassifyImport(t *testing.T) {
 		{"sklearn.linear_model", "LogisticRegression", RulePickleUnknown},
 		{"torch", "Storage.attack", RulePickleUnknown},
 		{"mypkg", "Thing", RulePickleUnknown},
+		{"numpy.core._internal", "_reconstruct", ""}, // pre-1.0 alias of multiarray._reconstruct (D-039)
+		{"numpy.core._internal", "_reconstruct.__globals__", RulePickleCodeExec},
+		{"numpy.core._internal", "_dtype_from_pep3118", RulePickleUnknown},
 	}
 	for _, tc := range tests {
 		if got := classifyImport(tc.mod, tc.name); got != tc.want {

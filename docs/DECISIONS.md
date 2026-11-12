@@ -342,3 +342,11 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - This isn't a real amd64 image build. Docker's layer application, pip's install-time steps (entry points, `.pyc`, `RECORD`) and the image env aren't reproduced, so the phone-home results differ and aren't checked.
 - Wheel selection follows pip's tag order for `python3.12`/glibc 2.39, so pip may pick a different manylinux variant than the image's pip would. The crypto paths are the same in every variant.
 - A real `make demo` on amd64 is still the final check.
+
+## D-039 (2026-11-12): `numpy.core._internal._reconstruct` is a safe pickle import
+
+**Context.** D-035 left one finding open in the demo image: numpy's own `py2-np0-objarr.npy` test file imports `numpy.core._internal._reconstruct`, rated high and unwaivable because nobody had shown it was harmless.
+
+**Decision.** Allowlist that exact name. numpy's source (`numpy/core/_internal.py`) defines it as `ndarray.__new__(subtype, shape, dtype)`, with a comment saying it's the pre-1.0 name embedded in old ndarray pickles. That is what `numpy.core.multiarray._reconstruct` does, and it was already allowlisted. Any other attribute of the module, and any dotted path such as `_reconstruct.__globals__`, stays flagged.
+
+**Consequences.** Old numpy array pickles no longer cap a scan. The `subtype` argument must still come from an import the scanner checks separately, so this opens no new route to code execution.

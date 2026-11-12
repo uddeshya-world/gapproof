@@ -47,9 +47,10 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Start each session by reading `docs/03_BUILD_PLAN.md` and stating which milestone you're on.
 - Finish each milestone by updating the "Status" table at the top of `docs/03_BUILD_PLAN.md` and `CHANGELOG.md`.
 - If the spec is ambiguous, choose the option that keeps rules 1–6 intact, note the decision in `docs/DECISIONS.md`, and continue.
-- The owner works a day job; keep PRs reviewable (under ~800 lines of non-test code where possible).
+- Keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
+- 2026-11-12: One-shot targets (`scan --one-shot`, D-040) pass AGR-1 by exiting 0 inside the window. The numpy pre-1.0 `_reconstruct` is allowlisted (D-039). CI is green on Go 1.26.10, and `make e2e demo demo-e2e` passes with the rebuilt harness. Repo made public.
 - 2026-11-12: **Integration branch `m4-integrate`** (not pushed).
   - It merges M3, M5 (`m5-agents`), the M4 evidence and report work (`m4-evidence-report`) and M6 (`m6-bundle-aibom-oscal`), plus the scan wiring and M7 (diff, offline licence, `action/`, pinned releases).
   - A live scan of the probe image gives AGR-1, and two runs produce a byte-identical `evidence.json`. Sign and verify round-trip.
@@ -63,19 +64,16 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - 2026-11-08 — Kit imported into `projects/gapproof` (git init).
 
 ## Open questions / next steps
-- **Owner decision (AGR spec change):** one-shot images (CLIs, batch jobs) can't pass liveness without a workload. Should "exits 0 within the window with egress blocked" count? This blocks the M8 self-scan at AGR-4.
 - v0.1 tag (owner). Demo and the Chromium zero-request check are done.
-- Demo follow-ups:
-  - PH-CHROMA-TELEMETRY needs a version bound (chromadb >= 1.5.4 has no product telemetry; check upstream), which needs version ranges in the rule engine (the demo pins chromadb 1.5.2).
-  - Pickles referencing harmless builtins (`range`) rate critical and unwaivable: owner call on an allowlist.
-  - Docker's embedded resolver `127.0.0.11:53` shows as an in-scope egress entry (noise).
-  - amd64 demo waivers are unverified.
+- Demo follow-ups were decided in D-035 to D-039 (pickle builtin allowlist, chromadb `<1.5.4` bound with PEP 440 ranges, NFLOG duplicate-flow fix, amd64 waivers generated from arm64). Still open:
+  - A real amd64 `make demo` run.
 - Gotchas:
+  - CI tests the minimum Go in go.mod (1.26.x); fixture checks must not depend on compress/flate bytes. Reproduce with `GOTOOLCHAIN=go1.26.10 go test ./...`.
   - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
   - `scan --out` must be a new or empty directory.
   - The harness e2e needs `bin/gapproof harness load dist/gapproof-harness-<version>-linux-<arch>.oci.tar` after every `make harness`. Use the exact name: the glob breaks once a `-dirty` and a clean tar are both in `dist/`.
   - `make demo` needs Docker (about 7 min with cached images) and writes `evidence/` (gitignored). `make demo-e2e` asserts leaky = AGR-1 and fixed = AGR-4, with byte-identical rescans.
-- Remote: private repo `github.com/uddeshya-world/gapproof` created 2026-11-12 and set as `origin`; nothing pushed yet. Push (still private) once the owner says so; stay private until the pre-launch legal check is done.
+- Remote: `github.com/uddeshya-world/gapproof`, public since 2026-11-12 (owner confirmed the IP check cleared); `m4-integrate` is pushed as `main`.
 - Promote the low-confidence rules (Unstructured, OpenAI and Anthropic base URL) after checking upstream source.
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.

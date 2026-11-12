@@ -110,6 +110,9 @@ var safeImports = setOf(
 	"torch.storage.UntypedStorage", "torch.storage.TypedStorage", "torch.UntypedStorage",
 	"torch.serialization._get_layout",
 	"numpy.core.multiarray._reconstruct", "numpy._core.multiarray._reconstruct",
+	// Pre-1.0 name of the same function: ndarray.__new__(subtype, shape,
+	// dtype), kept by numpy for old pickles (D-039). Exact name only.
+	"numpy.core._internal._reconstruct",
 	"numpy.core.multiarray.scalar", "numpy._core.multiarray.scalar",
 	"numpy.core.numeric._frombuffer", "numpy._core.numeric._frombuffer",
 	"numpy.ndarray", "numpy.dtype",
