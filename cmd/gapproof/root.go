@@ -43,6 +43,7 @@ func newRootCmd(stdout, stderr io.Writer) *cobra.Command {
 		newKeygenCmd(),
 		newRulesCmd(),
 		newAgentsCmd(),
+		newLicenceCmd(),
 		newHarnessCmd(),
 		newSinkholeCmd(),
 		newVersionCmd(),

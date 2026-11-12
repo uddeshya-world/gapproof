@@ -15,7 +15,7 @@ Rule: standard library first. Every third-party module needs a one-line justific
 |---|---|---|
 | `honnef.co/go/tools/cmd/staticcheck` | v0.8.2 | Lint, required by CLAUDE.md. Run through `go run` in `make lint`, so it stays out of `go.mod`. |
 
-## Proposed, needs owner OK before it's added
-| Module | Milestone | Why |
+## Test-only, in a container (never in go.mod)
+| Tool | Version | Why |
 |---|---|---|
-| `github.com/santhosh-tekuri/jsonschema/v6` | M6 (test-only) | Validate CycloneDX 1.6 and OSCAL output against vendored schemas. |
+| `python:3.12-slim` + `jsonschema` + `regex` | 4.23.0 / 2024.11.6 | Validate the AI-BOM (CycloneDX 1.6) and OSCAL 1.1.2 output against the official schemas vendored in `testdata/schemas` (D-029). This replaced the proposed Go `santhosh-tekuri/jsonschema` dependency. |

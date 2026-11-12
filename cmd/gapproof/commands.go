@@ -7,12 +7,16 @@ import (
 	"slices"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/uddeshya-world/gapproof/internal/agents"
+	"github.com/uddeshya-world/gapproof/internal/bundle"
+	"github.com/uddeshya-world/gapproof/internal/diff"
 	"github.com/uddeshya-world/gapproof/internal/evidence"
 	"github.com/uddeshya-world/gapproof/internal/harness"
+	"github.com/uddeshya-world/gapproof/internal/licence"
 	"github.com/uddeshya-world/gapproof/internal/sinkhole"
 )
 
@@ -51,12 +55,103 @@ func newReportCmd() *cobra.Command {
 }
 
 func newDiffCmd() *cobra.Command {
-	return &cobra.Command{
+	var lic string
+	var gate bool
+	cmd := &cobra.Command{
 		Use:   "diff <old-evidence-dir> <new-evidence-dir>",
 		Short: "Show what changed between two evidence directories",
-		Args:  exactArgs(2),
-		RunE:  runE(func(*cobra.Command, []string) error { return notImplemented("M7") }),
+		Long: "Compare two runs: the AGR change, new/resolved/changed findings, new egress\n" +
+			"destinations and model/crypto hash changes. Findings are matched on rule and\n" +
+			"evidence, not on ID. The itemised diff is a Pro feature (offline licence); without\n" +
+			"one, the level change and counts are shown.\n\n" +
+			"With --exit-code, exit 1 when the new run regressed (lower level or a new open finding).",
+		Args: exactArgs(2),
+		RunE: runE(func(cmd *cobra.Command, args []string) error {
+			old, err := evidence.Load(args[0])
+			if err != nil {
+				return usagef("%v", err)
+			}
+			cur, err := evidence.Load(args[1])
+			if err != nil {
+				return usagef("%v", err)
+			}
+			r := diff.Compare(old, cur)
+			out := cmd.OutOrStdout()
+			if st := licenceStatus(lic); st.Has("diff") {
+				r.WriteFull(out)
+			} else {
+				r.WriteSummary(out)
+				fmt.Fprintf(out, "\n(itemised diff is a Pro feature: %s)\n", st.Reason)
+			}
+			if gate && r.Regressed() {
+				return &checkFailedError{fmt.Sprintf("regressed: %s → %s", r.OldLevel, r.NewLevel)}
+			}
+			return nil
+		}),
 	}
+	cmd.Flags().StringVar(&lic, "licence", "", "Pro licence file (default $GAPPROOF_LICENCE); checked offline")
+	cmd.Flags().BoolVar(&gate, "exit-code", false, "exit 1 if the new run regressed")
+	return cmd
+}
+
+func licenceStatus(path string) licence.Status {
+	if path == "" {
+		path = os.Getenv("GAPPROOF_LICENCE")
+	}
+	return licence.Check(path, licence.PublicKey, time.Now())
+}
+
+func newLicenceCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "licence",
+		Short: "Show the offline Pro licence status (never checked online)",
+		Args:  exactArgs(0),
+		RunE: runE(func(cmd *cobra.Command, _ []string) error {
+			lic, _ := cmd.Flags().GetString("licence")
+			st := licenceStatus(lic)
+			if !st.Valid {
+				fmt.Fprintf(cmd.OutOrStdout(), "no valid Pro licence: %s (free features only)\n", st.Reason)
+				return nil
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Pro licence: %s, features %s, valid through %s\n", st.Licence.Org, strings.Join(st.Licence.Features, ","), st.Licence.Expires)
+			return nil
+		}),
+	}
+	cmd.Flags().String("licence", "", "licence file (default $GAPPROOF_LICENCE)")
+	issue := &cobra.Command{
+		Use:    "issue",
+		Short:  "Sign a licence with an Ed25519 key from `gapproof keygen` (release tooling)",
+		Hidden: true,
+		Args:   exactArgs(0),
+		RunE: runE(func(cmd *cobra.Command, _ []string) error {
+			if err := requireFlags(cmd, "key", "org", "expires"); err != nil {
+				return err
+			}
+			kp, _ := cmd.Flags().GetString("key")
+			org, _ := cmd.Flags().GetString("org")
+			exp, _ := cmd.Flags().GetString("expires")
+			feats, _ := cmd.Flags().GetStringSlice("features")
+			if _, err := time.Parse(time.DateOnly, exp); err != nil {
+				return usagef("--expires must be YYYY-MM-DD")
+			}
+			key, err := bundle.LoadPrivateKey(kp)
+			if err != nil {
+				return usagef("--key: %v", err)
+			}
+			b, err := licence.Sign(licence.Licence{Org: org, Expires: exp, Features: feats}, key)
+			if err != nil {
+				return err
+			}
+			_, err = cmd.OutOrStdout().Write(b)
+			return err
+		}),
+	}
+	issue.Flags().String("key", "", "Ed25519 private key")
+	issue.Flags().String("org", "", "licensee organisation")
+	issue.Flags().String("expires", "", "last valid day, YYYY-MM-DD")
+	issue.Flags().StringSlice("features", []string{"diff"}, "granted features")
+	cmd.AddCommand(issue)
+	return cmd
 }
 
 func newHarnessCmd() *cobra.Command {

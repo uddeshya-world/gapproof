@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/uddeshya-world/gapproof/internal/evidence"
+	"github.com/uddeshya-world/gapproof/internal/licence"
 )
 
 // TestScanRootfsPipeline runs the whole static pipeline on a fixture rootfs
@@ -103,5 +104,54 @@ func TestAgentsImportMCP(t *testing.T) {
 	}
 	if code := run([]string{"agents", "import-mcp"}, &so, &se); code != exitUsage {
 		t.Errorf("no args: exit %d, want 2", code)
+	}
+}
+
+func TestDiffLicenceGate(t *testing.T) {
+	rootfs := "../../rules/testdata/PH-CHROMA-TELEMETRY/positive/rootfs"
+	a, b := filepath.Join(t.TempDir(), "a"), filepath.Join(t.TempDir(), "b")
+	var so, se bytes.Buffer
+	if c := run([]string{"scan", "--rootfs", rootfs, "--skip", "egress,agents", "--out", a}, &so, &se); c != exitOK {
+		t.Fatal(se.String())
+	}
+	if c := run([]string{"scan", "--rootfs", rootfs, "--skip", "egress", "--agents", "../../internal/agents/testdata/leaky.yaml", "--out", b}, &so, &se); c != exitOK {
+		t.Fatal(se.String())
+	}
+
+	// Free: counts only, and the regression gate still works.
+	so.Reset()
+	if c := run([]string{"diff", a, b, "--exit-code"}, &so, &se); c != exitBelowThreshold {
+		t.Errorf("new open findings with --exit-code: exit %d, want 1", c)
+	}
+	if !strings.Contains(so.String(), "+4 new") || !strings.Contains(so.String(), "Pro feature") || strings.Contains(so.String(), "AG-0001") {
+		t.Errorf("free diff output:\n%s", so.String())
+	}
+
+	// Pro: a valid licence itemises it.
+	dir := t.TempDir()
+	if c := run([]string{"keygen", "--out", filepath.Join(dir, "lk")}, &so, &se); c != exitOK {
+		t.Fatal(se.String())
+	}
+	pub, _ := os.ReadFile(filepath.Join(dir, "lk.pub"))
+	lines := strings.Split(strings.TrimSpace(string(pub)), "\n")
+	old := licence.PublicKey
+	licence.PublicKey = lines[len(lines)-1]
+	t.Cleanup(func() { licence.PublicKey = old })
+	so.Reset()
+	if c := run([]string{"licence", "issue", "--key", filepath.Join(dir, "lk.key"), "--org", "Test Org", "--expires", "2099-12-31"}, &so, &se); c != exitOK {
+		t.Fatal(se.String())
+	}
+	lic := filepath.Join(dir, "lic")
+	os.WriteFile(lic, so.Bytes(), 0o600)
+	so.Reset()
+	if c := run([]string{"licence", "--licence", lic}, &so, &se); c != exitOK || !strings.Contains(so.String(), "Pro licence: Test Org") {
+		t.Errorf("licence status: %s %s", so.String(), se.String())
+	}
+	so.Reset()
+	if c := run([]string{"diff", a, b, "--licence", lic}, &so, &se); c != exitOK {
+		t.Errorf("diff without --exit-code: exit %d", c)
+	}
+	if !strings.Contains(so.String(), "+ AG-0001") || len(strings.Split(so.String(), "\n")) > 30 {
+		t.Errorf("pro diff output (want itemised, under 30 lines):\n%s", so.String())
 	}
 }

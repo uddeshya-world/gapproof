@@ -1,0 +1,142 @@
+name: gapproof-scan
+description: Scan a built container image for air-gap readiness, comment the report on the PR, and fail below min-agr.
+author: gapproof
+branding:
+  icon: shield
+  color: gray-dark
+
+inputs:
+  image:
+    description: Local image ref (already built in this job) or a docker-save tarball.
+    required: true
+  min-agr:
+    description: Fail the job if the result is below AGR-N (0-4). Empty = never fail on the level.
+    default: ""
+  observe:
+    description: Egress observation window.
+    default: 3m
+  workload:
+    description: Optional smoke-test script run by the driver container.
+    default: ""
+  agents:
+    description: Optional agents.yaml.
+    default: ""
+  scope:
+    description: Optional gapproof.scope.yaml.
+    default: ""
+  waivers:
+    description: Optional gapproof.waivers.yaml.
+    default: ""
+  skip:
+    description: Comma-separated modules to skip.
+    default: ""
+  version:
+    description: Gapproof release tag to download (e.g. v0.2.0). Ignored when gapproof-path is set.
+    default: latest
+  gapproof-path:
+    description: Use this gapproof binary instead of downloading one (and load harness-tar yourself or set it below).
+    default: ""
+  harness-tar:
+    description: Harness image tarball to load (downloaded with the release when empty).
+    default: ""
+  comment:
+    description: Post (or update) the Markdown report as a PR comment.
+    default: "true"
+  out:
+    description: Evidence directory.
+    default: gapproof-evidence
+
+outputs:
+  level:
+    description: The AGR level (e.g. AGR-3, or unassessed).
+    value: ${{ steps.scan.outputs.level }}
+  evidence:
+    description: Path of the evidence directory.
+    value: ${{ inputs.out }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get gapproof (release assets, SHA-256 checked)
+      id: get
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        VERSION: ${{ inputs.version }}
+        GP_PATH: ${{ inputs.gapproof-path }}
+        HARNESS_TAR: ${{ inputs.harness-tar }}
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/gapproof"; mkdir -p "$dir"
+        if [ -n "$GP_PATH" ]; then
+          bin="$GP_PATH"; tar="$HARNESS_TAR"
+        else
+          arch=$(uname -m); case "$arch" in x86_64) arch=amd64;; aarch64|arm64) arch=arm64;; esac
+          tag="$VERSION"; [ "$tag" = latest ] && tag=$(gh release view --repo uddeshya-world/gapproof --json tagName -q .tagName)
+          gh release download "$tag" --repo uddeshya-world/gapproof --dir "$dir" \
+            --pattern "gapproof_*_linux_${arch}.tar.gz" --pattern "gapproof-harness-*-linux-${arch}.oci.tar" --pattern checksums.sha256 --pattern harness-checksums.sha256
+          (cd "$dir" && sha256sum --check --ignore-missing checksums.sha256 harness-checksums.sha256)
+          tar -xzf "$dir"/gapproof_*_linux_${arch}.tar.gz -C "$dir" gapproof
+          bin="$dir/gapproof"; tar=$(ls "$dir"/gapproof-harness-*.oci.tar)
+        fi
+        "$bin" version
+        if [ -n "$tar" ]; then "$bin" harness load "$tar"; fi
+        echo "bin=$bin" >> "$GITHUB_OUTPUT"
+
+    - name: Scan
+      id: scan
+      shell: bash
+      env:
+        BIN: ${{ steps.get.outputs.bin }}
+        IMAGE: ${{ inputs.image }}
+        OUT: ${{ inputs.out }}
+        OBSERVE: ${{ inputs.observe }}
+        WORKLOAD: ${{ inputs.workload }}
+        AGENTS: ${{ inputs.agents }}
+        SCOPE: ${{ inputs.scope }}
+        WAIVERS: ${{ inputs.waivers }}
+        SKIP: ${{ inputs.skip }}
+        MIN_AGR: ${{ inputs.min-agr }}
+      run: |
+        set -uo pipefail
+        args=(scan --image "$IMAGE" --out "$OUT" --observe "$OBSERVE")
+        [ -n "$WORKLOAD" ] && args+=(--workload "$WORKLOAD")
+        [ -n "$AGENTS" ]   && args+=(--agents "$AGENTS")
+        [ -n "$SCOPE" ]    && args+=(--scope "$SCOPE")
+        [ -n "$WAIVERS" ]  && args+=(--waivers "$WAIVERS")
+        [ -n "$SKIP" ]     && args+=(--skip "$SKIP")
+        [ -n "$MIN_AGR" ]  && args+=(--min-agr "$MIN_AGR")
+        "$BIN" "${args[@]}"; code=$?
+        level=$(jq -r .agr.level "$OUT/summary.json" 2>/dev/null || echo unknown)
+        echo "level=$level" >> "$GITHUB_OUTPUT"
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+        [ -f "$OUT/report.md" ] && cat "$OUT/report.md" >> "$GITHUB_STEP_SUMMARY"
+        # 0 = ok, 1 = below --min-agr (gated after commenting); anything else fails now.
+        [ "$code" -le 1 ] || exit "$code"
+
+    - name: Comment on the PR
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        OUT: ${{ inputs.out }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        set -euo pipefail
+        body="$RUNNER_TEMP/gapproof-comment.md"
+        { echo '<!-- gapproof-report -->'; head -c 60000 "$OUT/report.md"; } > "$body"
+        [ "$(wc -c < "$OUT/report.md")" -gt 60000 ] && printf '\n\n…truncated; the full report is in the evidence directory.\n' >> "$body"
+        id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+             -q '.[] | select(.body | startswith("<!-- gapproof-report -->")) | .id' | tail -1)
+        if [ -n "$id" ]; then
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@"$body" >/dev/null
+        else
+          gh pr comment "$PR" --body-file "$body"
+        fi
+
+    - name: Gate
+      if: steps.scan.outputs.code == '1'
+      shell: bash
+      run: |
+        echo "::error::gapproof: ${{ steps.scan.outputs.level }} is below --min-agr ${{ inputs.min-agr }}"
+        exit 1

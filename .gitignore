@@ -13,3 +13,4 @@ content/
 .env
 *.pem
 .claude/
+release-assets/
