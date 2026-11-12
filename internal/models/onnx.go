@@ -40,9 +40,15 @@ func pbVarint(r io.ReaderAt, at, end int64) (uint64, int64, error) {
 	return 0, 0, errors.New("protobuf: bad varint")
 }
 
-// pbEach calls fn for every field in [start, end).
-func pbEach(r io.ReaderAt, start, end int64, fn func(pbField) error) error {
+// pbEach calls fn for every field in [start, end). Each field visited spends
+// one unit of *budget (a work bound: a file of millions of tiny fields would
+// otherwise cost millions of reads).
+func pbEach(r io.ReaderAt, start, end int64, budget *int, fn func(pbField) error) error {
 	for at := start; at < end; {
+		if *budget <= 0 {
+			return limitErrorf("onnx: more protobuf fields than the work budget allows")
+		}
+		*budget--
 		key, n, err := pbVarint(r, at, end)
 		if err != nil {
 			return err
@@ -109,6 +115,13 @@ const (
 	onnxAttrTensors      = 10
 	onnxAttrGraphs       = 11
 	onnxTensorName       = 8
+	onnxGraphSparseInit  = 15
+	onnxAttrSparse       = 22
+	onnxAttrSparses      = 23
+	onnxSparseValues     = 1
+	onnxSparseIndices    = 2
+	onnxModelFunctions   = 25
+	onnxFunctionNode     = 7
 	onnxTensorExternal   = 13
 	onnxTensorLocation   = 14
 	onnxEntryKey         = 1
@@ -116,11 +129,18 @@ const (
 	onnxDataExternal     = 1
 )
 
-// parseONNX walks the model graph (and subgraphs in node attributes) and
-// returns every tensor stored as external data.
-func parseONNX(r io.ReaderAt, size int64) ([]onnxExternal, error) {
+// parseONNX walks the model graph (and subgraphs in node attributes, sparse
+// tensors and model-local functions) and returns every tensor stored as
+// external data. It visits at most maxFields protobuf fields.
+func parseONNX(r io.ReaderAt, size int64, maxFields int) ([]onnxExternal, error) {
 	var out []onnxExternal
 	var graph func(start, end int64, depth int) error
+	budget := maxFields
+	// Shadows the package-level pbEach (which the body still calls) so every
+	// walk below spends the shared budget.
+	pbEach := func(r io.ReaderAt, start, end int64, fn func(pbField) error) error {
+		return pbEach(r, start, end, &budget, fn)
+	}
 
 	tensor := func(start, end int64) error {
 		var name, location string
@@ -167,29 +187,48 @@ func parseONNX(r io.ReaderAt, size int64) ([]onnxExternal, error) {
 		return nil
 	}
 
+	// A SparseTensorProto's values and indices are TensorProtos that may
+	// each be external.
+	sparse := func(start, end int64) error {
+		return pbEach(r, start, end, func(f pbField) error {
+			if (f.num == onnxSparseValues || f.num == onnxSparseIndices) && f.wire == 2 {
+				return tensor(f.off, f.off+f.len)
+			}
+			return nil
+		})
+	}
+
+	node := func(start, end int64, depth int) error {
+		return pbEach(r, start, end, func(n pbField) error {
+			if n.num != onnxNodeAttribute || n.wire != 2 {
+				return nil
+			}
+			return pbEach(r, n.off, n.off+n.len, func(a pbField) error {
+				switch {
+				case (a.num == onnxAttrT || a.num == onnxAttrTensors) && a.wire == 2:
+					return tensor(a.off, a.off+a.len)
+				case (a.num == onnxAttrSparse || a.num == onnxAttrSparses) && a.wire == 2:
+					return sparse(a.off, a.off+a.len)
+				case (a.num == onnxAttrG || a.num == onnxAttrGraphs) && a.wire == 2:
+					return graph(a.off, a.off+a.len, depth+1)
+				}
+				return nil
+			})
+		})
+	}
+
 	graph = func(start, end int64, depth int) error {
 		if depth > pbMaxDepth {
-			return errors.New("onnx: subgraphs nested too deeply")
+			return limitErrorf("onnx: subgraphs nested more than %d deep", pbMaxDepth)
 		}
 		return pbEach(r, start, end, func(f pbField) error {
 			switch {
 			case f.num == onnxGraphInitializer && f.wire == 2:
 				return tensor(f.off, f.off+f.len)
+			case f.num == onnxGraphSparseInit && f.wire == 2:
+				return sparse(f.off, f.off+f.len)
 			case f.num == onnxGraphNode && f.wire == 2:
-				return pbEach(r, f.off, f.off+f.len, func(n pbField) error {
-					if n.num != onnxNodeAttribute || n.wire != 2 {
-						return nil
-					}
-					return pbEach(r, n.off, n.off+n.len, func(a pbField) error {
-						switch {
-						case (a.num == onnxAttrT || a.num == onnxAttrTensors) && a.wire == 2:
-							return tensor(a.off, a.off+a.len)
-						case (a.num == onnxAttrG || a.num == onnxAttrGraphs) && a.wire == 2:
-							return graph(a.off, a.off+a.len, depth+1)
-						}
-						return nil
-					})
-				})
+				return node(f.off, f.off+f.len, depth)
 			}
 			return nil
 		})
@@ -197,9 +236,17 @@ func parseONNX(r io.ReaderAt, size int64) ([]onnxExternal, error) {
 
 	sawGraph := false
 	err := pbEach(r, 0, size, func(f pbField) error {
-		if f.num == onnxModelGraph && f.wire == 2 {
+		switch {
+		case f.num == onnxModelGraph && f.wire == 2:
 			sawGraph = true
 			return graph(f.off, f.off+f.len, 0)
+		case f.num == onnxModelFunctions && f.wire == 2:
+			return pbEach(r, f.off, f.off+f.len, func(fn pbField) error {
+				if fn.num == onnxFunctionNode && fn.wire == 2 {
+					return node(fn.off, fn.off+fn.len, 0)
+				}
+				return nil
+			})
 		}
 		return nil
 	})

@@ -31,7 +31,7 @@ func dir(name string) ent              { return ent{name: name, typ: tar.TypeDir
 func symlink(name, target string) ent  { return ent{name: name, typ: tar.TypeSymlink, link: target} }
 func hardlink(name, target string) ent { return ent{name: name, typ: tar.TypeLink, link: target} }
 
-func tarOf(t *testing.T, ents ...ent) []byte {
+func tarOf(t testing.TB, ents ...ent) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
@@ -55,7 +55,7 @@ func tarOf(t *testing.T, ents ...ent) []byte {
 	return buf.Bytes()
 }
 
-func gz(t *testing.T, b []byte) []byte {
+func gz(t testing.TB, b []byte) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)

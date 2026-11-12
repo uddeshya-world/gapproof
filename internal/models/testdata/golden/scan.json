@@ -626,7 +626,7 @@
         "path": "pickle/zip_bomb.pt",
         "member": "archive/data.pkl",
         "sha256": "bee00525118046dfec7e50680a0362f97eb0b3ab7fff871526368411ad52f953",
-        "detail": "possible zip bomb: decompression ratio above 100"
+        "detail": "limit: possible zip bomb: decompression ratio above 100"
       },
       "fix": "Re-export the file with its framework's serializer and rescan. If the file is legitimately unusual, document it as an accepted risk.",
       "controls": [

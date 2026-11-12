@@ -90,7 +90,7 @@ func TestWalkerErrors(t *testing.T) {
 		{"negative LONG4", []byte("\x8b\xff\xff\xff\xff."), "LONG4 negative length"},
 		{"huge length", append([]byte("\x8d"), bytes.Repeat([]byte{0xff}, 8)...), "too large"},
 		{"truncated string", []byte("X\x10\x00\x00\x00abc"), "truncated"},
-		{"line too long", append([]byte("I"), bytes.Repeat([]byte("1"), 70<<10)...), "line too long"},
+		{"line too long", append([]byte("I"), bytes.Repeat([]byte("1"), 70<<10)...), "limit: line longer than"},
 		{"truncated GLOBAL", []byte("cos\n"), "truncated"},
 		{"stack_global underflow", []byte("\x80\x04\x93."), "stack underflow"},
 		{"reduce underflow", []byte("R."), "stack underflow"},
@@ -219,13 +219,15 @@ func TestGGUFErrors(t *testing.T) {
 		{"unknown type", hdr(0, 1).str("k").u32(99).Bytes(), 1 << 20, "unknown value type"},
 		{"string too long", hdr(0, 1).str("k").u32(ggufString).u64(1 << 40).Bytes(), 1 << 20, "too large"},
 		{"array too large", hdr(0, 1).str("k").u32(ggufArray).u32(ggufU8).u64(1 << 40).Bytes(), 1 << 20, "too large"},
-		{"nested arrays", hdr(0, 1).str("k").u32(ggufArray).u32(ggufArray).u64(1).u32(ggufArray).u64(1).u32(ggufArray).u64(1).u32(ggufArray).u64(1).u32(ggufArray).u64(1).Bytes(), 1 << 20, "nested too deeply"},
+		{"nested arrays", hdr(0, 1).str("k").u32(ggufArray).u32(ggufArray).u64(1).u32(ggufArray).u64(1).u32(ggufArray).u64(1).u32(ggufArray).u64(1).u32(ggufArray).u64(1).Bytes(), 1 << 20, "nested more than"},
 		{"too many dims", hdr(1, 0).str("t").u32(9).Bytes(), 1 << 20, "dimensions"},
 		{"over budget", hdr(0, 1).str("k").u32(ggufString).str(strings.Repeat("x", 100)).Bytes(), 50, "read limit"},
+		// A declared length past the end of the file is never allocated.
+		{"string past EOF", hdr(0, 1).str("k").u32(ggufString).u64(32 << 20).Bytes(), 1 << 30, "past the end of the file"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := parseGGUF(bytes.NewReader(tc.b), tc.budget)
+			_, err := parseGGUF(bytes.NewReader(tc.b), int64(len(tc.b)), tc.budget)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("want error containing %q, got %v", tc.want, err)
 			}
@@ -244,11 +246,11 @@ func TestONNXErrors(t *testing.T) {
 		{"length past end", []byte{0x3a, 0x7f, 0x01}, "runs past"},
 		{"group wire type", []byte{0x0b}, "wire type"},
 		{"external without location", onnxModel([][]byte{cat(pbLen(8, []byte("w")), pbVar(14, 1))}, nil), "no location"},
-		{"deep subgraphs", deepGraph(40), "nested too deeply"},
+		{"deep subgraphs", deepGraph(40), "limit: onnx: subgraphs nested more than"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := parseONNX(bytes.NewReader(tc.b), int64(len(tc.b)))
+			_, err := parseONNX(bytes.NewReader(tc.b), int64(len(tc.b)), DefaultOptions().MaxONNXFields)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("want error containing %q, got %v", tc.want, err)
 			}
@@ -336,7 +338,7 @@ func TestScanEdgeCases(t *testing.T) {
 		{"npz object member", map[string][]byte{"a.npz": zipOf(t, member{"arr_0.npy", npyObjectFile(printPayload())}, member{"arr_1.npy", npy(1, numeric)})}, nil, RulePickleCodeExec + "|builtins.print", true},
 		{"keras no config", map[string][]byte{"a.keras": zipOf(t, member{"metadata.json", []byte("{}")})}, nil, RuleParseFailed + "|no config.json", true},
 		{"keras bad config", map[string][]byte{"a.keras": zipOf(t, member{"config.json", []byte("{")})}, nil, RuleParseFailed + "|config.json", true},
-		{"keras big config", map[string][]byte{"a.keras": zipOf(t, member{"config.json", []byte(`{"a":"` + strings.Repeat("x", 100) + `"}`)})}, func(o *Options) { o.MaxJSONBytes = 10 }, RuleParseFailed + "|too large", true},
+		{"keras big config", map[string][]byte{"a.keras": zipOf(t, member{"config.json", []byte(`{"a":"` + strings.Repeat("x", 100) + `"}`)})}, func(o *Options) { o.MaxJSONBytes = 10 }, RuleParseFailed + "|limit: config.json larger than", true},
 		{"h5 clean", map[string][]byte{"a.h5": cat([]byte("\x89HDF\r\n\x1a\n"), make([]byte, 3<<20))}, nil, "", true},
 		{"zip without pickle", map[string][]byte{"a.pt": zipOf(t, member{"x.txt", []byte("x")})}, nil, RuleParseFailed + "|no .pkl member", true},
 		{"zip too many entries", map[string][]byte{"a.pt": zipOf(t, member{"a.pkl", printPayload()}, member{"b.pkl", printPayload()})}, func(o *Options) { o.MaxZipEntries = 1 }, RuleParseFailed + "|entries", true},
@@ -347,7 +349,27 @@ func TestScanEdgeCases(t *testing.T) {
 		{"generation config", map[string][]byte{"generation_config.json": []byte(`{"max_length":10}`)}, nil, "", true},
 		{"template list", map[string][]byte{"tokenizer_config.json": []byte(`{"chat_template":[{"name":"default","template":"{{ x.__globals__ }}"}]}`)}, nil, RuleChatTemplate + "|chat_template[default]", true},
 		{"config bad json", map[string][]byte{"config.json": []byte("{")}, nil, "", false},
-		{"config too big", map[string][]byte{"config.json": []byte(`{"model_type":"x"}`)}, func(o *Options) { o.MaxJSONBytes = 4 }, "", false},
+		// Regression (M8): an oversized config.json used to be skipped
+		// silently, hiding an auto_map from the scan. It now fails closed.
+		{"config too big", map[string][]byte{"config.json": []byte(`{"model_type":"x"}`)}, func(o *Options) { o.MaxJSONBytes = 4 }, RuleParseFailed + "|limit: config.json is 18 bytes", true},
+		// Regression (M8): Python's json accepts NaN/Infinity/1e400, Go's
+		// doesn't; a model config Go can't decode must not be skipped.
+		{"config NaN with auto_map", map[string][]byte{"config.json": []byte(`{"auto_map":{"AutoModel":"m.M"},"x":NaN}`)}, nil, RuleParseFailed + "|config.json: invalid character 'N'", true},
+		{"config 1e400 with model_type", map[string][]byte{"config.json": []byte(`{"model_type":"x","y":1e400}`)}, nil, RuleParseFailed + "|config.json", true},
+		{"unrelated bad json", map[string][]byte{"config.json": []byte(`{"port":NaN}`)}, nil, "", false},
+		// Regression (M8): numpy reads the header with literal_eval, so
+		// double quotes, spacing and "object" all load as object arrays.
+		{"npy double-quoted object", map[string][]byte{"a.npy": append(npy(1, `{"descr": "|O", "fortran_order": False, "shape": (1,), }`+"\n"), printPayload()...)}, nil, RulePickleCodeExec + "|builtins.print", true},
+		{"npy spaced object", map[string][]byte{"a.npy": append(npy(1, "{'descr' : 'object', 'fortran_order': False, 'shape': (1,), }\n"), printPayload()...)}, nil, RuleNumpyObject + "|dtype object", true},
+		{"npy escaped descr", map[string][]byte{"a.npy": append(npy(1, `{'descr': '\x4f', 'fortran_order': False, 'shape': (1,), }`+"\n"), printPayload()...)}, nil, RuleNumpyObject + "|dtype object", true},
+		// Regression (M8): more pickles than the stream cap is reported,
+		// not silently cut short (the 65th could carry the payload).
+		{"too many pickles", map[string][]byte{"a.pkl": cat(bytes.Repeat(newPk(2).op('N').stop(), maxPickles), printPayload())}, nil, RuleParseFailed + "|limit: more than 64 consecutive pickles", true},
+		// Regression (M8): distinct imports per file are capped (memory).
+		{"too many imports", map[string][]byte{"a.pkl": manyGlobals(20)}, func(o *Options) { o.MaxImports = 10 }, RuleParseFailed + "|limit: more than 10 distinct", true},
+		// Regression (M8): members are capped together, not only one by one
+		// (overlapping entries can reuse the same compressed bytes).
+		{"zip total budget", map[string][]byte{"a.pt": manyMemberZip(t, 50)}, func(o *Options) { o.MaxZipTotalBytes = 10 << 10 }, RuleParseFailed + "|limit: possible zip bomb: archive members decompress to more than", true},
 		{"config model_type only", map[string][]byte{"config.json": []byte(`{"model_type":"bert"}`)}, nil, "", true},
 		{"gguf truncated", map[string][]byte{"a.gguf": ggufFile("x")[:40]}, nil, RuleParseFailed + "|gguf", true},
 		{"legacy torch only magic", map[string][]byte{"a.pt": legacyTorchMagic}, nil, "", true},

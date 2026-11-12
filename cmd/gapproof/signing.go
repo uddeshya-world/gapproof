@@ -65,12 +65,23 @@ func newSignCmd() *cobra.Command {
 			if fi, err := os.Stat(in); err != nil || !fi.IsDir() {
 				return usagef("--in %s is not an evidence directory", in)
 			}
+			if out == "" {
+				out = filepath.Clean(in) + ".bundle.tar"
+			}
+			// Work on the real directory: walking a symlinked root would
+			// see no files at all.
+			display := in
+			resolved, err := filepath.EvalSymlinks(in)
+			if err != nil {
+				return usagef("--in %s: %v", in, err)
+			}
+			in = resolved
 			key, err := bundle.LoadPrivateKey(keyPath)
 			if err != nil {
 				return usagef("--key: %v", err)
 			}
-			if out == "" {
-				out = filepath.Clean(in) + ".bundle.tar"
+			if w := bundle.PrivateKeyWarning(keyPath); w != "" {
+				fmt.Fprintln(cmd.ErrOrStderr(), w)
 			}
 
 			m, err := bundle.ReadManifest(in)
@@ -98,13 +109,16 @@ func newSignCmd() *cobra.Command {
 
 			fp, err := bundle.Sign(in, key)
 			if err != nil {
+				if errors.Is(err, bundle.ErrNoFiles) {
+					return usagef("--in %s: %v", display, err)
+				}
 				return usagef("%v (re-run with --rehash to sign the directory as it is now)", err)
 			}
 			if err := bundle.Pack(in, out); err != nil {
 				return usagef("packing: %v", err)
 			}
 			w := cmd.OutOrStdout()
-			fmt.Fprintf(w, "signed %s (%d files) with %s\nbundle: %s\n", in, len(m.Files), fp, out)
+			fmt.Fprintf(w, "signed %s (%d files) with %s\nbundle: %s\n", display, len(m.Files), fp, out)
 			if m.Artifact == "" {
 				fmt.Fprintln(cmd.ErrOrStderr(), "warning: no artifact digest recorded, so `verify --artifact` can't bind this bundle to an image")
 			} else {

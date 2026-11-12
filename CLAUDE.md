@@ -69,10 +69,9 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
   - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
   - `scan --out` must be a new or empty directory.
   - The harness e2e needs `bin/gapproof harness load dist/gapproof-harness-*.oci.tar` after every `make harness`.
-- Push to a personal GitHub (keep the repo private until the owner's pre-launch legal check is done) so GitHub Actions runs.
+- Remote: private repo `github.com/uddeshya-world/gapproof` created 2026-11-12 and set as `origin`; nothing pushed yet. Push (still private) once the owner says so; stay private until the pre-launch legal check is done.
 - Promote the low-confidence rules (Unstructured, OpenAI and Anthropic base URL) after checking upstream source.
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.
-- Module path: `github.com/uddeshya-world/gapproof` (confirm it's the personal account).
-- MESA INV-01 source isn't in the workspace; the owner points to it before M5.
+- 2026-11-12: INV-01 restated against MESA (mesa-ibi-scanner v0.3.2 LATTICE.md), D-032; the Go port is in progress on `m5-mesa-inv01`. Merged into `m4-integrate`: AGR fail-closed fixes (D-033), bundle hardening (D-034; older bundles with names sorting before `MANIFEST.*` must be re-signed), fuzz and model limits (m8), and rejection of sparse layer members. The demo is in progress on the m4-demo worktree.
 - Still open from the review (P1): `verify --rescan`.
