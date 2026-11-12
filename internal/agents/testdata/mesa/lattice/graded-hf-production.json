@@ -1,0 +1,56 @@
+{
+  "description": "public-writable registry with open egress, internal-data worker, production",
+  "expected": {
+    "closure": {
+      "agent:eval-worker": {
+        "E": 3,
+        "P": 2,
+        "U": 3
+      }
+    },
+    "near_miss": [],
+    "violations": [
+      "agent:eval-worker"
+    ]
+  },
+  "family": "graded-incident",
+  "id": "graded-hf-production",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:eval-worker",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:artifact-registry"
+      },
+      {
+        "dst": "agent:eval-worker",
+        "flow_type": "proxy/egress",
+        "pdp_gate": false,
+        "src": "svc:artifact-registry"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:eval-worker",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 2,
+          "U": 0
+        },
+        "zone": "production"
+      },
+      {
+        "id": "svc:artifact-registry",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

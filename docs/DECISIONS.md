@@ -211,6 +211,14 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 
 **Golden parity.** The Go port must reproduce `mesa-ibi-scanner`'s verdicts, closures, witnesses and cuts on its public fixtures, after converting them to the gapproof form. The parity fixtures are checked in as test data.
 
+**Port notes (2026-11-12, branch `m5-mesa-inv01`).**
+- *Spec version.* The graded lattice isn't in the `v0.3.2` tag. It first shipped in package version 0.4.0, which is untagged. The port follows `docs/LATTICE.md` and `lattice.py` at commit `b9cb325`, so the evidence records `mesa_spec: "mesa-ibi-scanner 0.4.0 LATTICE (b9cb325)"`.
+- *`reads: internal`.* The schema had no P=2 label, so this adds `internal` next to `untrusted`. P=1 (synthetic) and U=1 (authenticated-internal) have no label. Declaring nothing under-states them, but they can't reach the threshold of 2 either way.
+- *Edges.* A tool's `read` edge exists only if it has a read label, and its `proxy/egress` edge only if it has a sink label. An edge from a level-0 tool changes no closure, witness or cut.
+- *`exec` with `targets`* stays E=3. Arbitrary code isn't bound by an allowlist (over-inclusion).
+- *Cut wording.* A tool edge reads "gate `x` in `a` (or remove `x` from `a`)". A handoff edge reads "remove the handoff `a` → `b`". A manifest gate applies in every agent, which only removes more edges, so by P-01 it still breaks the violation. The cut is MESA's source-side minimum cut, so it names the edge nearest the source (usually the read). The agent's own data is a tool in gapproof, so it can be cut, unlike a MESA agent's own level. On converted fixtures the cut can therefore move from U to P.
+- *Algorithm.* The cut uses Dinic, not Edmonds–Karp. The source-side cut is the same for every maximum flow, so the result is identical and hostile 100-agent manifests stay well under a second.
+
 ## D-033 (2026-11-12): AGR fails closed on edge inputs (AGR-vs-spec audit)
 - **Live target required.** A passing workload only counts if the target is still running and not unhealthy. A crashed target makes no egress and must not look silent.
 - **Observation window.** A window of 0s or less blocks AGR-2. `--observe` must be at least 1s, and the elapsed time is truncated, not rounded.

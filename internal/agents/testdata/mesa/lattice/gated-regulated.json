@@ -1,0 +1,48 @@
+{
+  "description": "the only inbound edge is PDP-gated, regulated",
+  "expected": {
+    "closure": {
+      "agent:a": {
+        "E": 1,
+        "P": 0,
+        "U": 0
+      }
+    },
+    "near_miss": [],
+    "violations": []
+  },
+  "family": "gated",
+  "id": "gated-regulated",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:a",
+        "flow_type": "read",
+        "pdp_gate": true,
+        "src": "svc:s"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:a",
+        "kind": "agent",
+        "levels": {
+          "E": 1,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "regulated"
+      },
+      {
+        "id": "svc:s",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 1,
+          "U": 1
+        }
+      }
+    ]
+  }
+}

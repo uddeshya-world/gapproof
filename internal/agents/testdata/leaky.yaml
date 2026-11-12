@@ -1,10 +1,13 @@
-# leaky-rag demo: one analyst agent, no gates.
+# leaky-rag demo: one analyst agent, no gates. It reads private documents,
+# fetches untrusted web pages and can post out and run code: INV-01's
+# trifecta (P, U and E all at or above the production threshold).
 agents:
   - name: analyst
-    tools: [read_file, search_docs, http_post, run_python]
+    tools: [read_file, search_docs, fetch_url, http_post, run_python]
     handoffs: []
 tools:
   read_file:   { reads: [sensitive] }
   search_docs: { reads: [sensitive] }
+  fetch_url:   { reads: [untrusted] }
   http_post:   { sinks: [boundary_crossing], targets: ["notes.internal"] }
   run_python:  { sinks: [exec, boundary_crossing] }

@@ -1,196 +1,102 @@
 package agents
 
-import (
-	"slices"
-	"strings"
+import "strings"
+
+// Read labels map to a P or U level, sink labels to an E level (D-032).
+var (
+	readLevels = map[string]Levels{
+		ReadSensitive: {3, 0, 0}, // regulated/customer
+		ReadInternal:  {2, 0, 0}, // internal
+		ReadPublic:    {0, 2, 0}, // anonymous-external
+		ReadUntrusted: {0, 3, 0}, // public-writable
+	}
+	sinkLevels = map[string]Levels{
+		SinkInternal: {0, 0, 1}, // mesh-internal
+		SinkExec:     {0, 0, 3}, // open-internet (arbitrary code can reach anything)
+		// SinkBoundary is E=3, or E=2 with a non-empty targets allowlist.
+	}
 )
 
-// MaxReportedPaths caps the violating (source, sink) pairs listed with an
-// example path. Result.Violations always carries the full count.
-const MaxReportedPaths = 100
-
-// Path is one violating (source, sink) pair with one shortest example path,
-// as agent-qualified nodes ("analyst:read_file").
-type Path struct {
-	Source string   `json:"source"`
-	Sink   string   `json:"sink"`
-	Kind   string   `json:"kind"` // "boundary_crossing", "exec" or "boundary_crossing+exec"
-	Nodes  []string `json:"nodes"`
-}
-
-// String renders the path as "a:x → a:y".
-func (p Path) String() string { return strings.Join(p.Nodes, " → ") }
-
-// graph is the manifest in index form, agents sorted by name and each
-// agent's tools sorted, so every traversal is deterministic.
-type graph struct {
-	agents   []string
-	tools    [][]string // per agent
-	handoffs [][]int    // per agent, sorted indices
-	defs     map[string]Tool
-	edges    int
-	nodes    int
-}
-
-func newGraph(m *Manifest) *graph {
-	g := &graph{defs: m.Tools}
-	as := slices.Clone(m.Agents)
-	slices.SortFunc(as, func(a, b Agent) int { return strings.Compare(a.Name, b.Name) })
-	idx := map[string]int{}
-	for i, a := range as {
-		idx[a.Name] = i
-		g.agents = append(g.agents, a.Name)
-		ts := slices.Clone(a.Tools)
-		slices.Sort(ts)
-		g.tools = append(g.tools, ts)
-		g.nodes += len(ts)
+// Levels returns the tool's MESA level vector.
+func (t Tool) Levels() Levels {
+	var l Levels
+	for _, r := range t.Reads {
+		l = join(l, readLevels[r])
 	}
-	for _, a := range as {
-		var hs []int
-		for _, h := range a.Handoffs {
-			hs = append(hs, idx[h])
+	for _, s := range t.Sinks {
+		if s == SinkBoundary {
+			e := 3
+			if len(t.Targets) > 0 {
+				e = 2 // allowlisted-external
+			}
+			l = join(l, Levels{0, 0, e})
+			continue
 		}
-		slices.Sort(hs)
-		g.handoffs = append(g.handoffs, hs)
-		g.edges += len(hs)
+		l = join(l, sinkLevels[s])
 	}
+	return l
+}
+
+// toolVertex is the vertex id of tool t held by agent a. Agent names can't
+// contain ':', so tool and agent ids never collide.
+func toolVertex(a, t string) string { return a + ":" + t }
+
+// buildGraph turns a manifest into a MESA lattice graph (D-032):
+//   - each agent is a vertex with L = (0, 0, 0);
+//   - each (agent, tool) is a vertex with the tool's levels, so a cut can
+//     name one agent's copy of a tool;
+//   - a tool feeds its agent along a `read` edge (3,3,0) when it reads
+//     anything and a `proxy/egress` edge (0,0,3) when it sinks anything;
+//   - a handoff A → B is a `read` edge: B receives A's data and untrusted
+//     content, not A's egress;
+//   - a human_approval gate marks that tool's edges gated in every agent.
+func buildGraph(m *Manifest) *lgraph {
+	g := newLGraph()
+	for _, a := range m.Agents {
+		g.addVertex(a.Name, true, Levels{})
+	}
+	for _, a := range m.Agents {
+		for _, name := range a.Tools {
+			t := m.Tools[name]
+			id := toolVertex(a.Name, name)
+			g.addVertex(id, false, t.Levels())
+			_, gated := m.Gates[name]
+			if len(t.Reads) > 0 {
+				g.addEdge(&ledge{src: id, dst: a.Name, flow: FlowRead, gated: gated})
+			}
+			if len(t.Sinks) > 0 {
+				g.addEdge(&ledge{src: id, dst: a.Name, flow: FlowProxyEgress, gated: gated})
+			}
+		}
+		for _, h := range a.Handoffs {
+			g.addEdge(&ledge{src: a.Name, dst: h, flow: FlowRead})
+		}
+	}
+	g.finish()
 	return g
 }
 
-// state is a hypothetical manifest: the declared one plus cut-set actions.
-type state struct {
-	gated   map[string]bool    // tool name
-	removed map[[2]string]bool // {agent, tool}
+// CutEdge is one edge of a minimal cut, as a manifest change.
+type CutEdge struct {
+	Agent   string `json:"agent"`
+	Tool    string `json:"tool,omitempty"`    // a tool held by Agent
+	Handoff string `json:"handoff,omitempty"` // or a handoff from Agent
 }
 
-func (st state) active(agent, tool string) bool { return !st.removed[[2]string{agent, tool}] }
-
-// open reports whether data may flow into (and so through) the node.
-func (st state) open(agent, tool string) bool { return st.active(agent, tool) && !st.gated[tool] }
-
-// cost bounds the work of one violations() call (one reach per agent), for
-// the cut-set budget.
-func (g *graph) cost() int { return (1 + len(g.agents)) * (1 + len(g.agents) + g.edges + g.nodes) }
-
-// violations counts violating (source, sink) pairs under st. With collect it
-// also returns up to MaxReportedPaths pairs in (source agent, source tool,
-// sink agent, sink tool) order, each with a shortest path. With firstOnly it
-// stops at the first violation.
-func (g *graph) violations(st state, collect, firstOnly bool) (int, []Path) {
-	total := 0
-	var paths []Path
-	parent := make([]int, len(g.agents))
-	for a, agent := range g.agents {
-		var sources []string
-		for _, t := range g.tools[a] {
-			if g.defs[t].Sensitive() && st.active(agent, t) {
-				sources = append(sources, t)
-			}
-		}
-		if len(sources) == 0 {
-			continue
-		}
-		reached := g.reach(st, a, parent)
-		type sinkNode struct {
-			agent int
-			tool  string
-		}
-		var sinks []sinkNode
-		for _, x := range reached {
-			for _, t := range g.tools[x] {
-				if g.defs[t].Sink() && st.open(g.agents[x], t) {
-					sinks = append(sinks, sinkNode{x, t})
-				}
-			}
-		}
-		if len(sinks) == 0 {
-			continue
-		}
-		total += len(sources) * len(sinks)
-		if firstOnly {
-			return total, nil
-		}
-		if !collect || len(paths) >= MaxReportedPaths {
-			continue
-		}
-		for _, s := range sources {
-			for _, k := range sinks {
-				if len(paths) >= MaxReportedPaths {
-					break
-				}
-				paths = append(paths, g.path(st, a, s, k.agent, k.tool, parent))
-			}
-		}
+// String words the change: "gate `x` in `a` (or remove `x` from `a`)", or
+// "remove the handoff `a` → `b`".
+func (c CutEdge) String() string {
+	if c.Handoff != "" {
+		return "remove the handoff `" + c.Agent + "` → `" + c.Handoff + "`"
 	}
-	return total, paths
+	return "gate `" + c.Tool + "` in `" + c.Agent + "` (or remove `" + c.Tool + "` from `" + c.Agent + "`)"
 }
 
-// reach returns the agents (sorted by index) whose tools a source in agent
-// src can feed, filling parent with a BFS tree. src always relays to its
-// handoffs (the source itself feeds them); any other agent relays only
-// through an open tool.
-func (g *graph) reach(st state, src int, parent []int) []int {
-	for i := range parent {
-		parent[i] = -2
+// cutEdge maps a graph edge back to the manifest. Agent vertices have no
+// ':' in their id; tool vertices are "agent:tool".
+func cutEdge(e *ledge) CutEdge {
+	if i := strings.IndexByte(e.src, ':'); i >= 0 {
+		return CutEdge{Agent: e.src[:i], Tool: e.src[i+1:]}
 	}
-	parent[src] = -1
-	queue := []int{src}
-	for len(queue) > 0 {
-		x := queue[0]
-		queue = queue[1:]
-		if x != src && g.relay(st, x) == "" {
-			continue
-		}
-		for _, y := range g.handoffs[x] {
-			if parent[y] == -2 {
-				parent[y] = x
-				queue = append(queue, y)
-			}
-		}
-	}
-	var out []int
-	for i, p := range parent {
-		if p != -2 {
-			out = append(out, i)
-		}
-	}
-	return out
-}
-
-// relay returns the first open tool of agent x, or "".
-func (g *graph) relay(st state, x int) string {
-	for _, t := range g.tools[x] {
-		if st.open(g.agents[x], t) {
-			return t
-		}
-	}
-	return ""
-}
-
-func (g *graph) path(st state, src int, s string, dst int, k string, parent []int) Path {
-	var hops []int // intermediate agents, dst back to src exclusive
-	for x := parent[dst]; dst != src && x != src && x >= 0; x = parent[x] {
-		hops = append(hops, x)
-	}
-	slices.Reverse(hops)
-	p := Path{Source: g.agents[src] + ":" + s, Sink: g.agents[dst] + ":" + k, Kind: sinkKind(g.defs[k])}
-	p.Nodes = []string{p.Source}
-	for _, x := range hops {
-		p.Nodes = append(p.Nodes, g.agents[x]+":"+g.relay(st, x))
-	}
-	if p.Sink != p.Source {
-		p.Nodes = append(p.Nodes, p.Sink)
-	}
-	return p
-}
-
-func sinkKind(t Tool) string {
-	b, e := slices.Contains(t.Sinks, SinkBoundary), t.Exec()
-	switch {
-	case b && e:
-		return SinkBoundary + "+" + SinkExec
-	case e:
-		return SinkExec
-	}
-	return SinkBoundary
+	return CutEdge{Agent: e.src, Handoff: e.dst}
 }

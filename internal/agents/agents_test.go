@@ -1,12 +1,14 @@
 package agents
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/uddeshya-world/gapproof/internal/evidence"
 )
@@ -29,167 +31,303 @@ func analyze(t testing.TB, name string) (*Result, []evidence.Finding) {
 	return r, fs
 }
 
-func pathStrings(r *Result) []string {
-	var out []string
-	for _, p := range r.Paths {
-		out = append(out, p.String())
+func analyzeYAML(t testing.TB, y string) (*Result, []evidence.Finding) {
+	t.Helper()
+	r, fs, err := Analyze("m.yaml", []byte(y))
+	if err != nil {
+		t.Fatal(err)
 	}
-	return out
+	return r, fs
+}
+
+func verdictOf(t testing.TB, r *Result, agent string) AgentVerdict {
+	t.Helper()
+	for _, v := range r.Verdicts {
+		if v.Agent == agent {
+			return v
+		}
+	}
+	t.Fatalf("no verdict for %s in %+v", agent, r.Verdicts)
+	return AgentVerdict{}
+}
+
+func TestMapping(t *testing.T) {
+	cases := []struct {
+		tool Tool
+		want Levels
+	}{
+		{Tool{}, Levels{0, 0, 0}},
+		{Tool{Reads: []string{ReadSensitive}}, Levels{3, 0, 0}},
+		{Tool{Reads: []string{ReadInternal}}, Levels{2, 0, 0}},
+		{Tool{Reads: []string{ReadPublic}}, Levels{0, 2, 0}},
+		{Tool{Reads: []string{ReadUntrusted}}, Levels{0, 3, 0}},
+		{Tool{Reads: []string{ReadInternal, ReadSensitive, ReadPublic, ReadUntrusted}}, Levels{3, 3, 0}},
+		{Tool{Sinks: []string{SinkBoundary}}, Levels{0, 0, 3}},
+		{Tool{Sinks: []string{SinkBoundary}, Targets: []string{"api.example.com"}}, Levels{0, 0, 2}},
+		{Tool{Sinks: []string{SinkInternal}}, Levels{0, 0, 1}},
+		{Tool{Sinks: []string{SinkExec}, Targets: []string{"x"}}, Levels{0, 0, 3}},
+		{Tool{Sinks: []string{SinkInternal, SinkBoundary}, Targets: []string{"x"}}, Levels{0, 0, 2}},
+	}
+	for _, c := range cases {
+		if got := c.tool.Levels(); got != c.want {
+			t.Errorf("%+v: levels %v, want %v", c.tool, got, c.want)
+		}
+	}
+	if Threshold != (Levels{2, 2, 2}) {
+		t.Fatalf("threshold = %v", Threshold)
+	}
+}
+
+func TestBuildGraph(t *testing.T) {
+	m, err := ParseManifest([]byte(`
+agents:
+  - {name: a, tools: [rd, post, both, idle], handoffs: [b]}
+  - {name: b, tools: [rd]}
+tools: {rd: {reads: [public]}, post: {sinks: [internal]}, both: {reads: [internal], sinks: [exec]}, idle: {}}
+gates: {rd: human_approval}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := buildGraph(m)
+	var got []string
+	for _, e := range g.edges {
+		got = append(got, fmt.Sprintf("%s->%s %s gated=%v", e.src, e.dst, e.flow, e.gated))
+	}
+	want := []string{
+		"a->b read gated=false",
+		"a:both->a proxy/egress gated=false",
+		"a:both->a read gated=false",
+		"a:post->a proxy/egress gated=false",
+		"a:rd->a read gated=true",
+		"b:rd->b read gated=true",
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("edges:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	if !slices.Equal(g.ids, []string{"a", "a:both", "a:idle", "a:post", "a:rd", "b", "b:rd"}) {
+		t.Fatalf("ids = %v", g.ids)
+	}
 }
 
 func TestDemoManifests(t *testing.T) {
 	leaky, fs := analyze(t, "leaky.yaml")
-	wantPaths := []string{
-		"analyst:read_file → analyst:http_post",
-		"analyst:read_file → analyst:run_python",
-		"analyst:search_docs → analyst:http_post",
-		"analyst:search_docs → analyst:run_python",
-	}
-	if got := pathStrings(leaky); !slices.Equal(got, wantPaths) {
-		t.Fatalf("leaky paths = %q, want %q", got, wantPaths)
-	}
-	if !leaky.Ran || leaky.NoAgents || leaky.Violations != 4 || leaky.PathsTruncated {
+	if !leaky.Ran || leaky.NoAgents || leaky.Violations != 1 || leaky.NearMisses != 0 || leaky.Nodes != 5 {
 		t.Fatalf("leaky result = %+v", leaky)
 	}
-	wantCut := []Action{{Kind: ActionGate, Tool: "http_post"}, {Kind: ActionRemove, Tool: "run_python", Agent: "analyst"}}
-	if !slices.Equal(leaky.CutSet, wantCut) || !leaky.CutSetMinimal {
-		t.Fatalf("leaky cut = %v minimal=%v, want %v", leaky.CutSet, leaky.CutSetMinimal, wantCut)
+	if leaky.MESASpec != "mesa-ibi-scanner 0.4.0 LATTICE (b9cb325)" || leaky.Threshold != (Levels{2, 2, 2}) {
+		t.Fatalf("spec/threshold = %q %v", leaky.MESASpec, leaky.Threshold)
 	}
-	if want := "Smallest fix (2 changes, proven minimal): gate `http_post` and remove `run_python` from `analyst`."; leaky.Suggestion != want {
+	v := verdictOf(t, leaky, "analyst")
+	if !v.Violation || v.Closure != (Levels{3, 3, 3}) || len(v.Missing) != 0 {
+		t.Fatalf("verdict = %+v", v)
+	}
+	wantW := Witness{
+		P: []string{"analyst:read_file", "analyst"},
+		U: []string{"analyst:fetch_url", "analyst"},
+		E: []string{"analyst:run_python", "analyst"},
+	}
+	if fmt.Sprint(*v.Witness) != fmt.Sprint(wantW) {
+		t.Fatalf("witness = %+v", *v.Witness)
+	}
+	// U has one source edge; P and E have two each.
+	if v.CutDimension != "U" || !slices.Equal(v.Cut, []CutEdge{{Agent: "analyst", Tool: "fetch_url"}}) {
+		t.Fatalf("cut = %v on %s", v.Cut, v.CutDimension)
+	}
+	if want := "INV-01 smallest fix per violating agent (MESA minimal cut): `analyst`: gate `fetch_url` in `analyst` (or remove `fetch_url` from `analyst`)."; leaky.Suggestion != want {
 		t.Fatalf("suggestion = %q", leaky.Suggestion)
 	}
-	if leaky.Paths[1].Kind != "boundary_crossing+exec" || leaky.Paths[0].Kind != SinkBoundary {
-		t.Fatalf("kinds = %v", leaky.Paths)
+	if len(fs) != 1 {
+		t.Fatalf("leaky findings = %+v", fs)
 	}
-	if len(fs) != 4 {
-		t.Fatalf("leaky findings = %d", len(fs))
+	f := fs[0]
+	if f.Rule != "AGENT-INV01-analyst" || !strings.HasPrefix(f.Rule, evidence.RuleAgentPrefix) || f.Severity != evidence.High ||
+		!slices.Equal(f.Controls, []string{"AC-3", "AC-4", "AC-6"}) || evidence.Waivable(f.Rule) {
+		t.Fatalf("finding = %+v", f)
 	}
-	sum := leaky.ManifestSHA256
-	if len(sum) != 64 {
-		t.Fatalf("sha = %q", sum)
+	for _, s := range []string{StatementDeclared, "(P=3, U=3, E=3)", "(P=2, U=2, E=2)", "mesa-ibi-scanner 0.4.0 LATTICE (b9cb325)",
+		"P: analyst:read_file → analyst", "U: analyst:fetch_url → analyst", "E: analyst:run_python → analyst",
+		"Minimal cut (untrusted input (U), 1 edge(s)): gate `fetch_url` in `analyst`"} {
+		if !strings.Contains(strings.ToLower(f.Explanation), strings.ToLower(s)) {
+			t.Errorf("explanation lacks %q: %s", s, f.Explanation)
+		}
 	}
-	for i, f := range fs {
-		if f.Rule != RuleINV01Path || f.Severity != evidence.High || !slices.Equal(f.Controls, []string{"AC-3", "AC-4", "AC-6"}) {
-			t.Errorf("finding %d = %+v", i, f)
-		}
-		if !strings.Contains(strings.ToLower(f.Explanation), StatementDeclared) {
-			t.Errorf("finding %d explanation lacks %q: %s", i, StatementDeclared, f.Explanation)
-		}
-		if f.Evidence.Path != "leaky.yaml" || f.Evidence.SHA256 != sum || f.Evidence.Detail != wantPaths[i] || f.Fix != leaky.Suggestion {
-			t.Errorf("finding %d evidence = %+v fix=%q", i, f.Evidence, f.Fix)
-		}
+	if f.Evidence.Path != "leaky.yaml" || len(f.Evidence.SHA256) != 64 ||
+		f.Evidence.Detail != "closure=(P=3, U=3, E=3) threshold=(P=2, U=2, E=2); P: analyst:read_file → analyst; U: analyst:fetch_url → analyst; E: analyst:run_python → analyst" {
+		t.Errorf("evidence = %+v", f.Evidence)
+	}
+	if f.Fix != "Apply gate `fetch_url` in `analyst` (or remove `fetch_url` from `analyst`). A `gates:` entry applies to every agent that holds the tool." {
+		t.Errorf("fix = %q", f.Fix)
 	}
 
 	fixed, fs := analyze(t, "fixed.yaml")
-	if !fixed.Ran || fixed.Violations != 0 || len(fixed.Paths) != 0 || len(fixed.CutSet) != 0 || !fixed.CutSetMinimal || fixed.Suggestion != "" || fs != nil {
-		t.Fatalf("fixed = %+v, findings %v", fixed, fs)
+	if !fixed.Ran || fixed.Violations != 0 || fixed.NearMisses != 1 || fixed.Suggestion != "" || fixed.Statement != StatementDeclared {
+		t.Fatalf("fixed = %+v", fixed)
 	}
-	if fixed.Statement != StatementDeclared {
-		t.Fatalf("fixed statement = %q", fixed.Statement)
+	v = verdictOf(t, fixed, "analyst")
+	if v.Violation || !v.NearMiss || v.Closure != (Levels{3, 3, 0}) || !slices.Equal(v.Missing, []string{"E"}) || v.Witness != nil || v.Cut != nil {
+		t.Fatalf("fixed verdict = %+v", v)
+	}
+	if len(fs) != 1 || fs[0].Rule != "AGENT-NEARMISS-analyst" || fs[0].Severity != evidence.Info ||
+		strings.HasPrefix(fs[0].Rule, evidence.RuleAgentPrefix) || !strings.Contains(fs[0].Title, "egress (E)") ||
+		fs[0].Evidence.Detail != "closure=(P=3, U=3, E=0) threshold=(P=2, U=2, E=2); missing E" {
+		t.Fatalf("fixed findings = %+v", fs)
+	}
+}
+
+// A near miss must never move the AGR level: it is info, outside the
+// AGENT-INV01- prefix, and the AGR-3 checks skip info agents findings.
+func TestNearMissDoesNotAffectAGR(t *testing.T) {
+	_, fs := analyze(t, "fixed.yaml")
+	evidence.AssignIDs(fs)
+	in := evidence.AGRInput{
+		EgressRan: true, TargetStarted: true, WorkloadPassed: true, ObservedWindowS: 60,
+		ModulesRan:   []string{evidence.ModEgress, evidence.ModPhoneHome, evidence.ModCrypto, evidence.ModModels, evidence.ModAgents},
+		Findings:     fs,
+		ModelsHashed: true, AgentsManifest: true,
+	}
+	if got := evidence.Compute(in); got.Level != evidence.LevelAGR4 {
+		t.Fatalf("near miss changed the level: %+v", got)
+	}
+	_, fs = analyze(t, "leaky.yaml")
+	evidence.AssignIDs(fs)
+	in.Findings = fs
+	if got := evidence.Compute(in); got.Level != evidence.LevelAGR3 || len(got.Blocking) != 1 || !strings.Contains(got.Blocking[0].Reason, "1 INV-01 violation") {
+		t.Fatalf("leaky level = %+v", got)
 	}
 }
 
 func TestNoAgents(t *testing.T) {
 	r, fs := analyze(t, "none.yaml")
-	if !r.Ran || !r.NoAgents || r.Violations != 0 || fs != nil || r.Statement != StatementNoAgents {
+	if !r.Ran || !r.NoAgents || r.Violations != 0 || fs != nil || r.Statement != StatementNoAgents || r.Threshold != Threshold {
 		t.Fatalf("none = %+v", r)
 	}
 }
 
-func TestHandoffPaths(t *testing.T) {
-	r, _ := analyze(t, "handoff.yaml")
-	want := []string{"retriever:read_db → summarizer:summarize → notifier:send_email"}
-	if got := pathStrings(r); !slices.Equal(got, want) {
-		t.Fatalf("paths = %q, want %q", got, want)
+func TestHandoff(t *testing.T) {
+	r, fs := analyze(t, "handoff.yaml")
+	if r.Violations != 1 || r.NearMisses != 2 || len(fs) != 3 {
+		t.Fatalf("result = %+v findings %d", r, len(fs))
 	}
-	// The cheapest fixes are one action; gating the boundary sink is preferred.
-	if !slices.Equal(r.CutSet, []Action{{Kind: ActionGate, Tool: "send_email"}}) || !r.CutSetMinimal {
-		t.Fatalf("cut = %v", r.CutSet)
+	v := verdictOf(t, r, "notifier")
+	want := Witness{
+		P: []string{"retriever:read_db", "retriever", "summarizer", "notifier"},
+		U: []string{"retriever:read_inbox", "retriever", "summarizer", "notifier"},
+		E: []string{"notifier:send_email", "notifier"},
 	}
-	if want := "Smallest fix (1 change, proven minimal): gate `send_email`."; r.Suggestion != want {
-		t.Fatalf("suggestion = %q", r.Suggestion)
+	if v.Closure != (Levels{3, 3, 3}) || fmt.Sprint(*v.Witness) != fmt.Sprint(want) {
+		t.Fatalf("notifier = %+v witness %+v", v, *v.Witness)
 	}
+	// Every dimension has a one-edge cut; P wins the tie, and the
+	// source-side cut is the edge nearest the source.
+	if v.CutDimension != "P" || !slices.Equal(v.Cut, []CutEdge{{Agent: "retriever", Tool: "read_db"}}) {
+		t.Fatalf("cut = %v on %s", v.Cut, v.CutDimension)
+	}
+	for _, a := range []string{"retriever", "summarizer"} {
+		if v := verdictOf(t, r, a); !v.NearMiss || v.Closure != (Levels{3, 3, 0}) {
+			t.Fatalf("%s = %+v", a, v)
+		}
+	}
+	var rules []string
+	for _, f := range fs {
+		rules = append(rules, f.Rule)
+	}
+	if !slices.Equal(rules, []string{"AGENT-INV01-notifier", "AGENT-NEARMISS-retriever", "AGENT-NEARMISS-summarizer"}) {
+		t.Fatalf("rules = %v", rules)
+	}
+}
 
+func TestSemantics(t *testing.T) {
 	cases := []struct {
 		name, yaml string
-		want       []string
+		agent      string
+		closure    Levels
+		violation  bool
+		cut        []CutEdge
 	}{
-		{"gated relay blocks the path", `
-agents:
-  - {name: a, tools: [rd], handoffs: [b]}
-  - {name: b, tools: [mid], handoffs: [c]}
-  - {name: c, tools: [post]}
-tools: {rd: {reads: [sensitive]}, mid: {}, post: {sinks: [boundary_crossing]}}
-gates: {mid: human_approval}`, nil},
-		{"agent with no tools can't relay", `
-agents:
-  - {name: a, tools: [rd], handoffs: [b]}
-  - {name: b, tools: [], handoffs: [c]}
-  - {name: c, tools: [post]}
-tools: {rd: {reads: [sensitive]}, post: {sinks: [boundary_crossing]}}`, nil},
-		{"handoffs are one-way", `
+		{"public browsing is no longer harmless (D-032)", `
+agents: [{name: a, tools: [web, db, post]}]
+tools: {web: {reads: [public]}, db: {reads: [internal]}, post: {sinks: [boundary_crossing], targets: [api.example.com]}}`,
+			"a", Levels{2, 2, 2}, true, []CutEdge{{Agent: "a", Tool: "db"}}},
+		{"mesh-internal egress stays below the threshold", `
+agents: [{name: a, tools: [web, db, save]}]
+tools: {web: {reads: [untrusted]}, db: {reads: [sensitive]}, save: {sinks: [internal]}}`,
+			"a", Levels{3, 3, 1}, false, nil},
+		{"a gate removes every edge of that tool", `
+agents: [{name: a, tools: [web, db, run]}]
+tools: {web: {reads: [untrusted]}, db: {reads: [sensitive]}, run: {sinks: [exec]}}
+gates: {run: human_approval}`,
+			"a", Levels{3, 3, 0}, false, nil},
+		{"a handoff carries data and untrusted input, not egress", `
 agents:
   - {name: a, tools: [post], handoffs: [b]}
-  - {name: b, tools: [rd]}
-tools: {rd: {reads: [sensitive]}, post: {sinks: [boundary_crossing]}}`, nil},
-		{"direct handoff, shortest of two routes", `
+  - {name: b, tools: [web, db]}
+tools: {web: {reads: [untrusted]}, db: {reads: [sensitive]}, post: {sinks: [boundary_crossing]}}`,
+			"b", Levels{3, 3, 0}, false, nil},
+		{"handoff into the egress holder violates; the source-side cut is nearest the source", `
 agents:
-  - {name: a, tools: [rd], handoffs: [b, c]}
-  - {name: b, tools: [x], handoffs: [c]}
-  - {name: c, tools: [post]}
-tools: {rd: {reads: [sensitive]}, x: {}, post: {sinks: [exec]}}`, []string{"a:rd → c:post"}},
-		{"gated source still feeds", `
+  - {name: a, tools: [web, db], handoffs: [b]}
+  - {name: b, tools: [post]}
+tools: {web: {reads: [untrusted]}, db: {reads: [sensitive]}, post: {sinks: [boundary_crossing]}}`,
+			"b", Levels{3, 3, 3}, true, []CutEdge{{Agent: "a", Tool: "db"}}},
+		{"an agent with no tools still relays", `
 agents:
-  - {name: a, tools: [rd, post]}
-tools: {rd: {reads: [sensitive]}, post: {sinks: [boundary_crossing]}}
-gates: {rd: human_approval}`, []string{"a:rd → a:post"}},
-		{"source and sink in one tool", `
-agents:
-  - {name: a, tools: [export]}
-tools: {export: {reads: [sensitive], sinks: [boundary_crossing]}}`, []string{"a:export"}},
-		{"gated source-sink is not a violation", `
-agents:
-  - {name: a, tools: [export]}
-tools: {export: {reads: [sensitive], sinks: [boundary_crossing]}}
-gates: {export: human_approval}`, nil},
-		{"internal sink and public read are not INV-01 nodes", `
-agents:
-  - {name: a, tools: [rd, save]}
-tools: {rd: {reads: [public]}, save: {sinks: [internal]}}`, nil},
-		{"cyclic handoffs terminate", `
-agents:
-  - {name: a, tools: [rd], handoffs: [b, a]}
-  - {name: b, tools: [x], handoffs: [a, c]}
-  - {name: c, tools: [y], handoffs: [b, d]}
-  - {name: d, tools: [post], handoffs: [a]}
-tools: {rd: {reads: [sensitive]}, x: {}, y: {}, post: {sinks: [boundary_crossing]}}`, []string{"a:rd → b:x → c:y → d:post"}},
+  - {name: a, tools: [web, db], handoffs: [m]}
+  - {name: m, tools: [], handoffs: [c]}
+  - {name: c, tools: [run]}
+tools: {web: {reads: [untrusted]}, db: {reads: [sensitive]}, run: {sinks: [exec]}}`,
+			"c", Levels{3, 3, 3}, true, []CutEdge{{Agent: "a", Tool: "db"}}},
+		{"one tool can hold all three", `
+agents: [{name: a, tools: [inbox]}]
+tools: {inbox: {reads: [sensitive, untrusted], sinks: [boundary_crossing]}}`,
+			"a", Levels{3, 3, 3}, true, []CutEdge{{Agent: "a", Tool: "inbox"}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			r, fs, err := Analyze("m.yaml", []byte(c.yaml))
-			if err != nil {
-				t.Fatal(err)
+			r, fs := analyzeYAML(t, c.yaml)
+			v := verdictOf(t, r, c.agent)
+			if v.Closure != c.closure || v.Violation != c.violation || !slices.Equal(v.Cut, c.cut) {
+				t.Fatalf("verdict = %+v", v)
 			}
-			if got := pathStrings(r); !slices.Equal(got, c.want) {
-				t.Fatalf("paths = %q, want %q", got, c.want)
-			}
-			if len(fs) != len(c.want) || r.Violations != len(c.want) {
-				t.Fatalf("findings %d, violations %d", len(fs), r.Violations)
+			if c.violation != slices.ContainsFunc(fs, func(f evidence.Finding) bool { return f.Rule == RuleINV01Prefix+c.agent }) {
+				t.Fatalf("findings = %+v", fs)
 			}
 		})
 	}
 }
 
-func TestSingleToolFinding(t *testing.T) {
-	_, fs, err := Analyze("m.yaml", []byte(`
-agents:
-  - {name: a, tools: [export, run]}
-tools: {export: {reads: [sensitive], sinks: [boundary_crossing]}, run: {sinks: [exec]}}`))
+func TestCutWording(t *testing.T) {
+	if got := (CutEdge{Agent: "a", Tool: "x"}).String(); got != "gate `x` in `a` (or remove `x` from `a`)" {
+		t.Fatal(got)
+	}
+	if got := (CutEdge{Agent: "a", Handoff: "b"}).String(); got != "remove the handoff `a` → `b`" {
+		t.Fatal(got)
+	}
+	// Two parallel routes: a two-edge cut, worded as "Apply all of".
+	_, fs := analyzeYAML(t, `
+agents: [{name: a, tools: [w1, w2, db, run]}]
+tools: {w1: {reads: [untrusted]}, w2: {reads: [public]}, db: {reads: [sensitive, internal]}, run: {sinks: [exec, boundary_crossing]}}`)
+	if len(fs) != 1 || !strings.HasPrefix(fs[0].Fix, "Apply gate `db` in `a`") {
+		t.Fatalf("fix = %q", fs[0].Fix)
+	}
+	_, fs = analyzeYAML(t, `
+agents: [{name: a, tools: [w1, w2, d1, d2, e1, e2]}]
+tools: {w1: {reads: [untrusted]}, w2: {reads: [public]}, d1: {reads: [sensitive]}, d2: {reads: [internal]}, e1: {sinks: [exec]}, e2: {sinks: [internal, boundary_crossing]}}`)
+	if len(fs) != 1 || !strings.HasPrefix(fs[0].Fix, "Apply all of: gate `d1` in `a` (or remove `d1` from `a`), and gate `d2` in `a`") {
+		t.Fatalf("fix = %q", fs[0].Fix)
+	}
+}
+
+func TestJSONShape(t *testing.T) {
+	r, _ := analyze(t, "leaky.yaml")
+	b, err := json.Marshal(r)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(fs) != 2 || !strings.Contains(fs[0].Explanation, "in a single tool") || !strings.Contains(fs[1].Explanation, "executes code") {
-		t.Fatalf("findings = %+v", fs)
+	for _, s := range []string{`"threshold":{"P":2,"U":2,"E":2}`, `"mesa_spec":"mesa-ibi-scanner 0.4.0 LATTICE (b9cb325)"`,
+		`"closure":{"P":3,"U":3,"E":3}`, `"cut_dimension":"U"`, `"cut":[{"agent":"analyst","tool":"fetch_url"}]`} {
+		if !strings.Contains(string(b), s) {
+			t.Errorf("json lacks %s: %s", s, b)
+		}
 	}
 }
 
@@ -211,10 +349,17 @@ func TestParseErrors(t *testing.T) {
 	for i := range MaxTools {
 		manyNodes += fmt.Sprintf("  t%d: {}\n", i)
 	}
+	const noZone = "`zone` and `thresholds` can't be set"
 	cases := []struct{ name, yaml, want string }{
 		{"empty", "", "empty"},
 		{"missing agents", "tools: {}\n", "`agents:` is required"},
 		{"unknown top key", "agents: []\nmodels: []\n", "field models not found"},
+		{"zone", "agents: []\nzone: research\n", noZone},
+		{"null zone", "agents: []\nzone:\n", noZone},
+		{"thresholds", "agents: []\nthresholds: {P: 3, U: 3, E: 3}\n", noZone},
+		{"agent zone", "agents: [{name: a, zone: research}]\n", "field zone not found"},
+		{"agent thresholds", "agents: [{name: a, thresholds: {}}]\n", "field thresholds not found"},
+		{"tool levels", "agents: []\ntools: {t: {levels: {P: 0}}}\n", "field levels not found"},
 		{"unknown tool key", "agents: []\ntools: {t: {writes: [x]}}\n", "field writes not found"},
 		{"unknown agent key", "agents: [{name: a, tools: [], memory: x}]\n", "field memory not found"},
 		{"unknown read label", "agents: []\ntools: {t: {reads: [secret]}}\n", `unknown reads label "secret"`},
@@ -256,6 +401,10 @@ func TestParseErrors(t *testing.T) {
 				t.Fatalf("err not prefixed: %v", err)
 			}
 		})
+	}
+	// Every read label is accepted.
+	if _, _, err := Analyze("m.yaml", []byte("agents: []\ntools: {t: {reads: [sensitive, internal, public, untrusted]}}\n")); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -303,40 +452,38 @@ func TestReadManifestFile(t *testing.T) {
 }
 
 func TestDeterministic(t *testing.T) {
-	// Agent and tool order in the file must not change the output.
+	// Agent, tool, label and handoff order in the file must not change the output.
 	a := `
 agents:
-  - {name: z, tools: [rd, post], handoffs: [y]}
+  - {name: z, tools: [rd, post, web], handoffs: [y, x]}
   - {name: y, tools: [run]}
-tools: {rd: {reads: [sensitive]}, post: {sinks: [boundary_crossing]}, run: {sinks: [exec]}}`
+  - {name: x, tools: [run, web2]}
+tools: {rd: {reads: [sensitive, internal]}, web: {reads: [untrusted]}, web2: {reads: [public]}, post: {sinks: [boundary_crossing]}, run: {sinks: [exec]}}`
 	b := `
-tools: {run: {sinks: [exec]}, post: {sinks: [boundary_crossing]}, rd: {reads: [sensitive]}}
+tools: {run: {sinks: [exec]}, web2: {reads: [public]}, post: {sinks: [boundary_crossing]}, web: {reads: [untrusted]}, rd: {reads: [internal, sensitive]}}
 agents:
+  - {name: x, tools: [web2, run]}
   - {name: y, tools: [run]}
-  - {name: z, tools: [post, rd], handoffs: [y]}`
-	ra, fa, err := Analyze("m.yaml", []byte(a))
-	if err != nil {
-		t.Fatal(err)
-	}
-	rb, fb, err := Analyze("m.yaml", []byte(b))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if fmt.Sprint(ra.Paths, ra.CutSet, ra.Suggestion) != fmt.Sprint(rb.Paths, rb.CutSet, rb.Suggestion) {
-		t.Fatalf("order-dependent:\n%v\n%v", ra, rb)
+  - {name: z, tools: [web, post, rd], handoffs: [x, y]}`
+	ra, fa := analyzeYAML(t, a)
+	rb, fb := analyzeYAML(t, b)
+	ra.ManifestSHA256, rb.ManifestSHA256 = "", ""
+	ja, _ := json.Marshal(ra)
+	jb, _ := json.Marshal(rb)
+	if string(ja) != string(jb) {
+		t.Fatalf("order-dependent:\n%s\n%s", ja, jb)
 	}
 	for i := range fa {
 		fa[i].Evidence.SHA256, fb[i].Evidence.SHA256 = "", ""
 	}
-	if fmt.Sprint(fa) != fmt.Sprint(fb) {
-		t.Fatalf("findings differ")
+	if fmt.Sprint(fa) != fmt.Sprint(fb) || len(fa) != 3 {
+		t.Fatalf("findings differ or wrong count (%d)", len(fa))
 	}
 }
 
 func TestLargeHostileGraph(t *testing.T) {
-	// 100 agents × 50 tools, every agent hands off to 99 others: bounded
-	// work, capped paths, and the cut falls back to a feasible greedy/trivial
-	// answer flagged as not proven minimal.
+	// 100 agents × 50 tools, every agent hands off to every other: the
+	// analysis stays polynomial and every agent violates.
 	var b strings.Builder
 	b.WriteString("agents:\n")
 	for i := range MaxAgents {
@@ -356,60 +503,23 @@ func TestLargeHostileGraph(t *testing.T) {
 		switch {
 		case i%10 == 0:
 			fmt.Fprintf(&b, "  t%03d: {reads: [sensitive]}\n", i)
+		case i%10 == 3:
+			fmt.Fprintf(&b, "  t%03d: {reads: [untrusted]}\n", i)
 		case i%7 == 0:
 			fmt.Fprintf(&b, "  t%03d: {sinks: [boundary_crossing]}\n", i)
 		default:
 			fmt.Fprintf(&b, "  t%03d: {}\n", i)
 		}
 	}
+	start := time.Now()
 	r, fs, err := Analyze("big.yaml", []byte(b.String()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !r.PathsTruncated || len(r.Paths) != MaxReportedPaths || r.Violations <= MaxReportedPaths {
-		t.Fatalf("violations=%d paths=%d truncated=%v", r.Violations, len(r.Paths), r.PathsTruncated)
+	if r.Violations != MaxAgents || len(fs) != MaxAgents || r.Nodes != MaxAgents*50 {
+		t.Fatalf("violations=%d findings=%d nodes=%d", r.Violations, len(fs), r.Nodes)
 	}
-	if len(fs) != MaxReportedPaths+1 || fs[len(fs)-1].Rule != RuleINV01Truncated {
-		t.Fatalf("findings = %d, last %s", len(fs), fs[len(fs)-1].Rule)
-	}
-	if r.CutSetMinimal || !strings.Contains(r.Suggestion, "not proven minimal") {
-		t.Fatalf("cut minimal=%v suggestion=%q", r.CutSetMinimal, r.Suggestion)
-	}
-	m, _ := ParseManifest([]byte(b.String()))
-	g := newGraph(m)
-	if n, _ := g.violations(baseState(m).with(r.CutSet), false, false); n != 0 {
-		t.Fatalf("cut leaves %d violations", n)
-	}
-}
-
-func baseState(m *Manifest) state {
-	st := state{gated: map[string]bool{}, removed: map[[2]string]bool{}}
-	for t := range m.Gates {
-		st.gated[t] = true
-	}
-	return st
-}
-
-func TestNextComb(t *testing.T) {
-	idx := []int{0, 1}
-	var got [][]int
-	for {
-		got = append(got, slices.Clone(idx))
-		if !nextComb(idx, 4) {
-			break
-		}
-	}
-	if fmt.Sprint(got) != "[[0 1] [0 2] [0 3] [1 2] [1 3] [2 3]]" {
-		t.Fatal(got)
-	}
-}
-
-func TestSuggestionText(t *testing.T) {
-	acts := []Action{{Kind: ActionGate, Tool: "a"}, {Kind: ActionGate, Tool: "b"}, {Kind: ActionRemove, Tool: "c", Agent: "x"}}
-	if got := suggestion(acts, false); got != "Suggested fix (3 changes, greedy, not proven minimal): gate `a`, gate `b` and remove `c` from `x`." {
-		t.Fatal(got)
-	}
-	if suggestion(nil, true) != "" {
-		t.Fatal("empty cut must give empty suggestion")
+	if d := time.Since(start); d > 30*time.Second {
+		t.Fatalf("took %v", d)
 	}
 }

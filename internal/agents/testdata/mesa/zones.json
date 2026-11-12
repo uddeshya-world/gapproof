@@ -1,0 +1,11 @@
+{
+  "status": "pre-registered, approved by owner 27 Sep 2026",
+  "spec": "docs/LATTICE.md section 5",
+  "default_zone": "production",
+  "zones": {
+    "research": {"P": 3, "U": 3, "E": 3},
+    "staging": {"P": 2, "U": 2, "E": 3},
+    "production": {"P": 2, "U": 2, "E": 2},
+    "regulated": {"P": 1, "U": 1, "E": 1}
+  }
+}

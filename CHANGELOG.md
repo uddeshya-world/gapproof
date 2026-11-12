@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed (M5: INV-01 is MESA's definition, D-032)
+- `internal/agents` now ports MESA's graded lattice (mesa-ibi-scanner 0.4.0 `docs/LATTICE.md`): closure fixpoint over (P, U, E) with flow caps and gated edges removed, a fixed production threshold of (2, 2, 2), witness paths and a minimal edge cut. The old two-label path rule (D-030) is gone.
+- Findings: one `AGENT-INV01-<agent>` per violating agent (high, unwaivable) and `AGENT-NEARMISS-<agent>` (info, never affects AGR).
+- `agents.yaml` gains the read labels `internal` (P=2) and `untrusted` (U=3); `public` is now U=2 and no longer harmless. `zone` and `thresholds` are rejected.
+- The evidence `agents` section records `mesa_spec`, `inv01_threshold` and `inv01_near_misses`.
+- `agents import-mcp` labels tools that fetch web pages, mail, issues or comments as `reads: [untrusted]` (low confidence).
+- Golden parity on all 104 public MESA lattice fixtures, nine of them also as converted `agents.yaml`; property tests P-01, P-03, P-04, P-05, P-11 and P-12.
+
 ### Added (M7: diff, CI gate, offline licence)
 - `gapproof diff <old> <new> [--exit-code]` compares two runs:
   - the AGR change;

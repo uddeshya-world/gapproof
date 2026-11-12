@@ -1,0 +1,10 @@
+mesa-ibi-scanner
+Copyright 2026 Uddeshya Kumar
+
+This product includes software developed as a research companion to the MESA paper
+(concept DOI: https://doi.org/10.5281/zenodo.22743175).
+
+Research prototype — not production security software.
+Property-vector / trifecta concepts build on public prior work (Willison lethal trifecta;
+OWASP Least Agency; Meta Rule of Two). MESA-INV-01 directed inbound closure Cl(b) and
+this scanner's implementation are original to this project.

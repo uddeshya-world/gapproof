@@ -1,0 +1,16 @@
+# Converted from ../lattice/multihop-write-production.json (mesa-ibi-scanner, Apache-2.0).
+# svc:s L=(3,3,3) -read-> agent:b   -> b holds a tool reading `sensitive` and `untrusted`
+#                                      (the read cap drops E, so no sink)
+# agent:b -write-> agent:a          -> a handoff b → a (b's E is 0, so read and write agree)
+# agent:a L=(0,0,3)                 -> a holds an `exec` sink (E=3)
+# MESA puts agent:b in the research zone; gapproof's fixed production threshold
+# gives the same verdict for b (a near miss on E).
+agents:
+  - name: b
+    tools: [s]
+    handoffs: [a]
+  - name: a
+    tools: [egress]
+tools:
+  s:      { reads: [sensitive, untrusted] }
+  egress: { sinks: [exec] }

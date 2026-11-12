@@ -1,0 +1,26 @@
+{
+  "description": "v0.1 fixture local_full promoted, production; verdict from the v0.1 engine",
+  "expected": {
+    "violations": [
+      "agent:overprivileged"
+    ]
+  },
+  "family": "boolean-era",
+  "id": "v01-local_full-production",
+  "topology": {
+    "edges": [],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:overprivileged",
+        "kind": "agent",
+        "levels": {
+          "E": 3,
+          "P": 3,
+          "U": 3
+        },
+        "zone": "production"
+      }
+    ]
+  }
+}

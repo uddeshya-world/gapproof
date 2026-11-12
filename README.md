@@ -22,7 +22,7 @@ gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar   # th
 - **phonehome:** static telemetry and hosted-API rules;
 - **crypto:** an inventory matched against a dated CMVP snapshot;
 - **models:** a pickle opcode scan, safetensors/GGUF/ONNX checks and hashes;
-- **agents:** INV-01 containment paths from a declared manifest.
+- **agents:** INV-01 (MESA's graded lattice): flags any agent whose closure combines private data, untrusted input and egress at or above (2, 2, 2), from a declared manifest, with witness paths and a minimal cut.
 
 It writes `evidence.json`, `summary.json`, a CycloneDX AI-BOM, OSCAL assessment-results and the HTML/Markdown reports, plus a `MANIFEST.sha256` that `sign` signs.
 

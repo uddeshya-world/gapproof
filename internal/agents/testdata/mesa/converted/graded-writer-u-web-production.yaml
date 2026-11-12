@@ -1,0 +1,19 @@
+# Converted from ../lattice/graded-writer-u-web-production.json (mesa-ibi-scanner, Apache-2.0).
+# svc:web L=(0,3,0) -read-> agent:researcher  -> researcher holds a tool reading `untrusted`
+# agent:researcher -write-> svc:shared-notes L=(2,0,0) -read-> agent:ops
+#                                             -> a handoff researcher → ops (read cap carries
+#                                                P and U, as write-then-read does here), and
+#                                                ops holds the notes as a tool reading `internal`
+# agent:ops L=(2,0,2)                         -> ops' own data (`internal`) and an allowlisted
+#                                                boundary_crossing sink (E=2)
+agents:
+  - name: researcher
+    tools: [web]
+    handoffs: [ops]
+  - name: ops
+    tools: [shared_notes, internal_records, webhook]
+tools:
+  web:              { reads: [untrusted] }
+  shared_notes:     { reads: [internal] }
+  internal_records: { reads: [internal] }
+  webhook:          { sinks: [boundary_crossing], targets: ["hooks.example.com"] }

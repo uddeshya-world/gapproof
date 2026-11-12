@@ -120,7 +120,7 @@ func goldenBundle(t *testing.T, reverse bool) Bundle {
 			{Path: "models/reranker.pt", Format: "pytorch-zip", Size: 1024, SHA256: strings.Repeat("e", 64), Imports: []string{"builtins.print"}},
 			{Path: "models/embed.safetensors", Format: "safetensors", Size: 2048, SHA256: strings.Repeat("f", 64), Tensors: 3, DTypes: []string{"F32"}, Metadata: map[string]string{"z": "1", "a": "2"}},
 		}},
-		Agents:   &AgentsSection{Manifest: "agents.yaml", ManifestSHA256: strings.Repeat("9", 64), DeclaredNoAgents: true},
+		Agents:   &AgentsSection{Manifest: "agents.yaml", ManifestSHA256: strings.Repeat("9", 64), DeclaredNoAgents: true, MESASpec: "mesa-ibi-scanner 0.4.0 LATTICE (b9cb325)", Threshold: INV01Threshold{P: 2, U: 2, E: 2}},
 		Findings: fs,
 		Warnings: []string{"z warning", "a warning", "z warning"},
 		Run: RunMeta{ID: "run-0001", RunDate: "2026-11-09",

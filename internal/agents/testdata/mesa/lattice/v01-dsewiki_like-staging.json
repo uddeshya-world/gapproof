@@ -1,0 +1,42 @@
+{
+  "description": "v0.1 fixture dsewiki_like promoted, staging; verdict from the v0.1 engine",
+  "expected": {
+    "violations": [
+      "agent:sandbox-coder"
+    ]
+  },
+  "family": "boolean-era",
+  "id": "v01-dsewiki_like-staging",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:sandbox-coder",
+        "flow_type": "write",
+        "pdp_gate": false,
+        "src": "svc:public-get-mutable-wiki"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "agent:sandbox-coder",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 3,
+          "U": 0
+        },
+        "zone": "staging"
+      },
+      {
+        "id": "svc:public-get-mutable-wiki",
+        "kind": "service",
+        "levels": {
+          "E": 3,
+          "P": 0,
+          "U": 3
+        }
+      }
+    ]
+  }
+}

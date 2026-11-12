@@ -1,0 +1,84 @@
+{
+  "description": "notes surface whose U comes only from a writer reading web (U=3), research",
+  "expected": {
+    "closure": {
+      "agent:ops": {
+        "E": 2,
+        "P": 2,
+        "U": 3
+      },
+      "agent:researcher": {
+        "E": 0,
+        "P": 0,
+        "U": 3
+      }
+    },
+    "near_miss": [],
+    "violations": []
+  },
+  "family": "graded-incident",
+  "id": "graded-writer-u-web-research",
+  "topology": {
+    "edges": [
+      {
+        "dst": "agent:researcher",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:web"
+      },
+      {
+        "dst": "svc:shared-notes",
+        "flow_type": "write",
+        "pdp_gate": false,
+        "src": "agent:researcher"
+      },
+      {
+        "dst": "agent:ops",
+        "flow_type": "read",
+        "pdp_gate": false,
+        "src": "svc:shared-notes"
+      }
+    ],
+    "topology_version": "0.2.0",
+    "vertices": [
+      {
+        "id": "svc:web",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 3
+        }
+      },
+      {
+        "id": "agent:researcher",
+        "kind": "agent",
+        "levels": {
+          "E": 0,
+          "P": 0,
+          "U": 0
+        },
+        "zone": "research"
+      },
+      {
+        "id": "svc:shared-notes",
+        "kind": "service",
+        "levels": {
+          "E": 0,
+          "P": 2,
+          "U": 0
+        }
+      },
+      {
+        "id": "agent:ops",
+        "kind": "agent",
+        "levels": {
+          "E": 2,
+          "P": 2,
+          "U": 0
+        },
+        "zone": "research"
+      }
+    ]
+  }
+}

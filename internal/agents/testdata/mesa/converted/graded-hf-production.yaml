@@ -1,0 +1,11 @@
+# Converted from ../lattice/graded-hf-production.json (mesa-ibi-scanner, Apache-2.0).
+# agent:eval-worker L=(2,0,0)            -> its own data as a tool reading `internal` (P=2)
+# svc:artifact-registry L=(0,3,3), read + proxy/egress edges
+#                                        -> a tool reading `untrusted` (U=3) that sinks
+#                                           boundary_crossing with no allowlist (E=3)
+agents:
+  - name: eval-worker
+    tools: [eval_data, artifact_registry]
+tools:
+  eval_data:         { reads: [internal] }
+  artifact_registry: { reads: [untrusted], sinks: [boundary_crossing] }

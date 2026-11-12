@@ -1,0 +1,12 @@
+# Converted from ../lattice/v01-dsewiki_like-production.json (mesa-ibi-scanner, Apache-2.0;
+# a v0.1 boolean fixture promoted to levels 0/3).
+# agent:sandbox-coder L=(3,0,0)              -> its own data as a tool reading `sensitive` (P=3)
+# svc:public-get-mutable-wiki L=(0,3,3) -write-> agent
+#                                            -> a tool reading `untrusted` (U=3) that sinks
+#                                               boundary_crossing with no allowlist (E=3)
+agents:
+  - name: sandbox-coder
+    tools: [private_data, public_get_mutable_wiki]
+tools:
+  private_data:            { reads: [sensitive] }
+  public_get_mutable_wiki: { reads: [untrusted], sinks: [boundary_crossing] }
