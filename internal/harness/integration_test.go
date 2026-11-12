@@ -198,3 +198,36 @@ func startHostCapture(t *testing.T, e *Engine) func() string {
 		return strings.TrimSpace(string(out))
 	}
 }
+
+// TestOneShotTarget (D-040): with OneShot, a job that exits 0 inside the
+// window passes AGR-1 liveness; one that exits non-zero doesn't; and the
+// same clean-exit job without OneShot fails (it didn't stay up).
+func TestOneShotTarget(t *testing.T) {
+	e := requireEngine(t)
+	build := func(ref, cmd string) {
+		b := exec.Command(e.Bin, "build", "-q", "-t", ref, "-")
+		b.Stdin = strings.NewReader("FROM alpine:3.20\nCMD [\"sh\", \"-c\", \"" + cmd + "\"]\n")
+		if out, err := b.CombinedOutput(); err != nil {
+			t.Fatalf("build %s: %v\n%s", ref, err, out)
+		}
+	}
+	build("gapproof-oneshot-ok:test", "exit 0")
+	build("gapproof-oneshot-fail:test", "exit 3")
+	for _, c := range []struct {
+		ref     string
+		oneShot bool
+		want    bool
+	}{
+		{"gapproof-oneshot-ok:test", true, true},
+		{"gapproof-oneshot-fail:test", true, false},
+		{"gapproof-oneshot-ok:test", false, false},
+	} {
+		res, err := Run(context.Background(), e, Config{Target: c.ref, Observe: 5 * time.Second, OutDir: t.TempDir(), OneShot: c.oneShot})
+		if err != nil {
+			t.Fatalf("%s: %v", c.ref, err)
+		}
+		if got := res.Passed(); got != c.want {
+			t.Errorf("%s one-shot=%v: Passed() = %v, want %v (running=%v exit=%d)", c.ref, c.oneShot, got, c.want, res.TargetRunning, res.TargetExit)
+		}
+	}
+}

@@ -10,7 +10,7 @@ AGR describes how ready a specific build of an AI product is to run inside a dis
 |---|---|---|
 | `unassessed` | Not assessed | The egress module did not run (skipped, or the harness itself failed). Static findings may still be reported ("static-only report"), but no level is claimed. |
 | **AGR-0** | Fails offline | It was assessed, and with all egress blocked the target did not start, did not become healthy, or the workload failed. |
-| **AGR-1** | Runs offline | The target started and the workload passed with all egress blocked. |
+| **AGR-1** | Runs offline | The target started and the workload passed with all egress blocked. A long-running target must still be running (and not `unhealthy`) at the end of the window. A target scanned with `--one-shot` (a batch job or CLI) must instead exit 0 inside the window; one still running at the end counts as hung. |
 | **AGR-2** | Silent | AGR-1, **and** zero out-of-scope egress attempts (DNS, TCP, UDP, ICMP) for the whole observation window. |
 | **AGR-3** | Provable | AGR-2, **and** the phone-home, crypto and model modules ran, **and** there is no open finding of severity `high` or `critical` in them, **and** there is no unwaivable finding (§4), **and** every model artefact is hashed in the AI-BOM. |
 | **AGR-4** | Contained | AGR-3, **and** the agents module ran on a manifest, **and** it found zero INV-01 violations. |

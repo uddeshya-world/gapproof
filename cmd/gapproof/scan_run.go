@@ -378,7 +378,7 @@ func (s *scanRun) runEgress(ctx context.Context, e *harness.Engine, tarPath stri
 	ctx, stop := signalContext(ctx)
 	defer stop()
 	res, err := harness.Run(ctx, e, harness.Config{
-		Target: id, Workload: s.o.workload, Observe: s.o.observe, Pcap: s.o.pcap,
+		Target: id, Workload: s.o.workload, Observe: s.o.observe, Pcap: s.o.pcap, OneShot: s.o.oneShot,
 		OutDir: s.o.out, RunID: s.b.Run.ID,
 	})
 	if ctx.Err() != nil {
@@ -402,6 +402,7 @@ func (s *scanRun) runEgress(ctx context.Context, e *harness.Engine, tarPath stri
 	sec.TargetStarted = res.TargetStarted && len(res.Refused) == 0
 	sec.WorkloadPassed = res.Passed()
 	sec.ObservedWindowS = int64(res.Observed / time.Second)
+	sec.OneShot = res.OneShot
 	var raw []evidence.EgressAttempt
 	for _, ev := range res.Events {
 		if a, ok := attemptOf(ev); ok {

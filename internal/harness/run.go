@@ -35,8 +35,12 @@ type Config struct {
 	Workload string        // optional host path of a POSIX sh script for the driver
 	Observe  time.Duration // observation window
 	Pcap     bool          // sinkhole writes egress.pcapng
-	OutDir   string        // egress.log.jsonl, egress.pcapng, harness.log are written here
-	RunID    string        // optional; random if empty
+	// OneShot: the target is a batch job or CLI that should finish. It passes
+	// only by exiting 0 inside the window; still running at the end counts
+	// as hung (AGR_SPEC §1, D-040).
+	OneShot bool
+	OutDir  string // egress.log.jsonl, egress.pcapng, harness.log are written here
+	RunID   string // optional; random if empty
 	// Resource limits for the target.
 	Memory string // default "4g"
 	Pids   int    // default 4096
@@ -48,6 +52,7 @@ type Result struct {
 	Refused        []string // label entries asking for NET_ADMIN/NET_RAW: the target was not run
 	TargetStarted  bool
 	TargetRunning  bool   // still running at the end of the window
+	OneShot        bool   // judged as a one-shot job (Config.OneShot)
 	TargetHealth   string // engine health status if the image has a HEALTHCHECK
 	TargetExit     int    // exit code if it stopped
 	WorkloadRan    bool
@@ -65,6 +70,11 @@ func (r *Result) Passed() bool {
 		return false
 	}
 	alive := r.TargetRunning && r.TargetHealth != "unhealthy"
+	if r.OneShot {
+		// Done, cleanly, with egress blocked. A job still running at the end
+		// of the window is treated as hung (waiting on the network), not passed.
+		alive = !r.TargetRunning && r.TargetExit == 0 && r.TargetHealth != "unhealthy"
+	}
 	if r.WorkloadRan {
 		// A target that crashed makes no egress: a passing workload alone
 		// must not make it look silent (AGR_SPEC §1, "did not become healthy").
@@ -91,7 +101,7 @@ func Run(ctx context.Context, e *Engine, cfg Config) (res *Result, err error) {
 		_, _ = rand.Read(b)
 		cfg.RunID = hex.EncodeToString(b)
 	}
-	res = &Result{RunID: cfg.RunID}
+	res = &Result{RunID: cfg.RunID, OneShot: cfg.OneShot}
 	if !Pinned() {
 		res.Notes = append(res.Notes, "harness image is unpinned (development build of gapproof)")
 	}

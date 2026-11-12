@@ -342,3 +342,19 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - This isn't a real amd64 image build. Docker's layer application, pip's install-time steps (entry points, `.pyc`, `RECORD`) and the image env aren't reproduced, so the phone-home results differ and aren't checked.
 - Wheel selection follows pip's tag order for `python3.12`/glibc 2.39, so pip may pick a different manylinux variant than the image's pip would. The crypto paths are the same in every variant.
 - A real `make demo` on amd64 is still the final check.
+
+## D-040 (2026-11-12): One-shot targets pass AGR-1 by exiting 0, opt-in with `--one-shot`
+
+**Context.** AGR-1 required the target to still be running at the end of the window. A batch job or CLI (gapproof's own image, for one) finishes and exits, so it could never pass, even when it ran perfectly offline. This blocked the M8 self-scan.
+
+**Decision.** A new flag, `scan --one-shot`, judges the target as a job:
+- it passes liveness only if it **exits 0 inside the window** with all egress blocked (and isn't `unhealthy`);
+- a non-zero exit fails it;
+- still running at the end of the window counts as **hung** and fails it, because a job that waits forever is usually waiting on the network;
+- a `--workload`, if given, must pass as well.
+
+Without the flag nothing changes: exiting early still fails a long-running target. The evidence records `"one_shot": true` and the TTY, Markdown and HTML reports say so, so an approver can see how the target was judged.
+
+**Why opt-in and not automatic.** Treating any clean exit as success would let a server that quits at startup (for example, on a missing licence or a failed network call it handles "gracefully") look like a passing job. The owner of the image knows which kind it is and has to say so; the report shows it.
+
+**Consequences.** The observation window still runs to its end, so egress after the exit (from other processes in the netns) is still recorded. `TestOneShotTarget` checks all three cases against a real engine in `make e2e`.

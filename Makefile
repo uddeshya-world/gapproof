@@ -47,7 +47,7 @@ lint:
 
 e2e: harness build ## container tests (fail, never skip): no-egress, real images, the M3 egress harness
 	./$(BIN) harness load $(HARNESS_TAR)
-	GAPPROOF_REQUIRE_CONTAINER=1 go test -count=1 -run 'TestNoEgress|TestRealDockerSave|TestRealCryptographyWheel|TestEgressProbe|TestCancelCleansUp' -v ./...
+	GAPPROOF_REQUIRE_CONTAINER=1 go test -count=1 -run 'TestNoEgress|TestRealDockerSave|TestRealCryptographyWheel|TestEgressProbe|TestCancelCleansUp|TestOneShotTarget' -v ./...
 
 harness: ## build the harness image tarball and pin it (needs Docker/Podman)
 	mkdir -p dist/harness-ctx

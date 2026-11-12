@@ -200,7 +200,8 @@ Run <span class="mono">{{.B.Run.ID}}</span> on {{.B.Run.RunDate}} · Gapproof {{
 <dl>
 <dt>Target started and healthy</dt><dd>{{yesno .TargetStarted}}</dd>
 <dt>Workload passed</dt><dd>{{yesno .WorkloadPassed}}</dd>
-<dt>Observation window</dt><dd>{{window .ObservedWindowS}}</dd>
+<dt>Observation window</dt><dd>{{window .ObservedWindowS}}</dd>{{if .OneShot}}
+<dt>Mode</dt><dd>one-shot job: passes by exiting 0 inside the window, not by staying up</dd>{{end}}
 {{- if .HarnessFailed}}<dt>Harness</dt><dd>failed: no level claimed</dd>{{end}}
 </dl>
 <h3>Egress attempts (deduplicated set)</h3>

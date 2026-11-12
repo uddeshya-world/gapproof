@@ -110,6 +110,13 @@ func TestResultPassed(t *testing.T) {
 		{Result{TargetStarted: true, WorkloadRan: true, WorkloadPassed: true}, false},
 		{Result{TargetStarted: true, TargetRunning: true, TargetHealth: "unhealthy", WorkloadRan: true, WorkloadPassed: true}, false},
 		{Result{TargetStarted: true, TargetRunning: true, WorkloadRan: true}, false},
+		// One-shot (D-040): only a clean exit inside the window passes.
+		{Result{OneShot: true, TargetStarted: true, TargetExit: 0}, true},
+		{Result{OneShot: true, TargetStarted: true, TargetExit: 1}, false},
+		{Result{OneShot: true, TargetStarted: true, TargetRunning: true}, false}, // hung
+		{Result{OneShot: true, TargetExit: 0}, false},                            // never started
+		{Result{OneShot: true, TargetStarted: true, WorkloadRan: true, WorkloadPassed: true}, true},
+		{Result{OneShot: true, TargetStarted: true, WorkloadRan: true, WorkloadPassed: false}, false},
 	}
 	for i, c := range cases {
 		if got := c.r.Passed(); got != c.want {
