@@ -37,6 +37,7 @@ internal_cidrs:            # must be private: RFC1918, 100.64.0.0/10, fc00::/7
   - 10.20.0.0/16
 ```
 - Attempts to in-scope names/CIDRs are still **logged** (`in_scope: true`), but they don't count against AGR-2.
+- A wildcard must cover at least two labels (`*.corp.example`); a one-label wildcard such as `*.com` is rejected unless it covers a private TLD (`*.internal`, `*.local`, ...). DNS queries are in scope only when the resolver is loopback or inside a declared CIDR (D-042).
 - Public CIDRs are rejected at load time (usage error, exit 2). Names aren't resolved (that would be a network call), so the report lists every declared internal name prominently for the approver to judge.
 - The scope file's SHA-256 goes into `MANIFEST.sha256`, and its contents are reproduced in the report.
 - No scope file means nothing is in scope except the target's own hostname and `localhost`.
@@ -51,7 +52,7 @@ waivers:
     owner: "security@vendor.example"
     expires: 2027-03-31
 ```
-- A waiver matches exactly one finding, by rule plus an evidence key. A waiver that matches nothing is reported as **stale**, and one that matches several is a usage error.
+- A waiver matches exactly one finding, by rule plus an evidence key. A waiver that matches nothing is reported as **stale**, and one that matches several is a usage error (expired or not).
 - A waived finding stays in `evidence.json` with `status: waived` and the waiver attached. It's never deleted.
 - **Expiry** is evaluated against the run date in the run metadata. An expired waiver is ignored (the finding becomes `open`) and is listed as a warning.
 - The report has an **"Accepted risks"** section directly after the level badge. The approver sees the waivers before anything else.

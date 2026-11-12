@@ -26,6 +26,10 @@ func TestParseScopeErrors(t *testing.T) {
 		{"mid wildcard", "scope_version: 1\ninternal_names: [\"a.*.b\"]\n", "wildcard"},
 		{"bare wildcard", "scope_version: 1\ninternal_names: [\"*.\"]\n", "wildcard"},
 		{"bad char", "scope_version: 1\ninternal_names: [\"a b\"]\n", "contains"},
+		{"wildcard TLD com", "scope_version: 1\ninternal_names: [\"*.com\"]\n", "too broad"},
+		{"wildcard TLD io", "scope_version: 1\ninternal_names: [\"*.IO.\"]\n", "too broad"},
+		{"wildcard TLD uk", "scope_version: 1\ninternal_names: [\"*.uk\"]\n", "too broad"},
+		{"empty label", "scope_version: 1\ninternal_names: [\"*..corp\"]\n", "empty label"},
 		{"not yaml", "scope_version: [\n", "scope file"},
 	}
 	for _, tt := range tests {
@@ -96,7 +100,9 @@ func TestScopeContains(t *testing.T) {
 		{"undeclared name", EgressAttempt{Kind: KindDNS, Name: "api.example.com"}, false},
 		{"localhost", EgressAttempt{Kind: KindDNS, Name: "localhost"}, true},
 		{"target hostname", EgressAttempt{Kind: KindDNS, Name: "App-Host"}, true},
-		{"dns via private resolver", EgressAttempt{Kind: KindDNS, Name: "db", OrigDstIP: "172.17.0.1", Port: 53}, true},
+		{"dns via undeclared private resolver", EgressAttempt{Kind: KindDNS, Name: "db", OrigDstIP: "172.17.0.1", Port: 53}, false},
+		{"dns via undeclared link-local resolver", EgressAttempt{Kind: KindDNS, Name: "db", OrigDstIP: "169.254.169.254", Port: 53}, false},
+		{"dns via declared-CIDR resolver", EgressAttempt{Kind: KindDNS, Name: "db", OrigDstIP: "10.20.0.53", Port: 53}, true},
 		{"dns via loopback resolver", EgressAttempt{Kind: KindDNS, Name: "db", OrigDstIP: "127.0.0.11", Port: 53}, true},
 		{"dns via public resolver", EgressAttempt{Kind: KindDNS, Name: "db", OrigDstIP: "8.8.8.8", Port: 53}, false},
 		{"dns without name", EgressAttempt{Kind: KindDNS, OrigDstIP: "10.20.0.1"}, false},

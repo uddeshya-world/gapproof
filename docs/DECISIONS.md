@@ -380,3 +380,15 @@ Without the flag nothing changes: exiting early still fails a long-running targe
 **Agents manifest.** The old bundle did not carry the `--agents` file, so the agents result could not be reproduced. `scan` now writes it as `gapproof.agents.yaml` (covered by the manifest). Bundles without it are still rescanned, with agents reported as not compared.
 
 **Limits.** Artefacts from `--models` were never inside the image and are not compared. A rescan with a different gapproof or rule pack version can differ legitimately; on a mismatch the output names both versions. The rescan proves the static results reproduce on the image you hold, nothing about the dynamic ones.
+
+## D-042 (2026-11-12): Validator edge cases fail closed (review follow-ups)
+
+**Context.** The review of v0.1.0 found four places where a file the user (or a vendor) controls could widen what the tool trusts.
+
+**Decision.**
+- **Evidence `Load` recomputes the level.** `report`, `diff` and `replay` load evidence through `evidence.Load`. It now recomputes the level, observed window and `blocking` list from the findings and results in `evidence.json` (`Compute(AGRInput())`) and rejects the evidence on any disagreement, instead of trusting the stored AGR block. Evidence that records an AGR level with no matching egress result is therefore not loadable. Signing is unchanged: `verify` still proves who signed the bytes; `Load` makes the displayed level a function of the recorded evidence.
+- **Overly broad scope names.** A `*.` wildcard over a single label is rejected unless that label is a reserved or conventionally private TLD (`internal`, `local`, `lan`, `corp`, `home`, `intranet`, `private`, `localdomain`, `test`, `invalid`, `example`, `arpa`). `*.com`, `*.io`, `*.uk` are usage errors (exit 2). Empty labels are rejected too. Limitation: multi-label public suffixes such as `*.co.uk` are not detected, because that needs a public suffix list and Gapproof ships none; the report lists every declared name for the approver.
+- **DNS resolver trust.** A DNS query is in scope only if the resolver it was sent to is loopback (the container's embedded resolver) or inside a declared `internal_cidrs` entry. Any other private or link-local resolver is out of scope. Teams that use an internal resolver declare its CIDR. Before this, any RFC 1918 address counted, so a query to an undeclared host on a shared network was excused.
+- **Expired waivers keep the exactly-one rule.** A waiver that matches more than one finding is a usage error whether or not it has expired. Expiry is checked after the match count.
+
+**Consequences.** All four changes can turn a previously passing run or load into an error or a lower level, never the reverse. AGR_SPEC keeps its meaning (section 2 already says private CIDRs and names are declared up front); its text is clarified.

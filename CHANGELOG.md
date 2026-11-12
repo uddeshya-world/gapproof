@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed (validators fail closed, D-042)
+- `evidence.Load` recomputes the AGR level, window and blocking list from the recorded findings and rejects evidence whose stored level disagrees.
+- Scope files reject single-label wildcards such as `*.com` (private TLDs like `*.internal` stay allowed).
+- A DNS query counts as in scope only if its resolver is loopback or inside a declared internal CIDR; an undeclared private resolver no longer qualifies.
+- A waiver that matches several findings is a usage error even after it has expired.
+
 ## [0.1.0] - 2026-11-12
 
 Quiet release for design partners (D-001): no announcement.
