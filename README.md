@@ -60,6 +60,16 @@ make harness  # build + pin the egress harness image (needs Docker or Podman)
 make e2e      # container tests: no-egress, real images, the 9-attempt egress probe
 ```
 
+## Verifying a release
+Each release ships `checksums.sha256` with a keyless cosign signature (`checksums.sha256.sigstore.json`) and a GitHub build-provenance attestation for every archive. Both are checked online, by you, before the binary goes into the air gap; the binary itself never makes a network call.
+```sh
+sha256sum -c checksums.sha256 --ignore-missing
+cosign verify-blob checksums.sha256 --bundle checksums.sha256.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/uddeshya-world/gapproof/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify gapproof_<version>_<os>_<arch>.tar.gz --repo uddeshya-world/gapproof
+```
+
 ## Crypto Gapproof itself uses
 SHA-256 (hashing evidence and artefacts) and Ed25519 (signing). Release builds use Go's FIPS 140-3 module mode (`GOFIPS140=v1.0.0`), and `gapproof version` prints the mode and module version. This describes how Gapproof is built. It isn't a claim about any product Gapproof scans.
 

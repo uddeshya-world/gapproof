@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed (release hygiene)
+- Every GitHub Action is pinned to a full commit SHA with a version comment.
+- Releases sign `checksums.sha256` with keyless cosign (`.sigstore.json` bundle) and publish a build-provenance attestation for the archives (README, "Verifying a release").
+
 ### Changed (validators fail closed, D-042)
 - `evidence.Load` recomputes the AGR level, window and blocking list from the recorded findings and rejects evidence whose stored level disagrees.
 - Scope files reject single-label wildcards such as `*.com` (private TLDs like `*.internal` stay allowed).
