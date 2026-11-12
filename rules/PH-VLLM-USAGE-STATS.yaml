@@ -1,0 +1,27 @@
+id: PH-VLLM-USAGE-STATS
+title: vLLM usage statistics are on
+severity: medium
+confidence: high
+explanation: >-
+  vLLM posts usage statistics (CPU, memory and GPU details, platform, model architecture,
+  vLLM version and a random per-process id) to https://stats.vllm.ai when the engine starts, unless it is opted
+  out. Setting VLLM_NO_USAGE_STATS=1, VLLM_DO_NOT_TRACK=1 or DO_NOT_TRACK=1 (exactly "1"),
+  or creating ~/.config/vllm/do_not_track, turns it off. Note that upstream treats a set
+  but non-"1" VLLM_DO_NOT_TRACK as overriding DO_NOT_TRACK; this rule does not model that.
+match:
+  python_package: vllm
+  unless_env:
+    VLLM_NO_USAGE_STATS: ["1"]
+    VLLM_DO_NOT_TRACK: ["1"]
+    DO_NOT_TRACK: ["1"]
+  unless_file:
+    path_regex: '(^|/)\.config/vllm/do_not_track$'
+    content_regex: '(?s)'
+fix: Set VLLM_NO_USAGE_STATS=1 and DO_NOT_TRACK=1 in the image environment, or create /root/.config/vllm/do_not_track (the opt-out file) in the image.
+controls: [CM-7, SC-7]
+source:
+  - "https://github.com/vllm-project/vllm/blob/v0.32.0/vllm/usage/usage_lib.py#L50-L68 (tag v0.32.0, commit 5df63a7203cdb9328d824a27b682e77c7b9928be; checked 2026-11-12; is_usage_stats_enabled(): on by default, off for VLLM_DO_NOT_TRACK, DO_NOT_TRACK, VLLM_NO_USAGE_STATS or the do_not_track file)"
+  - "https://github.com/vllm-project/vllm/blob/v0.32.0/vllm/envs.py#L829-L841 (same tag; VLLM_USAGE_STATS_SERVER defaults to https://stats.vllm.ai; each opt-out variable compares equal to '1')"
+  - "https://github.com/vllm-project/vllm/blob/v0.32.0/vllm/usage/usage_lib.py#L265-L268 (same tag; _send_to_server() requests.Session().post to the stats server)"
+  - "https://github.com/vllm-project/vllm/blob/v0.32.0/vllm/v1/worker/gpu_worker.py#L558-L561 (same tag; rank 0 worker calls report_usage_stats() at startup; vllm/v1/utils.py#L688-L693 returns early only if disabled)"
+  - "https://github.com/vllm-project/vllm/blob/v0.4.0/vllm/usage/usage_lib.py (the module already exists at v0.4.0, checked 2026-11-12; older versions were not read)"

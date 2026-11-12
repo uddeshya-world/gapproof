@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (phone-home rules)
+- `PH-MLFLOW-TELEMETRY` (MLflow >= 3.2.0 usage telemetry), `PH-MLFLOW-REMOTE-TRACKING` (MLFLOW_TRACKING_URI on a public host) and `PH-VLLM-USAGE-STATS` (vLLM usage stats to stats.vllm.ai). Each is high confidence, checked against upstream source at a pinned tag on 2026-11-12, with permalinks and fixtures.
+
+### Changed (phone-home rules, re-verified against source)
+- `PH-LANGSMITH-TRACING`: the SDK enables tracing only for exactly `true`, so `1`, `yes` and `on` no longer match; `LANGSMITH_TRACING_V2` and `LANGCHAIN_TRACING` are now recognised (langsmith-sdk v0.14.9).
+- `PH-GRADIO-ANALYTICS` (gradio 6.31.0) and `PH-WANDB-ONLINE` (wandb 0.31.0) keep their logic and now cite source at pinned tags.
+
 ### Added (community files, D-043)
 - `CONTRIBUTING.md` (build/test/lint, rule contribution guide, DCO sign-off), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue templates (bug, false positive / rule request) and a pull request template.
 

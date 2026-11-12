@@ -34,8 +34,8 @@ Rules live in `rules/PH-*.yaml` and are embedded in the binary. Use `rules/PH-UN
 1. **A verified source.** `source:` lists permalinks to the upstream code or docs at a **pinned tag or commit** (not `main`), with the tag, the commit SHA, the date you checked it and what the code does (the function, the endpoint, the env var that turns it off). A bare docs URL is not enough for `confidence: high`.
 2. **A confidence.** `high` means you read the upstream source at the pinned tag and the rule's match condition (package, env var, version range) reflects it. `medium` or `low` is fine when you could not verify something; say why in the `explanation` or `source` text. Never mark a rule `high` from memory.
 3. **A severity** that matches the effect: `high` when data leaves by default with a plain install, `medium` when it needs a feature to be used, `low` for likely-dormant paths.
-4. **Fixtures.** `rules/testdata/<RULE-ID>/positive/` must trigger the rule and `negative/` must not (for example, the opt-out env var set). Each holds a small fake rootfs (`rootfs/...`, such as a `*.dist-info/METADATA` for a package match) and/or an `env.txt`. Fixtures are crafted bytes, never real third-party code.
-5. **Regenerated goldens.** Run `go test ./internal/phonehome -run TestRuleFixtures -update` and commit the `expected.json` files. Review the diff.
+4. **Fixtures.** Add a positive and a negative case (for example, the opt-out env var set) to the `ruleFixtures` table in `internal/phonehome/fixtures_test.go`, and more negatives (a version bound, a second opt-out) to `extraNegatives`. A case is an env list plus a few fake files, such as a `*.dist-info/METADATA` for a package match. Fixtures are crafted bytes, never real third-party code.
+5. **Regenerated goldens.** Run `go test ./internal/phonehome -run TestRuleFixtures -update`, which writes `rules/testdata/<RULE-ID>/...` and the golden `expected.json`. Commit them and review the diff.
 6. **Controls** (NIST 800-53 ids, informative) and a **fix** an engineer can act on.
 
 Check a rule locally with `bin/gapproof rules list` and `bin/gapproof rules test <RULE-ID> rules/testdata/<RULE-ID>/positive`.

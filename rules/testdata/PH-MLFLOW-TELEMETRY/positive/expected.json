@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-MLFLOW-TELEMETRY",
+    "severity": "medium",
+    "title": "MLflow usage telemetry may be on",
+    "explanation": "MLflow 3.2.0 and later sends anonymous usage telemetry: the client fetches a config from config.mlflow-telemetry.io and posts events to the ingestion URL it returns. MLFLOW_DISABLE_TELEMETRY=true (or 1) or DO_NOT_TRACK=true turns it off. Upstream also disables it when a CI environment variable (CI, GITHUB_ACTIONS, ...) is present; this rule does not model that, so it can over-report in images that set CI.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/mlflow-3.18.0.dist-info/METADATA",
+      "sha256": "7c2ef7265cf234d0f379762e92fc918e0e3cb74b1ce9e68a8dcaeb128a56cbac",
+      "detail": "mlflow 3.18.0 installed, in affected range \u003e=3.2; not disabled in the image (none of DO_NOT_TRACK=true, MLFLOW_DISABLE_TELEMETRY=true|1)"
+    },
+    "fix": "Set MLFLOW_DISABLE_TELEMETRY=true and DO_NOT_TRACK=true in the image environment.",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

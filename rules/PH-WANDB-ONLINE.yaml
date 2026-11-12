@@ -3,8 +3,8 @@ title: Weights & Biases syncs online
 severity: high
 confidence: high
 explanation: >-
-  wandb is installed and WANDB_MODE isn't offline or disabled, so any wandb.init() call
-  syncs runs, metrics and artifacts to the W&B service.
+  wandb is installed and WANDB_MODE isn't offline, dryrun or disabled, so any wandb.init()
+  call syncs runs, metrics and artifacts to the W&B service. The default mode is "online".
 match:
   python_package: wandb
   unless_env:
@@ -12,4 +12,6 @@ match:
 fix: Set WANDB_MODE=disabled (or offline) in the image environment, or remove wandb from the runtime image.
 controls: [CM-7, SC-7]
 source:
-  - https://docs.wandb.ai/library/environment-variables
+  - "https://github.com/wandb/wandb/blob/v0.31.0/wandb/sdk/wandb_settings.py#L400-L401 (tag v0.31.0, commit 15f8cbc581d1c5cfc6e31f68b48bdd13cec2dd2c; checked 2026-11-12; mode defaults to 'online'; settings are also read from WANDB_-prefixed environment variables, see L97-L99)"
+  - "https://github.com/wandb/wandb/blob/v0.31.0/wandb/sdk/wandb_settings.py#L1672-L1683 (same tag; 'disabled' is a no-op, 'offline' and 'dryrun' don't sync)"
+  - "https://docs.wandb.ai/library/environment-variables"

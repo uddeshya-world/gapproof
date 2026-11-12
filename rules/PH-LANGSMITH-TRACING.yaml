@@ -4,14 +4,21 @@ severity: high
 confidence: high
 explanation: >-
   The image environment turns on LangSmith tracing, which sends prompts, outputs and
-  traces to the LangSmith service. LANGCHAIN_TRACING_V2 is the older name for the same
-  switch.
+  traces to the LangSmith service (https://api.smith.langchain.com unless LANGSMITH_ENDPOINT
+  says otherwise). The SDK enables tracing only when the variable is exactly "true";
+  LANGSMITH_TRACING_V2 and LANGCHAIN_TRACING_V2 are the older names. When a _V2 variable is set
+  and non-empty it takes precedence over the plain one, which this rule does not model, so
+  it can over-report when the two disagree.
 match:
   env:
-    LANGSMITH_TRACING: ["1", "true", "yes", "on"]
-    LANGCHAIN_TRACING_V2: ["1", "true", "yes", "on"]
-fix: Remove LANGSMITH_TRACING / LANGCHAIN_TRACING_V2 from the image, or point LANGSMITH_ENDPOINT at a self-hosted instance inside the enclave.
+    LANGSMITH_TRACING: ["true"]
+    LANGSMITH_TRACING_V2: ["true"]
+    LANGCHAIN_TRACING: ["true"]
+    LANGCHAIN_TRACING_V2: ["true"]
+fix: Remove the tracing variables from the image, or point LANGSMITH_ENDPOINT at a self-hosted instance inside the enclave.
 controls: [SC-7, AC-4]
 source:
-  - https://docs.langchain.com/langsmith/annotate-code
-  - https://docs.langchain.com/langsmith/trace-without-env-vars
+  - "https://github.com/langchain-ai/langsmith-sdk/blob/v0.14.9/python/langsmith/utils.py#L121-L142 (tag v0.14.9, commit 3114edff2f41e5989724f27c0b37d3f69c6f198c; checked 2026-11-12; tracing_is_enabled() reads TRACING_V2 then TRACING and compares equal to 'true')"
+  - "https://github.com/langchain-ai/langsmith-sdk/blob/v0.14.9/python/langsmith/utils.py#L420-L440 (same tag; get_env_var() tries the LANGSMITH_ then the LANGCHAIN_ prefix and skips empty values)"
+  - "https://github.com/langchain-ai/langsmith-sdk/blob/v0.14.9/python/langsmith/utils.py#L837-L845 (same tag; the endpoint defaults to https://api.smith.langchain.com)"
+  - "https://docs.langchain.com/langsmith/trace-without-env-vars"

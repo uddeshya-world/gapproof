@@ -3,13 +3,13 @@
     "rule": "PH-LANGSMITH-TRACING",
     "severity": "high",
     "title": "LangSmith tracing is enabled",
-    "explanation": "The image environment turns on LangSmith tracing, which sends prompts, outputs and traces to the LangSmith service. LANGCHAIN_TRACING_V2 is the older name for the same switch.",
+    "explanation": "The image environment turns on LangSmith tracing, which sends prompts, outputs and traces to the LangSmith service (https://api.smith.langchain.com unless LANGSMITH_ENDPOINT says otherwise). The SDK enables tracing only when the variable is exactly \"true\"; LANGSMITH_TRACING_V2 and LANGCHAIN_TRACING_V2 are the older names. When a _V2 variable is set and non-empty it takes precedence over the plain one, which this rule does not model, so it can over-report when the two disagree.",
     "evidence": {
       "path": "(image config)",
       "sha256": "fixture",
       "detail": "image env LANGCHAIN_TRACING_V2=true"
     },
-    "fix": "Remove LANGSMITH_TRACING / LANGCHAIN_TRACING_V2 from the image, or point LANGSMITH_ENDPOINT at a self-hosted instance inside the enclave.",
+    "fix": "Remove the tracing variables from the image, or point LANGSMITH_ENDPOINT at a self-hosted instance inside the enclave.",
     "controls": [
       "SC-7",
       "AC-4"

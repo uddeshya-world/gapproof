@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-MLFLOW-REMOTE-TRACKING",
+    "severity": "high",
+    "title": "MLflow tracking URI points at a public host",
+    "explanation": "MLFLOW_TRACKING_URI is an http(s) URL on a public host, so runs, parameters, metrics and artifacts that MLflow logs are sent to that server. With no URI MLflow writes to a local file store. A \"databricks\" URI (the hosted Databricks service) is not detected by this rule.",
+    "evidence": {
+      "path": "(image config)",
+      "sha256": "fixture",
+      "detail": "image env MLFLOW_TRACKING_URI points at public host mlflow.vendor.example.com"
+    },
+    "fix": "Point MLFLOW_TRACKING_URI at a tracking server inside the enclave, or at a local path (file:///...), or unset it.",
+    "controls": [
+      "SC-7",
+      "AC-4"
+    ]
+  }
+]
