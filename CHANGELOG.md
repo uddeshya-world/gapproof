@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (D-041)
+- `gapproof verify --rescan` (requires `--artifact`): after the signature, hashes and artifact digest pass, re-runs the static modules offline on the delivered image tar and diffs the result against the signed evidence (`rescan: match` or the differences, exit 1). Egress is not re-run. `scan` now also copies the `--agents` manifest into the evidence directory (`gapproof.agents.yaml`); bundles made before this can still be rescanned, with the agents result not compared.
+
 ### Changed (demo follow-ups, D-035…D-038)
 - Models: `builtins.range` and the other side-effect-free value constructors (`int`, `float`, `bool`, `str`, `bytes`, `tuple`, `list`, `dict`, plus the Python 2 `xrange`/`unicode`/`long`) are safe pickle imports. Every other builtin and every dotted name stays critical. There is no path-based exemption for test fixtures (D-035).
 - Phone-home: rules take `python_package_version` (a PEP 440 range that fails closed). `PH-CHROMA-TELEMETRY` is bounded to `<1.5.4`, because upstream made telemetry a no-op and dropped posthog (D-036).

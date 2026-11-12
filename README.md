@@ -16,6 +16,7 @@ gapproof scan --image myapp.tar --observe 10m --agents agents.yaml --out evidenc
 open evidence/report.html
 gapproof keygen --out vendor && gapproof sign --in evidence/ --key vendor.key
 gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar   # the approver, fully offline
+gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar --rescan   # also re-run the static modules on the tar and diff against the evidence
 ```
 `scan` runs five modules on the same image:
 - **egress:** runs the image with every packet blocked and logged, behind a sinkhole that owns its network namespace;

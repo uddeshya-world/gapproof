@@ -95,34 +95,45 @@ func failf(format string, a ...any) error {
 // On ErrArtifactMismatch the returned Result is complete (the bundle itself
 // verified), so callers can still print the verdict line.
 func Verify(ctx context.Context, bundlePath string, pub ed25519.PublicKey, artifactTar string) (Result, error) {
-	return verify(ctx, bundlePath, pub, artifactTar, defaultLimits)
+	res, _, err := verify(ctx, bundlePath, pub, artifactTar, nil, defaultLimits)
+	return res, err
 }
 
-func verify(ctx context.Context, bundlePath string, pub ed25519.PublicKey, artifactTar string, lim limits) (Result, error) {
+// VerifyCapture is Verify that also returns the content of the named bundle
+// members (those present), read while they were hashed, so the bytes returned
+// are exactly the bytes the signature covers. Each captured member is held in
+// memory and is bounded like summary.json. Nothing is written to disk.
+func VerifyCapture(ctx context.Context, bundlePath string, pub ed25519.PublicKey, artifactTar string, capture []string) (Result, map[string][]byte, error) {
+	return verify(ctx, bundlePath, pub, artifactTar, capture, defaultLimits)
+}
+
+func verify(ctx context.Context, bundlePath string, pub ed25519.PublicKey, artifactTar string, capture []string, lim limits) (Result, map[string][]byte, error) {
 	res := Result{Artifact: ArtifactNotChecked}
+	var files map[string][]byte
 	if len(pub) != ed25519.PublicKeySize {
-		return res, fmt.Errorf("%w: public key has the wrong size", ErrKey)
+		return res, files, fmt.Errorf("%w: public key has the wrong size", ErrKey)
 	}
 	if err := checkPublicKey(pub); err != nil {
-		return res, err
+		return res, files, err
 	}
 	f, err := os.Open(bundlePath)
 	if err != nil {
-		return res, err
+		return res, files, err
 	}
 	defer f.Close()
 	fi, err := f.Stat()
 	if err != nil {
-		return res, err
+		return res, files, err
 	}
 	if !fi.Mode().IsRegular() {
-		return res, fmt.Errorf("%s is not a regular file", bundlePath)
+		return res, files, fmt.Errorf("%s is not a regular file", bundlePath)
 	}
 
-	b, err := readBundle(ctx, f, fi.Size(), pub, lim)
+	b, err := readBundle(ctx, f, fi.Size(), pub, capture, lim)
 	if err != nil {
-		return res, err
+		return res, nil, err
 	}
+	files = b.files
 	m := b.manifest
 	res.Signer = Fingerprint(pub)
 	res.Files = len(m.Files)
@@ -143,11 +154,11 @@ func verify(ctx context.Context, bundlePath string, pub ed25519.PublicKey, artif
 	}
 
 	if artifactTar == "" {
-		return res, nil
+		return res, files, nil
 	}
 	if m.Artifact == "" {
 		res.Artifact = ArtifactMismatch
-		return res, fmt.Errorf("%w: %w: the bundle records no artifact digest (the scan had no image)", ErrVerification, ErrArtifactMismatch)
+		return res, files, fmt.Errorf("%w: %w: the bundle records no artifact digest (the scan had no image)", ErrVerification, ErrArtifactMismatch)
 	}
 	// The config digest is compared before any layer is read, and layers are
 	// only hashed as they stream: nothing from --artifact is written to disk.
@@ -156,23 +167,24 @@ func verify(ctx context.Context, bundlePath string, pub ed25519.PublicKey, artif
 	case errors.Is(err, fsscan.ErrConfigMismatch):
 		res.Artifact = ArtifactMismatch
 		res.ArtifactDigest = got
-		return res, fmt.Errorf("%w: %w: bundle records %s, %s is %s", ErrVerification, ErrArtifactMismatch, m.Artifact, artifactTar, got)
+		return res, files, fmt.Errorf("%w: %w: bundle records %s, %s is %s", ErrVerification, ErrArtifactMismatch, m.Artifact, artifactTar, got)
 	case err != nil:
 		if errors.Is(err, os.ErrNotExist) || errors.Is(err, context.Canceled) {
-			return res, err
+			return res, files, err
 		}
 		res.Artifact = ArtifactMismatch
-		return res, fmt.Errorf("%w: %w: %s is not a valid image archive: %v", ErrVerification, ErrArtifactMismatch, artifactTar, err)
+		return res, files, fmt.Errorf("%w: %w: %s is not a valid image archive: %v", ErrVerification, ErrArtifactMismatch, artifactTar, err)
 	}
 	res.ArtifactDigest = got
 	res.Artifact = ArtifactMatch
-	return res, nil
+	return res, files, nil
 }
 
 // bundleContents is what readBundle hands back once everything verified.
 type bundleContents struct {
 	manifest *Manifest
-	summary  []byte // summary.json, nil if the bundle has none
+	summary  []byte            // summary.json, nil if the bundle has none
+	files    map[string][]byte // captured members
 }
 
 // countingReader counts the bytes read from the bundle file.
@@ -199,7 +211,7 @@ func (c *countingReader) Read(p []byte) (int, error) {
 //     records other than path and size (no GNU.sparse.*, no xattrs), and a
 //     declared size that fits in what is left of the file.
 //   - After the end-of-archive marker there is nothing but zero bytes.
-func readBundle(ctx context.Context, f io.Reader, fileSize int64, pub ed25519.PublicKey, lim limits) (*bundleContents, error) {
+func readBundle(ctx context.Context, f io.Reader, fileSize int64, pub ed25519.PublicKey, capture []string, lim limits) (*bundleContents, error) {
 	cr := &countingReader{r: f}
 	br := bufio.NewReaderSize(cr, 1<<20)
 	tr := tar.NewReader(br)
@@ -296,7 +308,7 @@ func readBundle(ctx context.Context, f io.Reader, fileSize int64, pub ed25519.Pu
 	}
 
 	// 2. The listed files, hashed as they stream.
-	out := &bundleContents{manifest: m}
+	out := &bundleContents{manifest: m, files: map[string][]byte{}}
 	seen := map[string]bool{}
 	prev := ""
 	for {
@@ -326,13 +338,18 @@ func readBundle(ctx context.Context, f io.Reader, fileSize int64, pub ed25519.Pu
 		seen[name] = true
 		prev = name
 		h := sha256.New()
-		if name == "summary.json" {
+		if name == "summary.json" || slices.Contains(capture, name) {
 			raw, err := readSmall(hdr)
 			if err != nil {
 				return nil, err
 			}
 			h.Write(raw)
-			out.summary = raw
+			if name == "summary.json" {
+				out.summary = raw
+			}
+			if slices.Contains(capture, name) {
+				out.files[name] = raw
+			}
 		} else if c, err := io.CopyN(h, tr, hdr.Size); err != nil || c != hdr.Size {
 			if cerr := ctx.Err(); cerr != nil {
 				return nil, cerr
