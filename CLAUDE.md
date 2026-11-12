@@ -64,14 +64,20 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 
 ## Open questions / next steps
 - **Owner decision (AGR spec change):** one-shot images (CLIs, batch jobs) can't pass liveness without a workload. Should "exits 0 within the window with egress blocked" count? This blocks the M8 self-scan at AGR-4.
-- Finish the demo apps and `make demo` (assert leaky = AGR-1, fixed = AGR-3, or AGR-4 with agents), the headless-Chromium zero-request check on report.html, and the v0.1 tag (owner).
+- v0.1 tag (owner). Demo and the Chromium zero-request check are done.
+- Demo follow-ups:
+  - PH-CHROMA-TELEMETRY needs a version bound (chromadb >= 1.5.4 has no product telemetry; check upstream), which needs version ranges in the rule engine (the demo pins chromadb 1.5.2).
+  - Pickles referencing harmless builtins (`range`) rate critical and unwaivable: owner call on an allowlist.
+  - Docker's embedded resolver `127.0.0.11:53` shows as an in-scope egress entry (noise).
+  - amd64 demo waivers are unverified.
 - Gotchas:
   - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
   - `scan --out` must be a new or empty directory.
-  - The harness e2e needs `bin/gapproof harness load dist/gapproof-harness-*.oci.tar` after every `make harness`.
+  - The harness e2e needs `bin/gapproof harness load dist/gapproof-harness-<version>-linux-<arch>.oci.tar` after every `make harness`. Use the exact name: the glob breaks once a `-dirty` and a clean tar are both in `dist/`.
+  - `make demo` needs Docker (about 7 min with cached images) and writes `evidence/` (gitignored). `make demo-e2e` asserts leaky = AGR-1 and fixed = AGR-4, with byte-identical rescans.
 - Remote: private repo `github.com/uddeshya-world/gapproof` created 2026-11-12 and set as `origin`; nothing pushed yet. Push (still private) once the owner says so; stay private until the pre-launch legal check is done.
 - Promote the low-confidence rules (Unstructured, OpenAI and Anthropic base URL) after checking upstream source.
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.
-- 2026-11-12: INV-01 is now MESA's graded lattice (mesa-ibi-scanner 0.4.0 LATTICE.md at `b9cb325`, untagged; not in v0.3.2), D-032. Merged into `m4-integrate`: the Go port (104 MESA fixtures at parity), AGR fail-closed fixes (D-033), bundle hardening (D-034; older bundles with names sorting before `MANIFEST.*` must be re-signed), fuzz and model limits (m8), and rejection of sparse layer members. The demo is in progress on the m4-demo worktree; its manifests need `untrusted` sources to violate.
+- 2026-11-12: INV-01 is now MESA's graded lattice (mesa-ibi-scanner 0.4.0 LATTICE.md at `b9cb325`, untagged; not in v0.3.2), D-032. Merged into `m4-integrate`: the Go port (104 MESA fixtures at parity), AGR fail-closed fixes (D-033), bundle hardening (D-034; older bundles with names sorting before `MANIFEST.*` must be re-signed), fuzz and model limits (m8), and rejection of sparse layer members. Also merged: the demo apps (m4-demo: leaky-rag scans at AGR-1, fixed-rag at AGR-4), the index.json attestation fix (every entry pinned to the config is accepted), and a determinism fix that folds bare teardown flows into the detailed egress entry.
 - Still open from the review (P1): `verify --rescan`.
