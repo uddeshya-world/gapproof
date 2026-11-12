@@ -350,3 +350,18 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 **Decision.** Allowlist that exact name. numpy's source (`numpy/core/_internal.py`) defines it as `ndarray.__new__(subtype, shape, dtype)`, with a comment saying it's the pre-1.0 name embedded in old ndarray pickles. That is what `numpy.core.multiarray._reconstruct` does, and it was already allowlisted. Any other attribute of the module, and any dotted path such as `_reconstruct.__globals__`, stays flagged.
 
 **Consequences.** Old numpy array pickles no longer cap a scan. The `subtype` argument must still come from an import the scanner checks separately, so this opens no new route to code execution.
+## D-040 (2026-11-12): One-shot targets pass AGR-1 by exiting 0, opt-in with `--one-shot`
+
+**Context.** AGR-1 required the target to still be running at the end of the window. A batch job or CLI (gapproof's own image, for one) finishes and exits, so it could never pass, even when it ran perfectly offline. This blocked the M8 self-scan.
+
+**Decision.** A new flag, `scan --one-shot`, judges the target as a job:
+- it passes liveness only if it **exits 0 inside the window** with all egress blocked (and isn't `unhealthy`);
+- a non-zero exit fails it;
+- still running at the end of the window counts as **hung** and fails it, because a job that waits forever is usually waiting on the network;
+- a `--workload`, if given, must pass as well.
+
+Without the flag nothing changes: exiting early still fails a long-running target. The evidence records `"one_shot": true` and the TTY, Markdown and HTML reports say so, so an approver can see how the target was judged.
+
+**Why opt-in and not automatic.** Treating any clean exit as success would let a server that quits at startup (for example, on a missing licence or a failed network call it handles "gracefully") look like a passing job. The owner of the image knows which kind it is and has to say so; the report shows it.
+
+**Consequences.** The observation window still runs to its end, so egress after the exit (from other processes in the netns) is still recorded. `TestOneShotTarget` checks all three cases against a real engine in `make e2e`.

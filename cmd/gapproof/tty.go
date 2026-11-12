@@ -60,6 +60,9 @@ func renderTTY(b *evidence.Bundle, only []string, color bool) []string {
 			case evidence.ModEgress:
 				if b.Egress != nil {
 					line += fmt.Sprintf(", %d destination%s, observed %s", len(b.Egress.Attempts), plural(len(b.Egress.Attempts)), evidence.FormatWindow(b.Egress.ObservedWindowS))
+					if b.Egress.OneShot {
+						line += ", one-shot"
+					}
 				}
 			case evidence.ModModels:
 				if b.Models != nil {

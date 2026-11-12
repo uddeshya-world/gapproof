@@ -198,6 +198,9 @@ func mdEgress(w *mdWriter, e *evidence.EgressSection) {
 		return
 	}
 	w.f("Target started and healthy: %s · workload passed: %s · observation window: %s", yesNo(e.TargetStarted), yesNo(e.WorkloadPassed), evidence.FormatWindow(e.ObservedWindowS))
+	if e.OneShot {
+		w.f(" · one-shot job (`--one-shot`): passes by exiting 0 inside the window, not by staying up")
+	}
 	if e.HarnessFailed {
 		w.f(" · harness failed: no level claimed")
 	}

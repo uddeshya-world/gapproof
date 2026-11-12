@@ -51,11 +51,10 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 
 ## Current state & decisions  (newest first, dated)
 - 2026-11-12: One-shot targets (`scan --one-shot`, D-040) pass AGR-1 by exiting 0 inside the window. The numpy pre-1.0 `_reconstruct` is allowlisted (D-039). CI is green on Go 1.26.10, and `make e2e demo demo-e2e` passes with the rebuilt harness. Repo made public.
-- 2026-11-12: **Integration branch `m4-integrate`** (not pushed).
+- 2026-11-12: **Integration branch `m4-integrate`** (pushed as `main`).
   - It merges M3, M5 (`m5-agents`), the M4 evidence and report work (`m4-evidence-report`) and M6 (`m6-bundle-aibom-oscal`), plus the scan wiring and M7 (diff, offline licence, `action/`, pinned releases).
   - A live scan of the probe image gives AGR-1, and two runs produce a byte-identical `evidence.json`. Sign and verify round-trip.
   - Decisions D-019…D-031.
-  - Pending: the demo apps (agent branch `worktree-agent-a8c54ad221f89222a`, unfinished) and models fuzzing (`worktree-agent-a7478812ec88a4b53`, unfinished).
 - 2026-11-11: **M3 done.** The sinkhole/NFLOG race (an explanation arriving before its NFLOG record) is fixed, and the probe test passed 5 of 5 runs.
 - 2026-11-09 — **M2 done** (branch `m2-phonehome-crypto`). Covers the phone-home rule pack (16 rules with sources and fixtures; `rules list` and `rules test`), the crypto inventory with the CMVP snapshot, and the shared inventory. The real-image e2e confirms the cryptography wheel bundles OpenSSL 3.4.1 statically (review P1 #5 closed). Decisions D-013…D-015.
 - 2026-11-08 — **M1 done** (branch `m1-fsscan-models`, 2 commits). Covers safe image extraction (`internal/fsscan`, verified on a real Docker 29 `docker save`) and the model scanner (`internal/models`, 91% coverage, 30 generated fixtures, a golden `scan.json`). The import policy now enforces rule 3 (no `os/exec`/`plugin` outside the harness) across every package. Decisions D-010…D-012. The scanners aren't wired into `gapproof scan` yet (that's M4).

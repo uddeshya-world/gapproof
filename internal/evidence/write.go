@@ -56,7 +56,8 @@ type EgressSection struct {
 	TargetStarted   bool            `json:"target_started"`
 	WorkloadPassed  bool            `json:"workload_passed"`
 	ObservedWindowS int64           `json:"observed_window_s"`
-	Attempts        []EgressAttempt `json:"attempts"` // deduplicated set
+	OneShot         bool            `json:"one_shot,omitempty"` // judged on a clean exit, not liveness (D-040)
+	Attempts        []EgressAttempt `json:"attempts"`           // deduplicated set
 }
 
 // CryptoModule mirrors crypto.Module (same JSON shape).

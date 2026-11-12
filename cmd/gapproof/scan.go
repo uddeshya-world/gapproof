@@ -14,6 +14,7 @@ type scanOpts struct {
 	image, rootfs, models, workload, agents string
 	scope, waivers, out                     string
 	observe                                 time.Duration
+	oneShot                                 bool
 	skip                                    []string
 	minAGR                                  int
 	pcap                                    bool
@@ -49,6 +50,7 @@ func newScanCmd() *cobra.Command {
 	f.StringVar(&o.models, "models", "", "extra model directory not inside the image")
 	f.StringVar(&o.workload, "workload", "", "smoke-test script run by the driver container")
 	f.DurationVar(&o.observe, "observe", 10*time.Minute, "egress observation window")
+	f.BoolVar(&o.oneShot, "one-shot", false, "the target is a batch job or CLI: it passes by exiting 0 inside the window, not by staying up")
 	f.StringVar(&o.agents, "agents", "", "agents.yaml or MCP tools/list JSON dump")
 	f.StringSliceVar(&o.skip, "skip", nil, "modules to skip: "+strings.Join(scanModules, "|"))
 	f.IntVar(&o.minAGR, "min-agr", -1, "CI gate: exit 1 if the result is below AGR-N (0-4)")
