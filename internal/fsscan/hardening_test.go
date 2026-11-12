@@ -1,0 +1,110 @@
+package fsscan
+
+import (
+	"archive/tar"
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"strings"
+	"testing"
+)
+
+// Regression (M8): a bad index.json next to manifest.json made ExtractImage
+// fail after creating its temp root, leaking it.
+func TestFailedExtractionLeavesNoTempDir(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("TMPDIR", tmp)
+	l := plain(t, file("a", "a"))
+	good := writeArchive(t, []layer{l}, archiveOpts{})
+	raw, err := os.ReadFile(good)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Append an index.json naming a blob whose content doesn't match.
+	var members []ent
+	tr := readTar(t, raw)
+	for name, body := range tr {
+		members = append(members, file(name, body))
+	}
+	bad := "sha256:" + strings.Repeat("a", 64)
+	members = append(members,
+		file("blobs/sha256/"+strings.Repeat("a", 64), "not the blob"),
+		file("index.json", `{"manifests":[{"digest":"`+bad+`"}]}`))
+	p := t.TempDir() + "/image.tar"
+	if err := os.WriteFile(p, tarOf(t, members...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = ExtractImage(context.Background(), p, DefaultLimits())
+	var ie *IntegrityError
+	if !errors.As(err, &ie) {
+		t.Fatalf("want IntegrityError, got %v", err)
+	}
+	ents, _ := os.ReadDir(tmp)
+	if len(ents) != 0 {
+		t.Fatalf("temp dir leaked: %v", ents)
+	}
+}
+
+// Regression (M8): each opaque whiteout re-listed the whole tree below it,
+// so a layer of N opaque whiteouts over N files cost O(N²) directory reads.
+func TestRepeatedOpaqueWhiteoutsAreLinear(t *testing.T) {
+	const n = 500
+	var lower, upper []ent
+	for i := range n {
+		lower = append(lower, file(fmt.Sprintf("d/old%d", i), "x"))
+	}
+	for i := range n {
+		upper = append(upper, file(fmt.Sprintf("d/sub/new%d", i), "y"), file("d/.wh..wh..opq", ""), file("d/sub/.wh..wh..opq", ""))
+	}
+	root, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	var st Stats
+	x := newExtractor(context.Background(), root, DefaultLimits(), &st, nil)
+	for _, l := range [][]ent{lower, upper} {
+		if _, err := x.applyLayer(bytes.NewReader(tarOf(t, l...))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if x.pruneReads > 4 {
+		t.Fatalf("%d directory reads for %d opaque whiteouts; want a constant", x.pruneReads, 2*n)
+	}
+	ents, err := fs.ReadDir(root.FS(), "d")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ents) != 1 || ents[0].Name() != "sub" {
+		t.Fatalf("lower files not hidden: %d entries in d", len(ents))
+	}
+	subs, _ := fs.ReadDir(root.FS(), "d/sub")
+	if len(subs) != n {
+		t.Fatalf("want %d new files kept, got %d", n, len(subs))
+	}
+}
+
+// readTar returns the regular members of a tar as name -> body.
+func readTar(t *testing.T, b []byte) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	tr := tar.NewReader(bytes.NewReader(b))
+	for {
+		h, err := tr.Next()
+		if err == io.EOF {
+			return out
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(tr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out[h.Name] = string(body)
+	}
+}

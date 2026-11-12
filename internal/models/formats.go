@@ -29,7 +29,7 @@ func (c *fileCtx) zipArchive(f *os.File, size int64) {
 		return
 	}
 	if len(zr.File) > c.s.opt.MaxZipEntries {
-		c.add(RuleParseFailed, "", nil, fmt.Sprintf("zip has %d entries (limit %d)", len(zr.File), c.s.opt.MaxZipEntries))
+		c.failed("", nil, limitErrorf("zip has %d entries (limit %d)", len(zr.File), c.s.opt.MaxZipEntries))
 		return
 	}
 	names := map[string]bool{}
@@ -81,34 +81,42 @@ func isTorchScriptCode(name string) bool {
 	return (strings.Contains(name, "/code/") || strings.HasPrefix(name, "code/")) && strings.HasSuffix(name, ".py")
 }
 
-// withMember opens a zip member behind the decompression limits.
+// withMember opens a zip member behind the decompression limits. Once the
+// archive's total decompression budget is spent (and reported), further
+// members aren't read: members may overlap, so many entries can point at the
+// same compressed bytes.
 func (c *fileCtx) withMember(zf *zip.File, fn func(io.Reader) error) {
+	if c.zipTotal > c.s.opt.MaxZipTotalBytes {
+		return
+	}
 	rc, err := zf.Open()
 	if err != nil {
 		c.add(RuleParseFailed, zf.Name, nil, "zip member: "+err.Error())
 		return
 	}
 	defer rc.Close()
-	lr := &memberLimit{r: rc, name: zf.Name, compressed: int64(max(zf.CompressedSize64, 1)), opt: c.s.opt}
+	lr := &memberLimit{r: rc, name: zf.Name, compressed: int64(max(zf.CompressedSize64, 1)), opt: c.s.opt, total: &c.zipTotal}
 	if err := fn(lr); err != nil && !errors.Is(err, errMemberLimit) {
-		c.add(RuleParseFailed, zf.Name, nil, err.Error())
+		c.failed(zf.Name, nil, err)
 	}
 	if lr.err != nil {
-		c.add(RuleParseFailed, zf.Name, nil, lr.err.Error())
+		c.failed(zf.Name, nil, lr.err)
 	}
 }
 
 // errMemberLimit marks a zip member that hit a decompression limit.
-var errMemberLimit = errors.New("possible zip bomb")
+var errMemberLimit = fmt.Errorf("%w: possible zip bomb", errLimit)
 
 // memberLimit stops reading a zip member that decompresses past the size
-// limit or the ratio limit (zip bombs). zip.File.Open can only read
-// CompressedSize64 compressed bytes, so the declared size bounds the ratio.
+// limit or the ratio limit (zip bombs), or that takes the whole archive past
+// its total budget. zip.File.Open can only read CompressedSize64 compressed
+// bytes, so the declared size bounds the ratio.
 type memberLimit struct {
 	r          io.Reader
 	name       string
 	compressed int64
 	n          int64
+	total      *int64 // shared by every member of one archive; nil = no total budget
 	opt        Options
 	err        error
 }
@@ -119,11 +127,16 @@ func (m *memberLimit) Read(p []byte) (int, error) {
 	}
 	n, err := m.r.Read(p)
 	m.n += int64(n)
+	if m.total != nil {
+		*m.total += int64(n)
+	}
 	switch {
 	case m.n > m.opt.MaxPickleBytes:
 		m.err = fmt.Errorf("%w: decompressed size exceeds %d bytes", errMemberLimit, m.opt.MaxPickleBytes)
 	case m.n > m.opt.ZipRatioFloor && float64(m.n)/float64(m.compressed) > m.opt.ZipRatio:
 		m.err = fmt.Errorf("%w: decompression ratio above %.0f", errMemberLimit, m.opt.ZipRatio)
+	case m.total != nil && *m.total > m.opt.MaxZipTotalBytes:
+		m.err = fmt.Errorf("%w: archive members decompress to more than %d bytes in total", errMemberLimit, m.opt.MaxZipTotalBytes)
 	}
 	if m.err != nil {
 		return n, m.err
@@ -144,7 +157,7 @@ func (c *fileCtx) kerasConfig(members []*zip.File) {
 				return err
 			}
 			if int64(len(b)) > c.s.opt.MaxJSONBytes {
-				return errors.New("config.json too large")
+				return limitErrorf("config.json larger than %d bytes", c.s.opt.MaxJSONBytes)
 			}
 			var v any
 			if err := json.Unmarshal(b, &v); err != nil {
@@ -218,14 +231,24 @@ func (c *fileCtx) h5(f *os.File) {
 
 // ---- NumPy ----
 
-var npyObject = regexp.MustCompile(`'descr':\s*(?:'[|<>=]?O\d*'|\[.*'[|<>=]?O\d*')`)
+// npyObject matches an object dtype anywhere in an .npy header. numpy reads
+// the header with ast.literal_eval and np.dtype, so either quote style,
+// spacing around ':' and the spelling "object" all load as object arrays.
+// A field literally named 'O' is a false positive (fail closed).
+var npyObject = regexp.MustCompile(`['"]\s*(?:[|<>=]?O\d*|object_?)\s*['"]`)
+
+// npyIsObject reports whether an .npy header may declare an object dtype.
+// String escapes ('\x4f' is 'O' to literal_eval) can't be judged statically.
+func npyIsObject(hdr []byte) bool {
+	return npyObject.Match(hdr) || bytes.ContainsRune(hdr, '\\')
+}
 
 func (c *fileCtx) npy(f *os.File) {
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
 		return
 	}
 	if err := c.npyStream(f, ""); err != nil {
-		c.add(RuleParseFailed, "", nil, err.Error())
+		c.failed("", nil, err)
 	}
 }
 
@@ -254,13 +277,13 @@ func (c *fileCtx) npyStream(r io.Reader, member string) error {
 		return fmt.Errorf("npy: unsupported version %d", pre[6])
 	}
 	if hl > 1<<20 {
-		return errors.New("npy: header too large")
+		return limitErrorf("npy: header larger than %d bytes", 1<<20)
 	}
 	hdr := make([]byte, hl)
 	if _, err := io.ReadFull(br, hdr); err != nil {
 		return errors.New("npy: truncated header")
 	}
-	if !npyObject.Match(hdr) {
+	if !npyIsObject(hdr) {
 		return nil
 	}
 	start := int64(len(pre)) + int64(map[byte]int{1: 2, 2: 4, 3: 4}[pre[6]]) + hl
@@ -275,13 +298,13 @@ func (c *fileCtx) gguf(f *os.File) {
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
 		return
 	}
-	info, err := parseGGUF(f, c.s.opt.MaxGGUFMetadata)
+	info, err := parseGGUF(f, c.art.Size, c.s.opt.MaxGGUFMetadata)
 	if errors.Is(err, errGGUFVersion) {
 		c.add(RuleUnscanned, "", nil, err.Error())
 		return
 	}
 	if err != nil {
-		c.add(RuleParseFailed, "", nil, err.Error())
+		c.failed("", nil, err)
 	}
 	c.art.Tensors, c.art.Parameters = info.tensors, info.parameters
 	c.art.Architecture = info.kv["general.architecture"]
@@ -303,9 +326,9 @@ func (c *fileCtx) gguf(f *os.File) {
 }
 
 func (c *fileCtx) onnx(f *os.File, size int64) {
-	ext, err := parseONNX(f, size)
+	ext, err := parseONNX(f, size, c.s.opt.MaxONNXFields)
 	if err != nil {
-		c.add(RuleParseFailed, "", nil, err.Error())
+		c.failed("", nil, err)
 	}
 	dir := path.Dir(c.path)
 	for _, e := range ext {
@@ -329,17 +352,33 @@ func (c *fileCtx) onnx(f *os.File, size int64) {
 
 // ---- Hugging Face JSON ----
 
+// hfModelKeys mark a JSON file as a model config even when Go can't decode it.
+var hfModelKeys = [][]byte{[]byte(`"auto_map"`), []byte(`"model_type"`), []byte(`"architectures"`),
+	[]byte(`"chat_template"`), []byte(`"tokenizer_class"`), []byte(`\u`)}
+
 // hfJSON checks config.json / tokenizer_config.json. It returns false when
-// the file isn't a model config (so it's not inventoried).
+// the file isn't a model config (so it's not inventoried). It fails closed
+// where Python and Go disagree: an oversized config, or one Go's decoder
+// rejects but Python's json accepts (NaN, Infinity, 1e400) and that looks
+// like a model config, is a MODEL-PARSE-FAILED finding, not a skip.
 func (c *fileCtx) hfJSON(f *os.File, size int64) bool {
 	if size > c.s.opt.MaxJSONBytes {
-		return false
+		c.failed("", nil, limitErrorf("%s is %d bytes (limit %d)", path.Base(c.path), size, c.s.opt.MaxJSONBytes))
+		return true
 	}
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
 		return false
 	}
+	raw, err := io.ReadAll(f)
+	if err != nil {
+		return false
+	}
 	var m map[string]any
-	if err := json.NewDecoder(f).Decode(&m); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(raw)).Decode(&m); err != nil {
+		if slices.ContainsFunc(hfModelKeys, func(k []byte) bool { return bytes.Contains(raw, k) }) {
+			c.failed("", nil, fmt.Errorf("%s: %w", path.Base(c.path), err))
+			return true
+		}
 		return false
 	}
 	base := path.Base(c.path)

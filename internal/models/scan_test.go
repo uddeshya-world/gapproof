@@ -132,7 +132,7 @@ func TestFindingDetails(t *testing.T) {
 		{"pickle/stack_global_os_system.pkl", RulePickleCodeExec, "|STACK_GLOBAL os.system@22"},
 		{"pickle/print_payload.pkl", RulePickleCodeExec, "|STACK_GLOBAL builtins.print@21"},
 		{"pickle/print_payload.pt", RulePickleCodeExec, "archive/data.pkl|STACK_GLOBAL builtins.print@21"},
-		{"pickle/zip_bomb.pt", RuleParseFailed, "archive/data.pkl|possible zip bomb: decompression ratio above 100"},
+		{"pickle/zip_bomb.pt", RuleParseFailed, "archive/data.pkl|limit: possible zip bomb: decompression ratio above 100"},
 		{"numpy/object.npy", RulePickleCodeExec, "|STACK_GLOBAL builtins.print@149"},
 		{"onnx/escape.onnx", RuleONNXExternalEscape, `|tensor "w2" location=../../../etc/shadow`},
 		{"keras/module_bypass.keras", RuleKerasModule, "config.json|module builtins"},
