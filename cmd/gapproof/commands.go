@@ -20,9 +20,8 @@ import (
 	"github.com/uddeshya-world/gapproof/internal/sinkhole"
 )
 
-// Stub commands. Each validates its arguments now, so the CLI contract (and
-// exit code 2 for usage errors) is fixed from M0, and returns
-// errNotImplemented (exit 3) until its milestone lands.
+// report, diff, licence, harness, agents and the internal sinkhole command.
+// scan lives in scan.go/scan_run.go; keygen/sign/verify in signing.go.
 
 func newReportCmd() *cobra.Command {
 	cmd := &cobra.Command{
