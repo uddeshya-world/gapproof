@@ -50,7 +50,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
-- 2026-11-12: **v0.1.0 cut** (CHANGELOG). `verify --rescan` merged (D-041; checked on the real leaky-rag tar: 20 findings reproduced in 18 s). Three low-confidence phone-home rules promoted after checking upstream source at pinned tags. Licence key: the public half is repo variable `GAPPROOF_LICENCE_PUB`; the private half is outside the repo in the owner's `~/.config/gapproof-release/` (never commit or print it). The release is a goreleaser draft; the owner publishes it.
+- 2026-11-12: **v0.1.0 tagged** (`d8cd96e`). The release workflow built a complete *draft* release (4 platforms, SBOMs, both harness tars, checksums), and the downloaded darwin/arm64 binary verifies. The first real amd64 `make demo demo-e2e` passed in the `demo` workflow, after dropping a stale post-D-039 expectation. `verify --rescan` merged (D-041; checked on the real leaky-rag tar: 20 findings reproduced in 18 s). Three low-confidence phone-home rules promoted after checking upstream source at pinned tags. Licence key: the public half is repo variable `GAPPROOF_LICENCE_PUB`; the private half is outside the repo in the owner's `~/.config/gapproof-release/` (never commit or print it). The release is a goreleaser draft; the owner publishes it.
 - 2026-11-12: One-shot targets (`scan --one-shot`, D-040) pass AGR-1 by exiting 0 inside the window. The numpy pre-1.0 `_reconstruct` is allowlisted (D-039). CI is green on Go 1.26.10, and `make e2e demo demo-e2e` passes with the rebuilt harness. Repo made public.
 - 2026-11-12: **Integration branch `m4-integrate`** (pushed as `main`).
   - It merges M3, M5 (`m5-agents`), the M4 evidence and report work (`m4-evidence-report`) and M6 (`m6-bundle-aibom-oscal`), plus the scan wiring and M7 (diff, offline licence, `action/`, pinned releases).
@@ -64,9 +64,9 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - 2026-11-08 — Kit imported into `projects/gapproof` (git init).
 
 ## Open questions / next steps
-- Publish the v0.1.0 draft release (owner). D-001: v0.1 is quiet, so publishing the MESA newsletter makes it public; tag v0.2.0 first or accept that.
+- Publish the v0.1.0 draft release on GitHub (owner). Gap work (validators, self-scan, rules, SHA pinning, signing) is on branch `m12-gaps`. D-001: v0.1 is quiet, so publishing the MESA newsletter makes it public; tag v0.2.0 first or accept that.
 - Demo follow-ups were decided in D-035 to D-039 (pickle builtin allowlist, chromadb `<1.5.4` bound with PEP 440 ranges, NFLOG duplicate-flow fix, amd64 waivers generated from arm64). Still open:
-  - amd64: run the manual `demo` workflow (`gh workflow run demo.yml`), which runs `make demo demo-e2e` on ubuntu-latest.
+  - amd64 demo: verified via the manual `demo` workflow (`gh workflow run demo.yml`). Re-run it before each release.
 - Gotchas:
   - CI tests the minimum Go in go.mod (1.26.x); fixture checks must not depend on compress/flate bytes. Reproduce with `GOTOOLCHAIN=go1.26.10 go test ./...`.
   - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
