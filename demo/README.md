@@ -49,7 +49,7 @@ is gitignored), carry the tars over, then `docker load` them and run
 | | `CRYPTO-WEAK-HASH` | `hashlib.md5` cache keys in `app/main.py` |
 | models | `MODEL-PICKLE-CODE-EXEC` (critical) | `/app/models/reranker.pt` → `builtins.print` (GLOBAL + REDUCE in `reranker/data.pkl`) |
 | | `MODEL-PICKLE-CODE-EXEC`, `MODEL-PICKLE-UNKNOWN-IMPORT`, `MODEL-NUMPY-OBJECT-ARRAY` | numpy's own test fixtures in site-packages (real images ship these too) |
-| agents | `AGENT-INV01-VIOLATION` | `analyst`: `read_file`/`search_docs` (sensitive) → `http_post`/`run_python`, no gate |
+| agents | `AGENT-INV01-PATH` ×4 | `analyst`: `read_file`/`search_docs` (sensitive) → `http_post`/`run_python`, no gate. Smallest fix: gate `http_post`, remove `run_python` |
 
 ### fixed-rag (AGR-4)
 | Change | Fixes |
@@ -83,6 +83,17 @@ waiver warnings in every report.
 `gapproof.scope.yaml` declares no internal names: fixed-rag needs nothing
 outside its own container.
 
+## Gotchas
+
+- `make demo-images` builds with `--provenance=false --sbom=false` (Docker/BuildKit
+  flags; Podman users drop them). With attestation manifests in the image,
+  `docker save` writes an OCI index with several manifests; gapproof then
+  can't tie the loaded image back to the scanned archive and refuses to observe
+  ("refusing to observe a different image"). It also deletes the old tags first,
+  because attestations already attached to a cached image survive a rebuild.
+- Each scan saves and extracts an ~860 MB image; most of a scan's time beyond
+  `--observe` is that, not the harness.
+
 ## Layout
 
 ```
@@ -91,7 +102,9 @@ leaky-rag/ fixed-rag/
   requirements.txt   every distribution pinned
   app/main.py        the service (GET /health, POST /ingest, POST /query)
   models/            leaky: reranker.pt (pickle) · fixed: reranker.safetensors + SHA256SUMS
-  agents.yaml        same content as internal/agents/testdata/{leaky,fixed}.yaml
+  agents.yaml        internal/agents/testdata/{leaky,fixed}.yaml; leaky adds fetch_url
+                     (reads: public), the untrusted-input source the MESA lattice
+                     form of INV-01 (D-032) needs to flag the agent
   workload.sh        POSIX sh + curl (or busybox wget); $GAPPROOF_TARGET=host:port
 fixed-rag/gapproof.waivers.{arm64,amd64}.yaml, gapproof.scope.yaml
 tools/gen_models.py  writes both model files deterministically (bytes only, never unpickles)
