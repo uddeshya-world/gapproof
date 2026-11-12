@@ -108,3 +108,52 @@ func readTar(t *testing.T, b []byte) map[string]string {
 		out[h.Name] = string(body)
 	}
 }
+
+// Regression (M8): a PAX GNU sparse 1.0 member expands on read; extraction
+// must reject it rather than write (or silently skip) it.
+func TestSparseMemberRejected(t *testing.T) {
+	rec := func(k, v string) string {
+		body := " " + k + "=" + v + "\n"
+		n := len(body) + 1
+		for len(fmt.Sprint(n))+len(body) != n {
+			n++
+		}
+		return fmt.Sprint(n) + body
+	}
+	const realSize = 64 << 20
+	pax := rec("GNU.sparse.major", "1") + rec("GNU.sparse.minor", "0") +
+		rec("GNU.sparse.name", "big") + rec("GNU.sparse.realsize", fmt.Sprint(realSize))
+	data := []byte(fmt.Sprintf("1\n%d\n0\n", realSize))
+	data = append(data, make([]byte, 512-len(data))...)
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	tw.WriteHeader(&tar.Header{Name: "PaxHeaders/big", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len(pax)), Format: tar.FormatUSTAR})
+	tw.Write([]byte(pax))
+	tw.WriteHeader(&tar.Header{Name: "GNUSparseFile.0/big", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len(data)), Format: tar.FormatUSTAR})
+	tw.Write(data)
+	tw.Close()
+	raw := buf.Bytes()
+	raw[156] = tar.TypeXHeader // retype the first block as a PAX header
+	copy(raw[148:156], "        ")
+	sum := 0
+	for _, c := range raw[:512] {
+		sum += int(c)
+	}
+	copy(raw[148:156], fmt.Sprintf("%06o\x00 ", sum))
+
+	root, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	var st Stats
+	x := newExtractor(context.Background(), root, DefaultLimits(), &st, nil)
+	_, err = x.applyLayer(bytes.NewReader(raw))
+	var up *UnsafePathError
+	if !errors.As(err, &up) || !strings.Contains(err.Error(), "sparse") {
+		t.Fatalf("err = %v, want sparse rejection", err)
+	}
+	if _, err := root.Stat("big"); err == nil {
+		t.Fatal("sparse member was written to disk")
+	}
+}

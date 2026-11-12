@@ -136,6 +136,12 @@ func (x *extractor) entry(hdr *tar.Header, r io.Reader) error {
 	if name == "." {
 		return nil // the root itself
 	}
+	if isSparse(hdr) {
+		// archive/tar expands sparse holes on read, so a few stored bytes
+		// become up to MaxFileSize on disk, unchecked by the ratio limit.
+		// Skipping would hide content from the scan: fail closed.
+		return &UnsafePathError{hdr.Name, "GNU sparse member (not produced by image builders)"}
+	}
 	dir, base := path.Split(name)
 	dir = strings.TrimSuffix(dir, "/")
 
