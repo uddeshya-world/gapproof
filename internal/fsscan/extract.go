@@ -47,6 +47,12 @@ type extractor struct {
 	// whiteouts only hide content from lower layers.
 	current   map[string]bool
 	ancestors map[string]bool
+	// Directories already pruned of lower-layer content in this layer.
+	// After a prune only current-layer entries remain below, so pruning the
+	// same tree again is a no-op; skipping it keeps a layer of many opaque
+	// whiteouts linear instead of quadratic.
+	pruned     map[string]bool
+	pruneReads int // directories listed while pruning (for tests)
 
 	caseInsensitive bool
 	caseSeen        map[string]string // lower(path) -> path, on case-insensitive filesystems
@@ -90,6 +96,7 @@ func (x *extractor) applyLayer(raw io.Reader) (diffID string, err error) {
 
 	x.current = map[string]bool{}
 	x.ancestors = map[string]bool{}
+	x.pruned = map[string]bool{}
 	for {
 		if err := x.ctx.Err(); err != nil {
 			return "", err
@@ -139,7 +146,7 @@ func (x *extractor) entry(hdr *tar.Header, r io.Reader) error {
 			return err
 		}
 		x.stats.Whiteouts++
-		return x.pruneLower(d)
+		return x.pruneOnce(d)
 	}
 	if victim, ok := strings.CutPrefix(base, ".wh."); ok {
 		if victim == "" || victim == "." || victim == ".." {
@@ -322,11 +329,32 @@ func (x *extractor) whiteout(p string) error {
 		return nil // created in this same layer: a whiteout doesn't apply to it
 	}
 	if x.ancestors[p] {
-		return x.pruneLower(p)
+		return x.pruneOnce(p)
 	}
 	if err := x.root.RemoveAll(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("whiteout %q: %w", p, err)
 	}
+	return nil
+}
+
+// pruneOnce prunes dir unless it, or a directory above it, was already
+// pruned in this layer.
+func (x *extractor) pruneOnce(dir string) error {
+	for p := dir; ; p = path.Dir(p) {
+		if p == "." {
+			p = ""
+		}
+		if x.pruned[p] {
+			return nil
+		}
+		if p == "" {
+			break
+		}
+	}
+	if err := x.pruneLower(dir); err != nil {
+		return err
+	}
+	x.pruned[dir] = true
 	return nil
 }
 
@@ -336,6 +364,7 @@ func (x *extractor) pruneLower(dir string) error {
 	if d == "" {
 		d = "."
 	}
+	x.pruneReads++
 	f, err := x.root.Open(d)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
