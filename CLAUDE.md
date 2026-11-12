@@ -50,6 +50,13 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
+- 2026-11-12: Merged `m12-gaps` (after v0.1.0):
+  - Validators fail closed (D-042): `Load` recomputes AGR and rejects edited levels; single-label `*.com` scopes are rejected; only loopback or declared-CIDR resolvers are trusted; expired waivers are held to the exactly-one rule.
+  - Community files with DCO (D-043).
+  - Rules: MLflow and vLLM added; LangSmith, W&B and Gradio re-verified at pinned tags (16 to 19 rules).
+  - `make selfscan` reaches AGR-4. The `.pth` false positive is fixed; real-world lessons are in D-044, and their scan outputs live outside the repo in `security-research/labs/gapproof-realworld/`.
+  - Actions are pinned to SHAs; each pin was checked against its upstream tag.
+  - Releases get a keyless cosign signature plus build provenance (not yet exercised by a real release).
 - 2026-11-12: **v0.1.0 tagged** (`d8cd96e`). The release workflow built a complete *draft* release (4 platforms, SBOMs, both harness tars, checksums), and the downloaded darwin/arm64 binary verifies. The first real amd64 `make demo demo-e2e` passed in the `demo` workflow, after dropping a stale post-D-039 expectation. `verify --rescan` merged (D-041; checked on the real leaky-rag tar: 20 findings reproduced in 18 s). Three low-confidence phone-home rules promoted after checking upstream source at pinned tags. Licence key: the public half is repo variable `GAPPROOF_LICENCE_PUB`; the private half is outside the repo in the owner's `~/.config/gapproof-release/` (never commit or print it). The release is a goreleaser draft; the owner publishes it.
 - 2026-11-12: One-shot targets (`scan --one-shot`, D-040) pass AGR-1 by exiting 0 inside the window. The numpy pre-1.0 `_reconstruct` is allowlisted (D-039). CI is green on Go 1.26.10, and `make e2e demo demo-e2e` passes with the rebuilt harness. Repo made public.
 - 2026-11-12: **Integration branch `m4-integrate`** (pushed as `main`).
@@ -64,7 +71,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - 2026-11-08 — Kit imported into `projects/gapproof` (git init).
 
 ## Open questions / next steps
-- Publish the v0.1.0 draft release on GitHub (owner). Gap work (validators, self-scan, rules, SHA pinning, signing) is on branch `m12-gaps`. D-001: v0.1 is quiet, so publishing the MESA newsletter makes it public; tag v0.2.0 first or accept that.
+- Publish the v0.1.0 draft release on GitHub (owner). Next release (v0.1.1/v0.2.0): check the cosign signature (`cosign verify-blob`) and the provenance (`gh attestation verify`). GitHub settings to apply: branch protection on `main` (require a PR and the `ci` checks, no force-push), private vulnerability reporting, read-only default workflow permissions, Dependabot for github-actions. D-001: v0.1 is quiet, so publishing the MESA newsletter makes it public; tag v0.2.0 first or accept that.
 - Demo follow-ups were decided in D-035 to D-039 (pickle builtin allowlist, chromadb `<1.5.4` bound with PEP 440 ranges, NFLOG duplicate-flow fix, amd64 waivers generated from arm64). Still open:
   - amd64 demo: verified via the manual `demo` workflow (`gh workflow run demo.yml`). Re-run it before each release.
 - Gotchas:
@@ -72,6 +79,8 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
   - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
   - `scan --out` must be a new or empty directory.
   - The harness e2e needs `bin/gapproof harness load dist/gapproof-harness-<version>-linux-<arch>.oci.tar` after every `make harness`. Use the exact name: the glob breaks once a `-dirty` and a clean tar are both in `dist/`.
+  - `make selfscan` needs a loaded harness (`make harness build`, then `harness load` with the exact tar name).
+  - Rule fixtures are declared in `internal/phonehome/fixtures_test.go` (`ruleFixtures`, `extraNegatives`) and generated with `-update`.
   - `make demo` needs Docker (about 7 min with cached images) and writes `evidence/` (gitignored). `make demo-e2e` asserts leaky = AGR-1 and fixed = AGR-4, with byte-identical rescans.
 - Remote: `github.com/uddeshya-world/gapproof`, public since 2026-11-12 (owner confirmed the IP check cleared); `m4-integrate` is pushed as `main`.
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
