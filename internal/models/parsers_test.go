@@ -319,6 +319,13 @@ func TestSniff(t *testing.T) {
 		{"a/x.joblib", []byte("\x80\x04."), "pickle"},
 		{"a/x.pth", zipHead, "pytorch-zip"},
 		{"a/x.ckpt", []byte("garbage"), "pickle"},
+		// A .pth in site-packages is a path-config text file, not a checkpoint.
+		{"usr/lib/python3/site-packages/distutils-precedence.pth", []byte("import os; var"), ""},
+		{"usr/lib/python3/dist-packages/x.pth", []byte("/opt/lib\n"), ""},
+		{"usr/lib/python3/site-packages/real.pth", []byte("\x80\x02}"), "pickle"},
+		{"usr/lib/python3/site-packages/real.pth", zipHead, "pytorch-zip"},
+		{"app/weights/x.pth", []byte("/opt/lib\n"), "pickle"}, // elsewhere: fail closed
+		{"usr/lib/python3/site-packages/sub/x.pth", []byte("/opt/lib\n"), "pickle"},
 		{"a/tokenizer.json", nil, "hf-tokenizer"},
 		{"a/generation_config.json", nil, "hf-config"},
 	}

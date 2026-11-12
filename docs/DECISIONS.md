@@ -402,3 +402,19 @@ Without the flag nothing changes: exiting early still fails a long-running targe
 **Decision.** Contributors sign commits off under the Developer Certificate of Origin (`git commit -s`). No CLA. The Code of Conduct is the Contributor Covenant 2.1 by reference. Enforcement is by reviewer checklist (PR template), not a bot yet.
 
 **Consequences.** Low friction for contributors. Contributions stay licensed Apache-2.0 under the inbound=outbound rule; the project can't relicense contributed code without the contributors' agreement. If the owner later wants that flexibility, move to a CLA before accepting significant outside code.
+
+## D-044 (2026-11-12): Real-world static scans: lessons, and `.pth` path files are not models
+
+**Context.** Before v0.1 was shared widely we ran static scans (`--skip egress`) of four popular, public AI images: a Python experiment-tracking server, a vector database (compiled server), a Go-based local LLM runtime and a C++ inference server, all pulled and `docker save`d outside the repo and never executed. Scan outputs of third-party images are not committed; these are the generic lessons.
+
+**Fixed.**
+- A text `.pth` file directly in `site-packages` or `dist-packages` (a Python path-configuration file such as a `distutils-precedence.pth`) was sniffed as a PyTorch checkpoint and reported as `MODEL-PARSE-FAILED` (high). The sniffer now skips a `.pth` there unless it starts with a zip or pickle header, so a real checkpoint in that directory is still scanned. A `.pth` anywhere else still fails closed. Covered by `TestSniff`.
+
+**Worked as intended (no change).**
+- The new MLflow rules fired on a current MLflow install: `PH-MLFLOW-TELEMETRY` once for `mlflow` and once for `mlflow-skinny`, because the image installs both distributions. This is correct (two installed copies) but noisy; waive both or opt out via the environment.
+- Pickle and NumPy object-array findings under library test-data directories (`joblib/test/data`, `numpy/lib/tests/data`, `scipy/.../tests`) are real fail-closed results: some are joblib files that embed raw array bytes after the pickle opcodes, so an opcode walk cannot verify the rest of the file. Vendors should drop test directories from runtime images or waive the findings (D-035, D-039). We did not allowlist more third-party classes (`joblib.numpy_pickle.*`, `numpy.matrixlib.defmatrix.matrix`, scipy sparse matrices) without reading their source, as D-039 requires.
+
+**Rule gaps, not fixed (recorded for later).**
+- Phone-home rules match Python distributions, image environment variables and application source. A compiled server (Go, Rust, C++) that phones home on its own produces zero static findings; only the egress harness can show it. Reports from `--skip egress` should not be read as "silent".
+- Statically linked Rust crypto (ring, rustls, aws-lc) is not inventoried, because such binaries carry no Go-style build info. Go binaries are detected; the note field shows the toolchain version while `version` stays blank unless built with `GOFIPS140`, which reads oddly.
+- System libraries without a version in the CMVP snapshot (nettle, gnutls, libgcrypt) are `CRYPTO-UNKNOWN-MODULE` (high) in every Debian/Ubuntu-based image. That is accurate under AGR_SPEC section 1 but is most of the noise in a base-image-heavy scan. A per-library waiver is the intended route.

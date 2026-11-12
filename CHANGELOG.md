@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Fixed (models, D-044)
+- A text `.pth` path-configuration file in `site-packages` or `dist-packages` is no longer scanned as a PyTorch checkpoint (it produced a high `MODEL-PARSE-FAILED`). Real checkpoints, and `.pth` files elsewhere, are still scanned.
+
 ### Added (self-scan, M8)
 - `make selfscan` scans Gapproof's own release binary in a scratch image with `--one-shot` and gates on AGR-4 (`deploy/selfscan/`). The result is AGR-4 (observed 20s): the binary exits 0 with all egress blocked and makes no network attempt, the Go cryptographic module matches CMVP certificate 5247 in the snapshot, and `agents: []` is a vendor-declared manifest ("no agentic tool use, vendor-declared"). Needs Docker and a loaded harness.
 
