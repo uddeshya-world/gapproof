@@ -48,7 +48,7 @@ is gitignored), carry the tars over, then `docker load` them and run
 | crypto | `CRYPTO-UNVALIDATED-MODULE` ×3, `CRYPTO-UNKNOWN-MODULE` | system OpenSSL, the OpenSSL bundled in the `cryptography` wheel, the BoringSSL bundled in `grpcio`, and nettle |
 | | `CRYPTO-WEAK-HASH` | `hashlib.md5` cache keys in `app/main.py` |
 | models | `MODEL-PICKLE-CODE-EXEC` (critical) | `/app/models/reranker.pt` → `builtins.print` (GLOBAL + REDUCE in `reranker/data.pkl`) |
-| | `MODEL-PICKLE-CODE-EXEC`, `MODEL-PICKLE-UNKNOWN-IMPORT`, `MODEL-NUMPY-OBJECT-ARRAY` | numpy's own test fixtures in site-packages (real images ship these too) |
+| | `MODEL-PICKLE-UNKNOWN-IMPORT`, `MODEL-NUMPY-OBJECT-ARRAY` | numpy's own test fixtures in site-packages (real images ship these too). Their `range`/`xrange` imports are allowlisted (D-035); `numpy.core._internal._reconstruct` in `py2-np0-objarr.npy` is not |
 | agents | `AGENT-INV01-analyst` (high) | `analyst` holds private data (`read_file`, `search_docs`), untrusted input (`fetch_url`) and ungated egress (`http_post`, `run_python`): all three MESA lattice components reach the production threshold (D-032) |
 
 ### fixed-rag (AGR-4)
@@ -79,6 +79,14 @@ Waiver paths contain the target triple, so there's one file per arch and
 `make demo` picks `gapproof.waivers.$(go env GOARCH).yaml`. A single file with
 both arches would work too, but the other arch's entries would show as stale
 waiver warnings in every report.
+
+The arm64 file is the one you edit, and it was checked against a real arm64
+scan. The amd64 file is generated from it (`go test ./cmd/gapproof -run
+TestDemoWaiversAmd64 -update-demo-waivers`), and the test fails if the two drift
+apart. `demo/tools/verify_amd64_waivers.sh <empty dir>` checks the amd64 file
+without an amd64 host or Docker. It assembles the amd64 rootfs from the pinned
+base layers and x86_64 wheels, scans it with `--rootfs`, and requires every
+crypto finding waived and no stale waiver (D-038).
 
 `gapproof.scope.yaml` declares no internal names: fixed-rag needs nothing
 outside its own container.

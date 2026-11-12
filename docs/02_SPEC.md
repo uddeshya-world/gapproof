@@ -62,7 +62,7 @@ driver (own netns, on gapproof-<runid>)  --->  <sinkhole-ip>:<target-port>
 8. Tear everything down (containers, then the network), even on Ctrl-C / SIGTERM, using a deferred cleanup plus a signal handler. Clean up leftovers from crashed runs by label (`gapproof.runid`).
 
 **Sinkhole listeners**
-- **DNS (`:5353` UDP+TCP):** logs every query (name, type, original resolver IP/port from NFLOG). A queries get a **per-name synthetic address** from `198.18.0.0/15` (RFC 2544, never routed). The first name gets `198.18.0.1`, the next `198.18.0.2`, and so on, stable within a run, so later connections can be attributed back to the name even without SNI. AAAA gets NODATA (IPv6 is disabled in the netns). Every other qtype gets NXDOMAIN.
+- **DNS (`:5353` UDP+TCP):** logs every query (name, type, original resolver IP/port from NFLOG). Under Docker the original resolver is normally `127.0.0.11`, the embedded resolver from the target's `resolv.conf`. It is recorded as is, because it is what the target addressed. It is never a separate egress entry, and a query is judged by its name plus that resolver (D-020, D-037). A second NFLOG record for the same 5-tuple within 1 s (conntrack logs back-to-back A/AAAA datagrams from one socket as two NEW packets) is the same flow, not an unexplained one. A queries get a **per-name synthetic address** from `198.18.0.0/15` (RFC 2544, never routed). The first name gets `198.18.0.1`, the next `198.18.0.2`, and so on, stable within a run, so later connections can be attributed back to the name even without SNI. AAAA gets NODATA (IPv6 is disabled in the netns). Every other qtype gets NXDOMAIN.
 - **TCP catch-all (`:15001`):** for each connection, read `SO_ORIGINAL_DST`, peek up to 4 KiB with a 2 s deadline, and parse the TLS ClientHello SNI (plus ALPN) or the HTTP/1 `Host`. Map the synthetic IP back to its DNS name, log, then close. **Never complete TLS, never proxy.**
 - **UDP catch-all (`:15002`):** the original destination comes from the matching NFLOG record (correlated by source port and time). Classify the payload where cheap: QUIC Initial (and the SNI if the Initial decrypts with the version-1 public salt), NTP, statsd/DogStatsD line format, syslog. Otherwise `unknown`. Never reply.
 
@@ -80,22 +80,24 @@ title: ChromaDB anonymized telemetry is on
 severity: high
 confidence: high            # low when the upstream docs couldn't be verified
 explanation: >-
-  chromadb sends anonymized telemetry (PostHog) by default...
+  chromadb before 1.5.4 sends anonymized product telemetry (PostHog) by default...
 match:                      # every condition present must hold
   python_package: chromadb  # string or list: any installed distribution (PEP 503 names)
+  python_package_version: "<1.5.4"  # optional PEP 440 range (<, <=, >, >=, ==, !=; comma = and), D-036
+                                    # unparseable installed versions count as in range (fail closed)
   # env: {VAR: [values]}            any VAR has one of the values ("*" = any non-empty, "!x" = set and not x)
   # env_public_url: [VAR, ...]      any VAR holds a URL/host that isn't private or internal
   # source_regex: '...'             application .py/.js (not site-packages/node_modules/stdlib)
   unless_env:               # any satisfied unless_* suppresses the rule
     ANONYMIZED_TELEMETRY: ["0", "false", "no", "off"]
   # unless_file: {path_regex: '...', content_regex: '...'}
-fix: Set ANONYMIZED_TELEMETRY=False in the image environment.
+fix: Upgrade chromadb to 1.5.4 or later, or set ANONYMIZED_TELEMETRY=False in the image environment.
 controls: [CM-7, SC-7]
 source:
   - https://docs.trychroma.com/telemetry
 ```
 - Rules are decoded strictly (unknown keys fail) and validated on load: ID format and file name, severity, confidence, controls, an https `source`, at least one match condition, compilable regexes.
-- Every rule has `rules/testdata/<ID>/{positive,negative}/` fixtures (`rootfs/` plus an optional `env.txt`) and a golden `expected.json`. The tests fail if a rule lacks them.
+- Every rule has `rules/testdata/<ID>/{positive,negative}/` fixtures (plus optional `negative-2`, `negative-3`, ...) (`rootfs/` plus an optional `env.txt`) and a golden `expected.json`. The tests fail if a rule lacks them.
 - `gapproof rules test <ID> <fixture-dir> [--expect match|none]` runs one rule against a fixture.
 - Evidence anchors: an installed package's `METADATA` (path + sha256), the matching source line (path + sha256 + offset), or `(image config)` with the config digest for environment-only rules.
 

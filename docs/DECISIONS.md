@@ -234,3 +234,111 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - **verify --artifact:** the image's config digest is compared first, and a mismatch is reported before any layer is read. Then each layer is decompressed and hashed only (diff_id, plus the blob digest when named). Nothing is written to disk. Outer image members with `GNU.sparse.*` records are refused by scan as well.
 - **Public keys:** non-canonical encodings (y ≥ p) and the small-order points (libsodium's `has_small_order` list, either sign bit) are refused. With such a key, a forged signature like R = identity, S = 0 would verify.
 - **sign:** `--in` is resolved through symlinks. A manifest that covers no files is never signed. A private key readable by group or other gets a warning. The "bundle inside the evidence directory" check compares resolved directories by identity (`os.SameFile`), so symlinks and case-insensitive filesystems can't get around it.
+
+## D-035 (2026-11-12): Pickle allowlist covers side-effect-free builtin constructors; no path-based exemption
+**Context.** Every `builtins.*` import that wasn't allowlisted was `MODEL-PICKLE-CODE-EXEC` (critical, unwaivable). numpy wheels ship object-array test fixtures (`numpy/lib/tests/data/py{2,3}-objarr.{npy,npz}`) that store the `range` type itself (`builtins.range`, or `__builtin__.xrange` in the Python 2 files). Each of them capped a scan at a critical that nobody could waive, for an import that can't run code.
+
+**Decision.**
+- **Allowlist (exact names only):** `builtins.` `range`, `int`, `float`, `bool`, `str`, `bytes`, `tuple`, `list`, `dict`, plus the existing `set`, `frozenset`, `bytearray`, `slice` and `complex`. Python 2 names map onto them only from `__builtin__` (as pickle's `_compat_pickle` NAME_MAPPING does for protocol < 3): `xrange`→`range`, `unicode`/`basestring`→`str`, `long`→`int`.
+- **Everything else in `builtins` stays critical,** including `getattr`, `setattr`, `eval`, `exec`, `compile`, `__import__`, `open`, `print`, `input`, `breakpoint`, `type`, `object`, `vars`, `map`, `filter`, `iter`, `apply`, `execfile`, `reduce` and `intern`. So do dotted names (`range.__new__`, `dict.fromkeys`), since pickle protocol 4+ resolves them with attribute walks. Other Python 2 renames (`reduce`→`functools`, `intern`→`sys`) aren't applied, so they're still judged as `builtins.*`.
+- **No path-based handling.** A pickle under `site-packages/*/tests/data/` gets the same rule and severity as any other, and the waivable list is unchanged. The fix for third-party test fixtures is to delete them in the image build, as `demo/fixed-rag` does.
+
+**Why.**
+- *Laundering.* A pickle can only call what it imports (GLOBAL, INST, STACK_GLOBAL or EXT) or what an earlier call returned. Called on the values a pickle can build, each allowlisted constructor returns plain data: never a callable, a module or a bound method. BUILD on those results can't reach `__setstate__` or set attributes on builtin types. So none of them can be turned into a call or attribute primitive, and a REDUCE chain through them stays harmless. Every other import in the same file is still classified on its own: a `getattr` behind `range(3)` is still critical (fixture `pickle/range_getattr_chain.pkl`).
+- *Excluded.* `type`, `object`, `map`, `filter`, `iter`, `sorted`, `min` and `max` are excluded because they create classes or call other callables.
+- *Paths.* The attacker controls the path. A path exemption would hand them a place to park a payload where anything that loads it by name still runs it. A waiver keyed on a test-fixture path would launder the same way.
+
+**Consequences.**
+- numpy's `py2-objarr`/`py3-objarr` fixtures now give only `MODEL-NUMPY-OBJECT-ARRAY` (medium, waivable).
+- `py2-np0-objarr.npy` still gives `MODEL-PICKLE-UNKNOWN-IMPORT` (high, unwaivable) for `numpy.core._internal._reconstruct`. That name isn't verified harmless, so stripping numpy's tests from the image is still the recommended fix.
+- The leaky-rag demo's rule set is unchanged, because its reranker still imports `builtins.print`.
+
+## D-036 (2026-11-12): Phone-home rules can be bounded by package version; PH-CHROMA-TELEMETRY is `<1.5.4`
+**Context.** `PH-CHROMA-TELEMETRY` fired on any installed chromadb unless `ANONYMIZED_TELEMETRY` was off. Upstream removed product telemetry in March 2026, and the rule engine had no way to say "only these versions".
+
+**Upstream evidence (checked 2026-11-12):**
+- chroma-core/chroma PR #6489, "[CLN] Make telemetry a no-op and remove posthog as a dependency", merged 2026-03-03: https://github.com/chroma-core/chroma/pull/6489. The author writes "We do not collect telemetry anymore". The `Posthog` class stays, as a no-op, for config compatibility.
+- PyPI (https://pypi.org/project/chromadb/#history):
+  - 1.5.2 (2026-02-27) requires `posthog<6.0.0,>=2.4.0`.
+  - 1.5.3 (2026-03-07, yanked) and 1.5.4 (2026-03-08) require no posthog, and neither does 1.5.9 (latest, 2026-05-05). This was read from the JSON API's `requires_dist`.
+- Wheel source (the `manylinux x86_64` wheels, read only, never installed):
+  - In 1.5.4, `chromadb/telemetry/product/posthog.py` is a 258-byte class whose `capture()` is `pass`.
+  - In 1.5.2, it imports posthog, sets a project key and calls `posthog.capture`.
+  - `config.py` still defaults to that class with `anonymized_telemetry = True`, which is now inert.
+  - The Rust bindings `.so` contains no `posthog` string in either version.
+- I couldn't load the Chroma docs telemetry page (404). A search snippet says the docs state "as of version 1.5.4" telemetry is no longer collected. That matches the above but is unverified.
+
+**Decision.**
+- **New field.** Rules gain an optional `match.python_package_version`, a PEP 440 range (comma-separated `<`, `<=`, `>`, `>=`, `==`, `!=`; all clauses must hold). It requires `python_package`. `~=`, `===` and `.*` wildcards are rejected at load.
+- **Comparison.** Versions compare in PEP 440's total order (epoch, release with trailing zeros ignored, dev < pre (a < b < rc) < final < post, and local labels). This lives in `internal/phonehome/pep440.go`: no dependency, `math/big` for arbitrarily long numbers, and a 256-byte cap on input.
+- **Fail closed.**
+  - The specifier rule that `<V` excludes pre-releases of V is deliberately not applied, so 1.5.4rc1 matches `<1.5.4`. A pre-release of the fixing version may not contain the fix.
+  - An installed version that isn't PEP 440 counts as in range, and the detail says so.
+- **Evidence.** A version-bounded finding's detail reads `chromadb 1.5.2 installed, in affected range <1.5.4; ...`.
+- **The rule.** `PH-CHROMA-TELEMETRY` is bounded `<1.5.4`, not `<1.5.3`. The yanked 1.5.3 still matches. That's a possible false positive on a yanked release, and the safer side.
+- **Fixtures.**
+  - positive: 1.5.2
+  - negative: 1.5.4
+  - `negative-2`: 1.5.2 with the env opt-out
+  - `negative-3`: 2.0.0
+
+  Rule fixture dirs may now include `negative-N`.
+
+**Why.**
+- An unbounded rule reports telemetry that the shipped code can't send, so approvers learn to ignore phone-home findings.
+- Version ranges are the smallest general tool. Every rule that "stopped phoning home in version X" needs one.
+- A dependency-free subset keeps rule 2 and keeps the code reviewable. It's fuzzed (`FuzzVersion`: order is reflexive and antisymmetric, normalisation round-trips; `FuzzSpec`: specs round-trip, and unparseable versions never count as out of range). The ordering test mirrors packaging's own sequence.
+
+**Consequences.**
+- `rule_pack_version` changes.
+- The demo's leaky-rag pins chromadb 1.5.2, so it still fires there, and its expected rule set is unchanged.
+- An image with chromadb ≥ 1.5.4 and no env opt-out no longer gets `PH-CHROMA-TELEMETRY`. Its OpenTelemetry export is a separate path (`PH-OTLP-PUBLIC-ENDPOINT`).
+
+## D-037 (2026-11-12): Docker's embedded resolver: a correlation bug fixed, the resolver kept as evidence
+**Context.** Under Docker, the leaky-rag scan listed a bare `udp 127.0.0.11:53` (proto unknown, in scope) next to its DNS attempts, and every DNS attempt recorded `orig_dst_ip: 127.0.0.11`. Its `egress.log.jsonl` shows seven "seen by NFLOG only" UDP records to 127.0.0.11:53. Every one of them is on a source port that has **two** NFLOG records for the identical 5-tuple, about 70 µs apart. A resolver (glibc) sends its A and AAAA queries back to back from one socket, and conntrack logs both datagrams as NEW (the insert race on an unconfirmed entry). `Flows` kept both records, but the DNS listener's single Lookup explained only the newer one, so the older one was reported at shutdown as unexplained.
+
+**Decision.**
+- **Fix the cause.** A second NFLOG record for the same 5-tuple (proto, src, dst, ports), on the same source port, within 1 s of the first, is the same flow. It isn't stored again, so it's explained (or reported) once with the first. The raw `flow` lines and the pcap still keep both records, since they're the audit trail. A reuse of the tuple after 1 s, or another destination from the same port, is still a separate flow.
+- **Not hidden, and not relabelled as infrastructure.** No special case for 127.0.0.11 in the evidence or the scope.
+  - A DNS attempt keeps `orig_dst_ip` = the resolver the target actually addressed. Under Docker that is the embedded resolver from `resolv.conf`; under Podman it's whatever its `resolv.conf` names.
+  - Scope stays as in D-020: the name decides, and a public resolver IP makes the query out of scope.
+  - A non-DNS datagram to 127.0.0.11:53 still reaches the DNS listener as a malformed query: kind `dns`, no name, so out of scope (fail closed).
+  - A genuinely unexplained flow to the resolver (for example, cut at teardown) is still listed.
+
+**Why.**
+- Hiding 127.0.0.11 would have masked a real defect: unexplained-flow reporting that misfires on ordinary resolver behaviour. It would also bake an engine-specific address into the evidence model.
+- A target can address a resolver directly. Recording the address it used is the honest evidence: it shows which resolver the image is configured for and makes a hard-coded resolver stand out.
+- 127.0.0.11 is constant under Docker, so it doesn't break determinism. The phantom entry did depend on a race, and the dedup removes that.
+
+**Consequences.**
+- leaky-rag's attempt set loses the bare `udp 127.0.0.11:53` entry. It was in scope, so no finding or AGR level changes.
+- The DNS entries still show `127.0.0.11`.
+- The sinkhole runs inside the harness image, so the fix only takes effect after `make harness` and `harness load`, which re-pins the image.
+- Not re-verified in a container here, because a full verification was running on the main checkout. The next `make demo` should show the entry gone (the demo e2e only checks rules and levels).
+
+## D-038 (2026-11-12): amd64 demo waivers are generated from arm64 and checked statically
+**Context.** Waivers match exact paths (D-019), and no glob is supported. Three of fixed-rag's four crypto paths contain the target triple. `gapproof.waivers.amd64.yaml` was hand-derived from the arm64 scan and had never been checked, and there's no amd64 host.
+
+**Decision.**
+- **Generate, don't hand-edit.** `gapproof.waivers.arm64.yaml` stays the source, since it was verified by a real arm64 scan. The amd64 file is generated from it: a "GENERATED" header, then `aarch64-linux-gnu`→`x86_64-linux-gnu` (the Debian multiarch dir and CPython's `EXT_SUFFIX`) and `linux/arm64`→`linux/amd64`. `TestDemoWaiversAmd64` (in `cmd/gapproof`, runs in `go test ./...`) checks four things:
+  - the amd64 file is byte-identical to the generated form (`-update-demo-waivers` regenerates it);
+  - nothing arm-specific survives the substitution;
+  - both files parse, with equal waivers apart from the triple;
+  - the amd64 paths equal a list that was verified by hand. A change to that list fails the test until it's re-verified.
+- **Verify statically, once per change.** `demo/tools/verify_amd64_waivers.sh <dir>` builds an approximate linux/amd64 fixed-rag rootfs from data only:
+  - the pinned `python:3.12-slim` index → amd64 manifest → layers, each checked against its digest;
+  - the x86_64 wheels for `requirements.txt` (`pip download --only-binary`, nothing built or run);
+  - the app files, with numpy's tests removed as the Dockerfile does.
+
+  It then runs `gapproof scan --rootfs --skip egress,agents` with the amd64 waivers, and requires every `CRYPTO-*` finding to be waived with no stale waiver.
+- **Glob waivers: no.** An arch-agnostic file would need glob matching in waivers, which would widen what one accepted risk can cover. That's against D-019's "exact match" for the sake of a demo convenience.
+
+**Verification (2026-11-12).** The script found exactly four crypto findings, all waived, with 0 stale waivers. The models module was clean.
+- The base layer (`sha256:37fb86c2…`) contains `usr/lib/x86_64-linux-gnu/libcrypto.so.3` and `libnettle.so.8.10`.
+- grpcio 1.85.1's cp312 x86_64 wheel ships `grpc/_cython/cygrpc.cpython-312-x86_64-linux-gnu.so`.
+- cryptography 50.0.2's abi3 wheel ships `_rust.abi3.so`.
+
+**Limits.**
+- This isn't a real amd64 image build. Docker's layer application, pip's install-time steps (entry points, `.pyc`, `RECORD`) and the image env aren't reproduced, so the phone-home results differ and aren't checked.
+- Wheel selection follows pip's tag order for `python3.12`/glibc 2.39, so pip may pick a different manylinux variant than the image's pip would. The crypto paths are the same in every variant.
+- A real `make demo` on amd64 is still the final check.

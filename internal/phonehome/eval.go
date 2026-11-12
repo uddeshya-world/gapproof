@@ -60,8 +60,21 @@ func Evaluate(ctx context.Context, rs []*Rule, in Input) ([]evidence.Finding, er
 		}
 		m := r.Match
 		var pkgs []inventory.PythonPackage
+		verNote := map[string]string{} // METADATA path -> version-range note
 		for _, name := range m.PythonPackage {
-			pkgs = append(pkgs, in.Inv.Package(name)...)
+			for _, p := range in.Inv.Package(name) {
+				if r.versionSpec != nil {
+					inRange, ok := r.versionSpec.Contains(p.Version)
+					if !inRange {
+						continue
+					}
+					verNote[p.Metadata] = ", in affected range " + r.versionSpec.String()
+					if !ok {
+						verNote[p.Metadata] = ", version isn't PEP 440 so treated as in affected range " + r.versionSpec.String()
+					}
+				}
+				pkgs = append(pkgs, p)
+			}
 		}
 		if len(m.PythonPackage) > 0 && len(pkgs) == 0 {
 			continue
@@ -98,7 +111,7 @@ func Evaluate(ctx context.Context, rs []*Rule, in Input) ([]evidence.Finding, er
 			}
 		case len(pkgs) > 0:
 			for _, p := range pkgs {
-				d := fmt.Sprintf("%s %s installed", p.RawName, p.Version)
+				d := fmt.Sprintf("%s %s installed%s", p.RawName, p.Version, verNote[p.Metadata])
 				if len(envHits)+len(urlHits) > 0 {
 					d += "; " + strings.Join(append(envHits, urlHits...), "; ")
 				}

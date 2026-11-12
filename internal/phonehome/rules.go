@@ -31,6 +31,7 @@ type Rule struct {
 	Source      []string          `yaml:"source" json:"source"`
 
 	sourceRe, unlessPathRe, unlessContentRe *regexp.Regexp
+	versionSpec                             VersionSpec
 }
 
 // Match lists conditions; every condition present must hold. Any satisfied
@@ -38,6 +39,9 @@ type Rule struct {
 type Match struct {
 	// Any of these Python distributions is installed.
 	PythonPackage StringList `yaml:"python_package,omitempty" json:"python_package,omitempty"`
+	// Only installed versions of those packages inside this PEP 440 range
+	// count, e.g. "<1.5.4" (D-036). An unparseable installed version counts.
+	PythonPackageVersion string `yaml:"python_package_version,omitempty" json:"python_package_version,omitempty"`
 	// Any of these image env vars has one of the listed values.
 	Env map[string][]string `yaml:"env,omitempty" json:"env,omitempty"`
 	// Any of these image env vars holds a URL/host that isn't private.
@@ -141,6 +145,14 @@ func (r *Rule) validate() error {
 		return fmt.Errorf("%s: match needs at least one of python_package, env, env_public_url, source_regex", r.ID)
 	}
 	var err error
+	if m.PythonPackageVersion != "" {
+		if len(m.PythonPackage) == 0 {
+			return fmt.Errorf("%s: python_package_version needs python_package", r.ID)
+		}
+		if r.versionSpec, err = parseSpec(m.PythonPackageVersion); err != nil {
+			return fmt.Errorf("%s: python_package_version: %w", r.ID, err)
+		}
+	}
 	if m.SourceRegex != "" {
 		if r.sourceRe, err = regexp.Compile(m.SourceRegex); err != nil {
 			return fmt.Errorf("%s: source_regex: %w", r.ID, err)

@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed (demo follow-ups, D-035…D-038)
+- Models: `builtins.range` and the other side-effect-free value constructors (`int`, `float`, `bool`, `str`, `bytes`, `tuple`, `list`, `dict`, plus the Python 2 `xrange`/`unicode`/`long`) are safe pickle imports. Every other builtin and every dotted name stays critical. There is no path-based exemption for test fixtures (D-035).
+- Phone-home: rules take `python_package_version` (a PEP 440 range that fails closed). `PH-CHROMA-TELEMETRY` is bounded to `<1.5.4`, because upstream made telemetry a no-op and dropped posthog (D-036).
+- Sinkhole: a duplicate NFLOG record for one flow (back-to-back A/AAAA queries) is no longer reported as an unexplained flow. That record showed up as a phantom `udp 127.0.0.11:53` egress entry under Docker (D-037).
+- Demo: the amd64 fixed-rag waivers are generated from the arm64 file and kept in sync by a test, and `demo/tools/verify_amd64_waivers.sh` checks them statically (D-038).
+
 ### Changed (M5: INV-01 is MESA's definition, D-032)
 - `internal/agents` now ports MESA's graded lattice (mesa-ibi-scanner 0.4.0 `docs/LATTICE.md`): closure fixpoint over (P, U, E) with flow caps and gated edges removed, a fixed production threshold of (2, 2, 2), witness paths and a minimal edge cut. The old two-label path rule (D-030) is gone.
 - Findings: one `AGENT-INV01-<agent>` per violating agent (high, unwaivable) and `AGENT-NEARMISS-<agent>` (info, never affects AGR).

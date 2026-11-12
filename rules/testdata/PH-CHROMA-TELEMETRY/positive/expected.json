@@ -3,13 +3,13 @@
     "rule": "PH-CHROMA-TELEMETRY",
     "severity": "high",
     "title": "ChromaDB anonymized telemetry is on",
-    "explanation": "chromadb sends anonymized telemetry (PostHog) by default. It's off only when ANONYMIZED_TELEMETRY is False in the environment or anonymized_telemetry=False is passed in client Settings.",
+    "explanation": "chromadb before 1.5.4 sends anonymized product telemetry (PostHog) by default. It's off only when ANONYMIZED_TELEMETRY is False in the environment or anonymized_telemetry=False is passed in client Settings. From 1.5.3 (yanked; 1.5.4 is the first available release) the PostHog client is a no-op and posthog is no longer a dependency, so newer versions don't match.",
     "evidence": {
-      "path": "usr/local/lib/python3.12/site-packages/chromadb-0.5.23.dist-info/METADATA",
-      "sha256": "a62520e24e40f214e0e24c13c455609652f3626ccff8ec08d8c2a71ba8f3483f",
-      "detail": "chromadb 0.5.23 installed; not disabled in the image (none of ANONYMIZED_TELEMETRY=0|false|no|off)"
+      "path": "usr/local/lib/python3.12/site-packages/chromadb-1.5.2.dist-info/METADATA",
+      "sha256": "e96e4f9c7b035fabcef0956685be6755fc87d7041e77a3713bba420aa43800a3",
+      "detail": "chromadb 1.5.2 installed, in affected range \u003c1.5.4; not disabled in the image (none of ANONYMIZED_TELEMETRY=0|false|no|off)"
     },
-    "fix": "Set ANONYMIZED_TELEMETRY=False in the image environment.",
+    "fix": "Upgrade chromadb to 1.5.4 or later, or set ANONYMIZED_TELEMETRY=False in the image environment.",
     "controls": [
       "CM-7",
       "SC-7"
