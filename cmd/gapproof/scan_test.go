@@ -155,3 +155,44 @@ func TestDiffLicenceGate(t *testing.T) {
 		t.Errorf("pro diff output (want itemised, under 30 lines):\n%s", so.String())
 	}
 }
+
+func TestTTYNeutralisesControlChars(t *testing.T) {
+	b := &evidence.Bundle{
+		Modules:  []evidence.ModuleStatus{{Name: "egress", Status: evidence.ModuleRan}},
+		Egress:   &evidence.EgressSection{Attempts: []evidence.EgressAttempt{{Kind: "dns", Name: "evil\x1b[2J.example"}}},
+		Findings: []evidence.Finding{{ID: "EG-0001", Rule: evidence.RuleEgressAttempt, Severity: evidence.High, Status: "open", Title: "x\x1b]0;pwned\x07"}},
+	}
+	for _, l := range renderTTY(b, nil, false) {
+		if strings.ContainsAny(l, "\x1b\x07") {
+			t.Fatalf("control character reached the terminal: %q", l)
+		}
+	}
+}
+
+func TestScanValidatesInputsBeforeWriting(t *testing.T) {
+	rootfs := "../../rules/testdata/PH-CHROMA-TELEMETRY/positive/rootfs"
+	out := filepath.Join(t.TempDir(), "ev")
+	var so, se bytes.Buffer
+	for _, args := range [][]string{
+		{"--models", "/nonexistent"},
+		{"--skip", "egress,agents", "--agents", "x.yaml"},
+		{"--agents", "../../internal/agents/testdata/mcp-files.json"}, // fails after --out is created
+	} {
+		a := append([]string{"scan", "--rootfs", rootfs, "--skip", "egress", "--out", out}, args...)
+		if c := run(a, &so, &se); c != exitUsage {
+			t.Errorf("%v: exit %d, want 2: %s", args, c, se.String())
+		}
+		if _, err := os.Stat(out); err == nil {
+			t.Errorf("%v: left %s behind", args, out)
+		}
+	}
+	// Same inputs spelled differently give the same evidence (rule 6).
+	o1, o2 := filepath.Join(t.TempDir(), "a"), filepath.Join(t.TempDir(), "b")
+	run([]string{"scan", "--rootfs", rootfs, "--skip", "egress", "--agents", "../../internal/agents/testdata/leaky.yaml", "--out", o1}, &so, &se)
+	run([]string{"scan", "--rootfs", "./" + rootfs + "/", "--skip", "egress", "--agents", "./../../internal/agents/testdata/leaky.yaml", "--out", o2}, &so, &se)
+	e1, _ := os.ReadFile(filepath.Join(o1, "evidence.json"))
+	e2, _ := os.ReadFile(filepath.Join(o2, "evidence.json"))
+	if len(e1) == 0 || !bytes.Equal(e1, e2) {
+		t.Error("evidence.json depends on how the input paths are spelled")
+	}
+}

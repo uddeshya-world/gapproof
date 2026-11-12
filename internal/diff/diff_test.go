@@ -77,3 +77,35 @@ func TestCompare(t *testing.T) {
 		t.Error(s.String())
 	}
 }
+
+func TestRegressionCases(t *testing.T) {
+	ran := func(ms ...string) []evidence.ModuleStatus {
+		var out []evidence.ModuleStatus
+		for _, m := range ms {
+			out = append(out, evidence.ModuleStatus{Name: m, Status: evidence.ModuleRan})
+		}
+		return out
+	}
+	ph := f("PH-0001", "PH-X", "a.py", evidence.High, "open")
+	waived := f("PH-0001", "PH-X", "a.py", evidence.High, "waived")
+	lvl := evidence.AGR{Level: evidence.LevelAGR2}
+
+	// Skipping a module isn't "resolving" its findings.
+	r := Compare(&evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{ph}}, &evidence.Bundle{AGR: lvl})
+	if !r.Regressed() || len(r.Removed) != 0 || len(r.ModulesLost) != 1 {
+		t.Errorf("skipped module: regressed=%v removed=%d lost=%v", r.Regressed(), len(r.Removed), r.ModulesLost)
+	}
+	// A waiver that lapsed reopens a finding.
+	if r := Compare(&evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{waived}}, &evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{ph}}); !r.Regressed() {
+		t.Error("waived → open must regress")
+	}
+	// Severity raised.
+	med := f("PH-0001", "PH-X", "a.py", evidence.Medium, "open")
+	if r := Compare(&evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{med}}, &evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{ph}}); !r.Regressed() {
+		t.Error("medium → high must regress")
+	}
+	// A second occurrence of the same key is new.
+	if r := Compare(&evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{ph}}, &evidence.Bundle{AGR: lvl, Modules: ran("phonehome"), Findings: []evidence.Finding{ph, ph}}); len(r.Added) != 1 {
+		t.Errorf("duplicate key: added=%d, want 1", len(r.Added))
+	}
+}

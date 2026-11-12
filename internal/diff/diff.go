@@ -39,15 +39,24 @@ type Result struct {
 	EgressRemoved      []evidence.EgressAttempt
 	Models             []HashChange
 	Crypto             []HashChange
+	// ModulesLost ran in the old run but not in the new one (skipped or
+	// failed). Their old findings aren't reported as resolved: nobody looked.
+	ModulesLost []string
 }
 
 // Regressed reports whether the new run is worse: a lower level or any new
 // open finding (for CI gates).
 func (r *Result) Regressed() bool {
-	if evidence.LevelRank(r.NewLevel) < evidence.LevelRank(r.OldLevel) {
+	if evidence.LevelRank(r.NewLevel) < evidence.LevelRank(r.OldLevel) || len(r.ModulesLost) > 0 {
 		return true
 	}
-	return slices.ContainsFunc(r.Added, evidence.Finding.Open)
+	if slices.ContainsFunc(r.Added, evidence.Finding.Open) {
+		return true
+	}
+	// A waiver that expired or was removed, or a severity that went up.
+	return slices.ContainsFunc(r.Changed, func(c FindingChange) bool {
+		return (c.New.Open() && !c.Old.Open()) || (c.New.Open() && c.New.Severity.Rank() < c.Old.Severity.Rank())
+	})
 }
 
 func findingKey(f evidence.Finding) string {
@@ -58,10 +67,18 @@ func findingKey(f evidence.Finding) string {
 // Compare diffs old against new.
 func Compare(old, new *evidence.Bundle) *Result {
 	r := &Result{OldLevel: old.AGR.Level, NewLevel: new.AGR.Level, OldTarget: old.Target, NewTarget: new.Target}
+	lost := map[string]bool{}
+	for _, m := range evidence.Modules {
+		if old.ModuleState(m) == evidence.ModuleRan && new.ModuleState(m) != evidence.ModuleRan {
+			lost[m] = true
+			r.ModulesLost = append(r.ModulesLost, m)
+		}
+	}
 
-	om, nm := indexFindings(old.Findings), indexFindings(new.Findings)
-	for _, f := range new.Findings {
-		o, ok := om[findingKey(f)]
+	ok, nk := occurrenceKeys(old.Findings), occurrenceKeys(new.Findings)
+	om, nm := indexFindings(old.Findings, ok), indexFindings(new.Findings, nk)
+	for i, f := range new.Findings {
+		o, ok := om[nk[i]]
 		switch {
 		case !ok:
 			r.Added = append(r.Added, f)
@@ -69,8 +86,11 @@ func Compare(old, new *evidence.Bundle) *Result {
 			r.Changed = append(r.Changed, FindingChange{o, f})
 		}
 	}
-	for _, f := range old.Findings {
-		if _, ok := nm[findingKey(f)]; !ok {
+	for i, f := range old.Findings {
+		if lost[evidence.ModuleOf(f.Rule)] {
+			continue
+		}
+		if _, found := nm[ok[i]]; !found {
 			r.Removed = append(r.Removed, f)
 		}
 	}
@@ -89,10 +109,24 @@ func Compare(old, new *evidence.Bundle) *Result {
 	return r
 }
 
-func indexFindings(fs []evidence.Finding) map[string]evidence.Finding {
+// occurrenceKeys numbers findings that share a key (same rule, path and
+// detail at different offsets), so an extra occurrence shows up as new
+// without making shifted offsets look like changes.
+func occurrenceKeys(fs []evidence.Finding) []string {
+	seen := map[string]int{}
+	keys := make([]string, len(fs))
+	for i, f := range fs {
+		k := findingKey(f)
+		keys[i] = fmt.Sprintf("%s\x00#%d", k, seen[k])
+		seen[k]++
+	}
+	return keys
+}
+
+func indexFindings(fs []evidence.Finding, keys []string) map[string]evidence.Finding {
 	m := make(map[string]evidence.Finding, len(fs))
-	for _, f := range fs {
-		m[findingKey(f)] = f
+	for i, f := range fs {
+		m[keys[i]] = f
 	}
 	return m
 }
@@ -161,6 +195,9 @@ func (r *Result) WriteSummary(w io.Writer) {
 		arrow = "→ (unchanged)"
 	}
 	fmt.Fprintf(w, "AGR: %s %s %s\n", r.OldLevel, arrow, r.NewLevel)
+	if len(r.ModulesLost) > 0 {
+		fmt.Fprintf(w, "REGRESSED coverage: %s ran before but not now (its old findings are not counted as resolved)\n", strings.Join(r.ModulesLost, ", "))
+	}
 	fmt.Fprintf(w, "findings: +%d new, -%d resolved, %d changed\n", len(r.Added), len(r.Removed), len(r.Changed))
 	fmt.Fprintf(w, "egress destinations: +%d new, -%d gone · model files changed: %d · crypto modules changed: %d\n",
 		len(r.EgressAdded), len(r.EgressRemoved), len(r.Models), len(r.Crypto))

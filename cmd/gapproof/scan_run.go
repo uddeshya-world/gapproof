@@ -52,9 +52,10 @@ type scanRun struct {
 	models   *models.Result // for the AI-BOM
 	im       *fsscan.Image
 	skipped  map[string]bool
+	waivers  *evidence.Waivers
 }
 
-func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) error {
+func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) (err error) {
 	s := &scanRun{o: o, progress: stderr, skipped: map[string]bool{}}
 	for _, m := range o.skip {
 		s.skipped[m] = true
@@ -69,6 +70,7 @@ func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) error {
 
 	// Inputs that can be wrong are checked before anything slow runs.
 	scope, waivers, err := loadPolicy(o.scope, o.waivers)
+	s.waivers = waivers
 	if err != nil {
 		return err
 	}
@@ -82,10 +84,19 @@ func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) error {
 	if o.image != "" && !isFile(o.image) && looksLikePath(o.image) {
 		return usagef("--image %s: no such file (a local image ref has no path separators or archive suffix)", o.image)
 	}
-	if o.rootfs != "" {
-		if fi, err := os.Stat(o.rootfs); err != nil || !fi.IsDir() {
-			return usagef("--rootfs %s is not a directory", o.rootfs)
+	for flag, dir := range map[string]string{"--rootfs": o.rootfs, "--models": o.models} {
+		if dir == "" {
+			continue
 		}
+		if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
+			return usagef("%s %s is not a directory", flag, dir)
+		}
+	}
+	if o.models != "" && s.skipped["models"] {
+		return usagef("--models was given but the models module is skipped")
+	}
+	if o.agents != "" && s.skipped["agents"] {
+		return usagef("--agents was given but the agents module is skipped")
 	}
 	var engine *harness.Engine
 	if !s.skipped["egress"] || (o.image != "" && !isFile(o.image)) {
@@ -98,9 +109,18 @@ func (o *scanOpts) run(ctx context.Context, stdout, stderr io.Writer) error {
 			return fmt.Errorf("%w (or pass --skip egress)", err)
 		}
 	}
-	if err := prepareOut(o.out); err != nil {
+	created, err := prepareOut(o.out)
+	if err != nil {
 		return err
 	}
+	defer func() {
+		// Don't leave an empty evidence directory behind on failure.
+		if err != nil && created {
+			if ents, _ := os.ReadDir(o.out); len(ents) == 0 {
+				os.Remove(o.out)
+			}
+		}
+	}()
 
 	// Target.
 	tarPath, cleanup, err := s.openTarget(ctx, engine)
@@ -165,7 +185,7 @@ func (s *scanRun) openTarget(ctx context.Context, engine *harness.Engine) (strin
 			return "", nop, usagef("--rootfs: %v", err)
 		}
 		s.im = im
-		s.b.Target = evidence.Target{Image: o.rootfs}
+		s.b.Target = evidence.Target{Image: displayName(o.rootfs)}
 		s.logf("rootfs %s (static only: egress can't be observed without running an image)", o.rootfs)
 		return "", nop, nil
 	}
@@ -190,7 +210,11 @@ func (s *scanRun) openTarget(ctx context.Context, engine *harness.Engine) (strin
 		return "", nop, fmt.Errorf("--image %s: %w", o.image, err)
 	}
 	s.im = im
-	s.b.Target = evidence.Target{Image: o.image, ConfigDigest: im.ConfigDigest, ImageID: im.ImageID}
+	img := o.image
+	if isFile(img) {
+		img = displayName(img) // a tar path; a ref like ghcr.io/org/app:1 is kept whole
+	}
+	s.b.Target = evidence.Target{Image: img, ConfigDigest: im.ConfigDigest, ImageID: im.ImageID}
 	if isFile(o.image) {
 		if s.b.Target.ArtifactDigest, err = sha256File(o.image); err != nil {
 			cleanup()
@@ -305,7 +329,7 @@ func (s *scanRun) runAgents(data []byte) error {
 		return nil
 	}
 	s.logf("agents: %s", s.o.agents)
-	name := filepath.ToSlash(s.o.agents)
+	name := displayName(s.o.agents)
 	res, fs, err := agents.Analyze(name, data)
 	if err != nil {
 		hint := ""
@@ -361,7 +385,10 @@ func (s *scanRun) runEgress(ctx context.Context, e *harness.Engine, tarPath stri
 	s.b.Egress = sec
 	if err != nil {
 		sec.HarnessFailed = true
-		s.failed("egress", err)
+		// The detail (container IDs, timings) goes to stderr only: evidence.json
+		// must not depend on it (rule 6).
+		s.logf("egress FAILED: %v", err)
+		s.status("egress", evidence.ModuleFailed, "the harness itself failed (details on stderr); no level claimed")
 		return nil
 	}
 	note := ""
@@ -415,7 +442,7 @@ func (s *scanRun) write() error {
 		}
 	}
 	if s.o.waivers != "" {
-		if err := copyFile(s.o.waivers, filepath.Join(out, waiversCopy)); err != nil {
+		if err := os.WriteFile(filepath.Join(out, waiversCopy), s.waivers.Raw, 0o644); err != nil {
 			return err
 		}
 	}
@@ -511,20 +538,27 @@ func loadPolicy(scopePath, waiversPath string) (*evidence.Scope, *evidence.Waive
 
 // prepareOut creates the evidence directory. It must be new or empty, so
 // MANIFEST.sha256 never covers a stale file from an earlier run.
-func prepareOut(dir string) error {
+func prepareOut(dir string) (created bool, err error) {
 	ents, err := os.ReadDir(dir)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return usagef("--out: %v", err)
+			return false, usagef("--out: %v", err)
 		}
-		return nil
+		return true, nil
 	case err != nil:
-		return usagef("--out: %v", err)
+		return false, usagef("--out: %v", err)
 	case len(ents) > 0:
-		return usagef("--out %s is not empty (evidence directories are written once; pick a new one)", dir)
+		return false, usagef("--out %s is not empty (evidence directories are written once; pick a new one)", dir)
 	}
-	return nil
+	return false, nil
+}
+
+// displayName is how an input path is recorded in the evidence: its base
+// name, so the same inputs give the same evidence.json from any working
+// directory (rule 6).
+func displayName(p string) string {
+	return filepath.Base(filepath.Clean(p))
 }
 
 func mustRules() []*phonehome.Rule {
@@ -561,14 +595,6 @@ func sha256File(p string) (string, error) {
 		return "", err
 	}
 	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
-}
-
-func copyFile(src, dst string) error {
-	b, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(dst, b, 0o644)
 }
 
 func isTerminal(w io.Writer) bool {

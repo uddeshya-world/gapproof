@@ -27,7 +27,7 @@ func renderTTY(b *evidence.Bundle, only []string, color bool) []string {
 	show := func(m string) bool { return len(only) == 0 || slices.Contains(only, m) }
 
 	var out []string
-	target := b.Target.Image
+	target := safe(b.Target.Image)
 	if b.Target.ConfigDigest != "" {
 		target += "  (" + short(b.Target.ConfigDigest) + ")"
 	}
@@ -71,7 +71,7 @@ func renderTTY(b *evidence.Bundle, only []string, color bool) []string {
 				}
 			}
 		}
-		if note := moduleNote(b, m); note != "" {
+		if note := safe(moduleNote(b, m)); note != "" {
 			line += c("2", "  ("+note+")")
 		}
 		out = append(out, line)
@@ -88,7 +88,7 @@ func renderTTY(b *evidence.Bundle, only []string, color bool) []string {
 			if hint == "" {
 				hint = "-"
 			}
-			out = append(out, fmt.Sprintf("    %-44s %-8s %s", trunc(a.Destination(), 44), hint, scope))
+			out = append(out, fmt.Sprintf("    %-44s %-8s %s", trunc(safe(a.Destination()), 44), safe(hint), scope))
 		}
 	}
 
@@ -106,7 +106,7 @@ func renderTTY(b *evidence.Bundle, only []string, color bool) []string {
 				out = append(out, fmt.Sprintf("    … and %d more in report.html", len(open)-8))
 				break
 			}
-			out = append(out, fmt.Sprintf("    %-8s %s  %s", f.ID, sevColor(c, f.Severity), trunc(f.Title, 70)))
+			out = append(out, fmt.Sprintf("    %-8s %s  %s", f.ID, sevColor(c, f.Severity), trunc(safe(f.Title), 70)))
 		}
 	}
 
@@ -126,7 +126,7 @@ func renderTTY(b *evidence.Bundle, only []string, color bool) []string {
 		if len(bl.FindingIDs) > 0 {
 			ids = " [" + strings.Join(firstN(bl.FindingIDs, 6), " ") + "]"
 		}
-		out = append(out, fmt.Sprintf("    → %s blocked: %s%s", bl.NextLevel, bl.Reason, ids))
+		out = append(out, fmt.Sprintf("    → %s blocked: %s%s", bl.NextLevel, safe(bl.Reason), ids))
 	}
 	return out
 }
@@ -171,6 +171,17 @@ func replay(w io.Writer, dir string, only []string, speed float64) error {
 
 func signalContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+}
+
+// safe neutralises control characters: names, SNIs and Host headers come
+// from the scanned target's traffic and must not drive the terminal.
+func safe(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f || (r >= 0x80 && r < 0xa0) {
+			return '?'
+		}
+		return r
+	}, s)
 }
 
 func short(d string) string {
