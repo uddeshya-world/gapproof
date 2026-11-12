@@ -64,10 +64,13 @@ func (r *Result) Passed() bool {
 	if !r.TargetStarted {
 		return false
 	}
+	alive := r.TargetRunning && r.TargetHealth != "unhealthy"
 	if r.WorkloadRan {
-		return r.WorkloadPassed
+		// A target that crashed makes no egress: a passing workload alone
+		// must not make it look silent (AGR_SPEC §1, "did not become healthy").
+		return r.WorkloadPassed && alive
 	}
-	return r.TargetRunning && r.TargetHealth != "unhealthy"
+	return alive
 }
 
 // Run executes the harness. On any return, everything it created is removed.
@@ -217,7 +220,7 @@ func Run(ctx context.Context, e *Engine, cfg Config) (res *Result, err error) {
 		return nil, ctx.Err()
 	case <-time.After(cfg.Observe):
 	}
-	res.Observed = time.Since(start).Round(time.Second)
+	res.Observed = time.Since(start).Truncate(time.Second)
 	if res.WorkloadRan {
 		select {
 		case w := <-wdone:

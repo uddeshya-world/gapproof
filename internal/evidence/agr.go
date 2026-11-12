@@ -150,6 +150,10 @@ func Compute(in AGRInput) AGR {
 		}
 	}
 	out = max(out, len(egressF))
+	if in.ObservedWindowS <= 0 {
+		block(LevelAGR2, "no observation window recorded: silence over 0s proves nothing", nil)
+		return r
+	}
 	if out > 0 {
 		block(LevelAGR2, plural(out, "out-of-scope egress attempt", "out-of-scope egress attempts"), egressF)
 		return r
@@ -164,9 +168,11 @@ func Compute(in AGRInput) AGR {
 	}
 	var unwaivable, highOpen []Finding
 	for _, f := range in.Findings {
-		m := ModuleOf(f.Rule)
-		if m == ModAgents || f.Rule == RuleEgressAttempt {
+		if strings.HasPrefix(f.Rule, RuleAgentPrefix) || f.Rule == RuleEgressAttempt {
 			continue // INV-01 gates AGR-4; egress attempts gate AGR-2
+		}
+		if ModuleOf(f.Rule) == ModAgents && f.Severity == Info {
+			continue // e.g. an INV-01 near miss: informative only
 		}
 		if !Waivable(f.Rule) {
 			unwaivable = append(unwaivable, f)

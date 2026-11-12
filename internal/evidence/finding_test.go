@@ -34,7 +34,7 @@ func TestSeverityRank(t *testing.T) {
 			t.Errorf("%s should rank above %s", order[i-1], order[i])
 		}
 	}
-	if Severity("bogus").Rank() != Info.Rank() {
-		t.Error("unknown severities rank lowest")
+	if Severity("bogus").Rank() != Critical.Rank() {
+		t.Error("unknown severities must fail closed (rank as critical)")
 	}
 }

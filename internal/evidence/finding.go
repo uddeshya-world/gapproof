@@ -27,8 +27,10 @@ func (s Severity) Rank() int {
 		return 2
 	case Low:
 		return 3
-	default:
+	case Info:
 		return 4
+	default:
+		return 0 // unknown: fail closed, rank as critical
 	}
 }
 

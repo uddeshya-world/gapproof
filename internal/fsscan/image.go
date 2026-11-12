@@ -239,6 +239,12 @@ func indexTar(f *os.File, lim Limits) (map[string]member, error) {
 			return nil, &LimitError{"max archive members", fmt.Sprintf("more than %d members", lim.MaxOuterMembers)}
 		}
 		name := path.Clean(strings.TrimLeft(hdr.Name, "/"))
+		if isSparse(hdr) {
+			// Members are read by raw offset; a sparse member's declared size
+			// is its expanded size, not what is stored. docker save never
+			// writes them.
+			return nil, &UnsafePathError{name, "sparse members are not allowed in an image archive"}
+		}
 		switch hdr.Typeflag {
 		case tar.TypeReg:
 			off, err := f.Seek(0, io.SeekCurrent)
@@ -442,4 +448,18 @@ func caseInsensitive(dir string) bool {
 	defer os.Remove(p)
 	_, err := os.Stat(path.Join(dir, ".gapproof-caseprobe"))
 	return err == nil
+}
+
+// isSparse reports whether hdr is a GNU sparse member (old GNU type 'S', or
+// any PAX GNU.sparse.* record).
+func isSparse(hdr *tar.Header) bool {
+	if hdr.Typeflag == tar.TypeGNUSparse {
+		return true
+	}
+	for k := range hdr.PAXRecords {
+		if strings.HasPrefix(k, "GNU.sparse.") {
+			return true
+		}
+	}
+	return false
 }

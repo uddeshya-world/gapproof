@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 )
 
@@ -26,16 +25,20 @@ func Pack(dir, out string) error {
 	if err != nil {
 		return err
 	}
+	// MANIFEST.sha256 and MANIFEST.sig come first so a verifier can check
+	// the signature before hashing anything else (D-034).
 	names := make([]string, 0, len(files)+2)
-	for p := range files {
-		names = append(names, p)
-	}
 	for _, r := range []string{ManifestName, SignatureName} {
 		if _, err := os.Lstat(filepath.Join(dir, r)); err == nil {
 			names = append(names, r)
 		}
 	}
-	slices.Sort(names)
+	rest := make([]string, 0, len(files))
+	for p := range files {
+		rest = append(rest, p)
+	}
+	slices.Sort(rest)
+	names = append(names, rest...)
 
 	tmp, err := os.CreateTemp(filepath.Dir(out), ".gapproof-bundle-*.tar")
 	if err != nil {
@@ -97,19 +100,42 @@ func addFile(tw *tar.Writer, src, name string) error {
 	return nil
 }
 
-// within reports whether p is dir itself or below it.
+// within reports whether p is dir itself or below it. Both sides are
+// resolved through symlinks, and directories are compared by identity
+// (os.SameFile), not by name, so a symlinked path or a different spelling
+// on a case-insensitive filesystem can't hide that p is inside dir.
 func within(dir, p string) (bool, error) {
-	ad, err := filepath.Abs(dir)
+	rd, err := filepath.EvalSymlinks(dir)
 	if err != nil {
 		return false, err
 	}
-	ap, err := filepath.Abs(p)
+	di, err := os.Stat(rd)
 	if err != nil {
 		return false, err
 	}
-	rel, err := filepath.Rel(ad, ap)
-	if err != nil {
-		return false, nil
+	if fi, err := os.Stat(p); err == nil && os.SameFile(di, fi) {
+		return true, nil // p is dir itself
 	}
-	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))), nil
+	ap, err := filepath.Abs(filepath.Dir(p))
+	if err != nil {
+		return false, err
+	}
+	cur, err := filepath.EvalSymlinks(ap)
+	if err != nil {
+		return false, err
+	}
+	for {
+		fi, err := os.Stat(cur)
+		if err != nil {
+			return false, err
+		}
+		if os.SameFile(di, fi) {
+			return true, nil
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return false, nil
+		}
+		cur = parent
+	}
 }

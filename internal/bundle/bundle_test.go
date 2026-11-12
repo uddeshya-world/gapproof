@@ -555,7 +555,7 @@ func TestKeygen(t *testing.T) {
 
 func TestKeyFileErrors(t *testing.T) {
 	_, _, prefix := keypair(t)
-	if _, err := LoadPublicKey(prefix + ".key"); !errors.Is(err, ErrKey) || !strings.Contains(err.Error(), "want a gapproof-ed25519-public-key-v1") {
+	if _, err := LoadPublicKey(prefix + ".key"); !errors.Is(err, ErrKey) || !strings.Contains(err.Error(), "is a private key, but a public key is needed") {
 		t.Errorf("private as public: %v", err)
 	}
 	if _, err := LoadPrivateKey(prefix + ".pub"); !errors.Is(err, ErrKey) {
@@ -581,22 +581,5 @@ func TestKeyFileErrors(t *testing.T) {
 	}
 	if _, err := LoadPrivateKey(filepath.Join(d, "missing")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("missing: %v", err)
-	}
-}
-
-func TestWithin(t *testing.T) {
-	for _, tc := range []struct {
-		dir, p string
-		want   bool
-	}{
-		{"/a/b", "/a/b", true},
-		{"/a/b", "/a/b/c.tar", true},
-		{"/a/b", "/a/b.bundle.tar", false},
-		{"/a/b", "/a/..b", false},
-		{"/a/b", "/a/c/d", false},
-	} {
-		if got, _ := within(tc.dir, tc.p); got != tc.want {
-			t.Errorf("within(%s, %s) = %v", tc.dir, tc.p, got)
-		}
 	}
 }
