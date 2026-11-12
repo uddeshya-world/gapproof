@@ -169,3 +169,37 @@ func TestSignWithoutDigestWarns(t *testing.T) {
 		t.Fatalf("garbage manifest: %d\n%s", code, out)
 	}
 }
+
+func TestSignSymlinkedInAndEmptyDir(t *testing.T) {
+	tmp := t.TempDir()
+	runCLI(t, "keygen", "--out", filepath.Join(tmp, "k"))
+	ev := filepath.Join(tmp, "ev")
+	os.Mkdir(ev, 0o755)
+	os.WriteFile(filepath.Join(ev, "summary.json"), []byte(`{"agr":{"level":"AGR-2"}}`), 0o644)
+	os.WriteFile(filepath.Join(ev, "report.md"), []byte("# r\n"), 0o644)
+	link := filepath.Join(tmp, "evlink")
+	if err := os.Symlink(ev, link); err != nil {
+		t.Skip("no symlinks:", err)
+	}
+	code, out := runCLI(t, "sign", "--in", link, "--key", filepath.Join(tmp, "k.key"))
+	if code != exitOK || !strings.Contains(out, "signed "+link+" (2 files)") {
+		t.Fatalf("sign via symlink: %d\n%s", code, out)
+	}
+	code, out = runCLI(t, "verify", link+".bundle.tar", "--pub", filepath.Join(tmp, "k.pub"))
+	if code != exitOK || !strings.HasPrefix(out, "AGR-2 · signed by") {
+		t.Fatalf("verify: %d\n%s", code, out)
+	}
+
+	empty := filepath.Join(tmp, "empty")
+	os.Mkdir(empty, 0o755)
+	if code, out := runCLI(t, "sign", "--in", empty, "--key", filepath.Join(tmp, "k.key")); code != exitUsage || !strings.Contains(out, "covers no files") {
+		t.Fatalf("sign empty dir: %d\n%s", code, out)
+	}
+
+	// A group/other-readable private key still signs, with a warning.
+	os.Chmod(filepath.Join(tmp, "k.key"), 0o644)
+	code, out = runCLI(t, "sign", "--in", ev, "--key", filepath.Join(tmp, "k.key"), "--bundle", filepath.Join(tmp, "b2.tar"))
+	if code != exitOK || !strings.Contains(out, "warning: private key") {
+		t.Fatalf("lax key perms: %d\n%s", code, out)
+	}
+}

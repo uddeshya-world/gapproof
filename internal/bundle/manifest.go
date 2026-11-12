@@ -29,6 +29,9 @@ const (
 	noArtifact    = "none"
 )
 
+// ErrNoFiles means Sign was asked to sign a manifest that covers no files.
+var ErrNoFiles = errors.New("refusing to sign an empty evidence directory")
+
 var (
 	digestRe = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 	hexRe    = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -220,6 +223,9 @@ func Sign(dir string, key ed25519.PrivateKey) (string, error) {
 	}
 	if err := compareFiles(m.Files, files); err != nil {
 		return "", fmt.Errorf("%s is stale: %w", ManifestName, err)
+	}
+	if len(m.Files) == 0 {
+		return "", fmt.Errorf("%w: %s covers no files", ErrNoFiles, ManifestName)
 	}
 	pub := key.Public().(ed25519.PublicKey)
 	sig := ed25519.Sign(key, raw)
