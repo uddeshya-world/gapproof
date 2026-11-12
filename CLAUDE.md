@@ -50,6 +50,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
+- 2026-11-12: **v0.1.0 cut** (CHANGELOG). `verify --rescan` merged (D-041; checked on the real leaky-rag tar: 20 findings reproduced in 18 s). Three low-confidence phone-home rules promoted after checking upstream source at pinned tags. Licence key: the public half is repo variable `GAPPROOF_LICENCE_PUB`; the private half is outside the repo in the owner's `~/.config/gapproof-release/` (never commit or print it). The release is a goreleaser draft; the owner publishes it.
 - 2026-11-12: One-shot targets (`scan --one-shot`, D-040) pass AGR-1 by exiting 0 inside the window. The numpy pre-1.0 `_reconstruct` is allowlisted (D-039). CI is green on Go 1.26.10, and `make e2e demo demo-e2e` passes with the rebuilt harness. Repo made public.
 - 2026-11-12: **Integration branch `m4-integrate`** (pushed as `main`).
   - It merges M3, M5 (`m5-agents`), the M4 evidence and report work (`m4-evidence-report`) and M6 (`m6-bundle-aibom-oscal`), plus the scan wiring and M7 (diff, offline licence, `action/`, pinned releases).
@@ -63,9 +64,9 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - 2026-11-08 — Kit imported into `projects/gapproof` (git init).
 
 ## Open questions / next steps
-- v0.1 tag (owner). Demo and the Chromium zero-request check are done.
+- Publish the v0.1.0 draft release (owner). D-001: v0.1 is quiet, so publishing the MESA newsletter makes it public; tag v0.2.0 first or accept that.
 - Demo follow-ups were decided in D-035 to D-039 (pickle builtin allowlist, chromadb `<1.5.4` bound with PEP 440 ranges, NFLOG duplicate-flow fix, amd64 waivers generated from arm64). Still open:
-  - A real amd64 `make demo` run.
+  - amd64: run the manual `demo` workflow (`gh workflow run demo.yml`), which runs `make demo demo-e2e` on ubuntu-latest.
 - Gotchas:
   - CI tests the minimum Go in go.mod (1.26.x); fixture checks must not depend on compress/flate bytes. Reproduce with `GOTOOLCHAIN=go1.26.10 go test ./...`.
   - staticcheck runs against GOOS=linux (`go run -exec "env GOOS=linux"`), because the sinkhole code is Linux-only.
@@ -76,4 +77,4 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.
 - 2026-11-12: INV-01 is now MESA's graded lattice (mesa-ibi-scanner 0.4.0 LATTICE.md at `b9cb325`, untagged; not in v0.3.2), D-032. Merged into `m4-integrate`: the Go port (104 MESA fixtures at parity), AGR fail-closed fixes (D-033), bundle hardening (D-034; older bundles with names sorting before `MANIFEST.*` must be re-signed), fuzz and model limits (m8), and rejection of sparse layer members. Also merged: the demo apps (m4-demo: leaky-rag scans at AGR-1, fixed-rag at AGR-4), the index.json attestation fix (every entry pinned to the config is accepted), and a determinism fix that folds bare teardown flows into the detailed egress entry.
-- 2026-11-12: `verify --rescan` (D-041, branch `m11-verify-rescan`) re-runs the static modules on the delivered tar and diffs against the signed evidence; `scan` now copies the agents manifest into the evidence (`gapproof.agents.yaml`).
+- `scan` copies the agents manifest into the evidence (`gapproof.agents.yaml`) so `verify --rescan` can reproduce the agents result.

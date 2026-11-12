@@ -15,9 +15,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --no-deps --disable-pip-version-check --root-user-action=ignore -r requirements.txt \
  && pip check
-# numpy ships test fixtures that are object-dtype pickles (one imports a name
-# outside the allowlist: MODEL-PICKLE-UNKNOWN-IMPORT, unwaivable). They aren't
-# part of the product, so they don't ship (D-035: no path-based exemption).
+# numpy ships test fixtures that are object-dtype pickles (MODEL-NUMPY-OBJECT-ARRAY).
+# They aren't part of the product, so they don't ship (D-035: no path-based exemption).
 RUN rm -rf /usr/local/lib/python3.12/site-packages/numpy/*/tests /usr/local/lib/python3.12/site-packages/numpy/tests
 
 COPY app/ app/
