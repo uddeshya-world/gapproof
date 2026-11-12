@@ -41,6 +41,13 @@ func NewFlows() *Flows {
 	return f
 }
 
+// dupWindow: a second NFLOG record for the same 5-tuple this soon after the
+// first is the same flow (D-037). conntrack logs both datagrams as NEW when
+// a resolver sends its A and AAAA queries back to back from one socket (the
+// insert race on an unconfirmed entry); the DNS listener's one Lookup must
+// account for both.
+const dupWindow = time.Second
+
 // Add records a new flow from NFLOG.
 func (f *Flows) Add(fl Flow, t time.Time) {
 	f.mu.Lock()
@@ -48,6 +55,10 @@ func (f *Flows) Add(fl Flow, t time.Time) {
 	r := &flowRec{Flow: fl, seen: t}
 	if fl.Proto == protoTCP || fl.Proto == protoUDP {
 		k := flowKey{fl.Proto, fl.SrcPort}
+		if prev, ok := f.byPort[k]; ok && prev.Flow == fl && !t.Before(prev.seen) && t.Sub(prev.seen) < dupWindow {
+			f.cond.Broadcast()
+			return // the same flow, already recorded (and explained or not with it)
+		}
 		f.byPort[k] = r
 		if e, ok := f.early[k]; ok {
 			delete(f.early, k)

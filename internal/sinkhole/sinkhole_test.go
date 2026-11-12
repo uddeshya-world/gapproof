@@ -296,6 +296,42 @@ func TestFlowsLookupWaits(t *testing.T) {
 	}
 }
 
+// D-037: glibc sends A and AAAA back to back from one socket, conntrack logs
+// both as NEW, and the DNS listener looks the flow up once. The second record
+// is the same flow, not an unexplained one (it showed up as a bare
+// "udp 127.0.0.11:53" attempt under Docker).
+func TestDuplicateNFLOGRecord(t *testing.T) {
+	f := NewFlows()
+	t0 := time.Unix(1_700_000_000, 0)
+	dns := Flow{Proto: protoUDP, Src: netip.MustParseAddr("127.0.0.1"), Dst: netip.MustParseAddr("127.0.0.11"), SrcPort: 54451, DstPort: 53}
+	f.Add(dns, t0)
+	f.Add(dns, t0.Add(67*time.Microsecond))
+	if _, ok := f.Lookup(protoUDP, 54451, 0); !ok {
+		t.Fatal("lookup failed")
+	}
+	if u := f.Unexplained(); len(u) != 0 {
+		t.Fatalf("duplicate record reported as unexplained: %+v", u)
+	}
+
+	// Not duplicates: a later reuse of the 5-tuple, and another destination
+	// from the same port. Neither was looked up, so both are reported.
+	f.Add(dns, t0.Add(2*time.Second))
+	other := dns
+	other.Dst = netip.MustParseAddr("8.8.8.8")
+	f.Add(other, t0.Add(2*time.Second+time.Millisecond))
+	if u := f.Unexplained(); len(u) != 2 || u[0] != dns || u[1] != other {
+		t.Fatalf("unexplained = %+v, want the reused tuple and 8.8.8.8", u)
+	}
+
+	// Two unexplained duplicates (e.g. at teardown) are reported once.
+	g := NewFlows()
+	g.Add(dns, t0)
+	g.Add(dns, t0.Add(time.Microsecond))
+	if u := g.Unexplained(); len(u) != 1 {
+		t.Fatalf("unexplained = %+v, want one", u)
+	}
+}
+
 // The TCP listener can read SO_ORIGINAL_DST before the NFLOG record
 // arrives; the explanation must survive that race.
 func TestExplainBeforeAdd(t *testing.T) {

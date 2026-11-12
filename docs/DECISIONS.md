@@ -293,3 +293,25 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - `rule_pack_version` changes.
 - The demo's leaky-rag pins chromadb 1.5.2, so it still fires there, and its expected rule set is unchanged.
 - An image with chromadb ≥ 1.5.4 and no env opt-out no longer gets `PH-CHROMA-TELEMETRY`. Its OpenTelemetry export is a separate path (`PH-OTLP-PUBLIC-ENDPOINT`).
+
+## D-037 (2026-11-12): Docker's embedded resolver: a correlation bug fixed, the resolver kept as evidence
+**Context.** Under Docker, the leaky-rag scan listed a bare `udp 127.0.0.11:53` (proto unknown, in scope) next to its DNS attempts, and every DNS attempt recorded `orig_dst_ip: 127.0.0.11`. Its `egress.log.jsonl` shows seven "seen by NFLOG only" UDP records to 127.0.0.11:53. Every one of them is on a source port that has **two** NFLOG records for the identical 5-tuple, about 70 µs apart. A resolver (glibc) sends its A and AAAA queries back to back from one socket, and conntrack logs both datagrams as NEW (the insert race on an unconfirmed entry). `Flows` kept both records, but the DNS listener's single Lookup explained only the newer one, so the older one was reported at shutdown as unexplained.
+
+**Decision.**
+- **Fix the cause.** A second NFLOG record for the same 5-tuple (proto, src, dst, ports), on the same source port, within 1 s of the first, is the same flow. It isn't stored again, so it's explained (or reported) once with the first. The raw `flow` lines and the pcap still keep both records, since they're the audit trail. A reuse of the tuple after 1 s, or another destination from the same port, is still a separate flow.
+- **Not hidden, and not relabelled as infrastructure.** No special case for 127.0.0.11 in the evidence or the scope.
+  - A DNS attempt keeps `orig_dst_ip` = the resolver the target actually addressed. Under Docker that is the embedded resolver from `resolv.conf`; under Podman it's whatever its `resolv.conf` names.
+  - Scope stays as in D-020: the name decides, and a public resolver IP makes the query out of scope.
+  - A non-DNS datagram to 127.0.0.11:53 still reaches the DNS listener as a malformed query: kind `dns`, no name, so out of scope (fail closed).
+  - A genuinely unexplained flow to the resolver (for example, cut at teardown) is still listed.
+
+**Why.**
+- Hiding 127.0.0.11 would have masked a real defect: unexplained-flow reporting that misfires on ordinary resolver behaviour. It would also bake an engine-specific address into the evidence model.
+- A target can address a resolver directly. Recording the address it used is the honest evidence: it shows which resolver the image is configured for and makes a hard-coded resolver stand out.
+- 127.0.0.11 is constant under Docker, so it doesn't break determinism. The phantom entry did depend on a race, and the dedup removes that.
+
+**Consequences.**
+- leaky-rag's attempt set loses the bare `udp 127.0.0.11:53` entry. It was in scope, so no finding or AGR level changes.
+- The DNS entries still show `127.0.0.11`.
+- The sinkhole runs inside the harness image, so the fix only takes effect after `make harness` and `harness load`, which re-pins the image.
+- Not re-verified in a container here, because a full verification was running on the main checkout. The next `make demo` should show the entry gone (the demo e2e only checks rules and levels).
