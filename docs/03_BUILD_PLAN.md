@@ -11,7 +11,7 @@
 | M5 Agent containment (MESA port) | ✅ 2026-11-12 INV-01 ported from MESA's graded lattice (D-032, branch `m5-mesa-inv01`): parity on all 104 MESA lattice fixtures, 99.6% cov | 4–5 |
 | M6 Sign / verify, AI-BOM, OSCAL → **v0.2 public launch** | ✅ 2026-11-11 (schemas validate) | 5–6 |
 | M7 Diff + CI gate (GitHub Action) → Pro beta | ✅ 2026-11-12 (action-smoke job green in CI) | 7–8 |
-| M8 Hardening: fuzzing, limits, self-scan | 🟡 SECURITY.md, models fuzzing, sparse-member rejection, `--one-shot` (D-040) done; self-scan and action SHA pinning pending | 9 |
+| M8 Hardening: fuzzing, limits, self-scan | ✅ 2026-11-12 SECURITY.md, models fuzzing, sparse-member rejection, `--one-shot` (D-040), action SHA pinning, self-scan (`make selfscan`: gapproof's own scratch image, one-shot, AGR-4 with a vendor-declared `agents: []` manifest, observed 20s) | 9 |
 | M9 Design-partner fixes, docs site, v1.0 | ⬜ | 10–12 |
 
 **Release policy:** v0.1 (M4) is tagged and the repo can be public, but there's **no announcement**: it goes to design partners only. The public launch (video, article, X thread) happens at **v0.2 (M6)**, because the launch content shows agent paths, AGR-4 and signed, offline-verifiable evidence, which only exist after M5 and M6. Never show a feature or number in launch content that the tagged release can't produce.

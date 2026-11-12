@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (self-scan, M8)
+- `make selfscan` scans Gapproof's own release binary in a scratch image with `--one-shot` and gates on AGR-4 (`deploy/selfscan/`). The result is AGR-4 (observed 20s): the binary exits 0 with all egress blocked and makes no network attempt, the Go cryptographic module matches CMVP certificate 5247 in the snapshot, and `agents: []` is a vendor-declared manifest ("no agentic tool use, vendor-declared"). Needs Docker and a loaded harness.
+
 ### Added (phone-home rules)
 - `PH-MLFLOW-TELEMETRY` (MLflow >= 3.2.0 usage telemetry), `PH-MLFLOW-REMOTE-TRACKING` (MLFLOW_TRACKING_URI on a public host) and `PH-VLLM-USAGE-STATS` (vLLM usage stats to stats.vllm.ai). Each is high confidence, checked against upstream source at a pinned tag on 2026-11-12, with permalinks and fixtures.
 

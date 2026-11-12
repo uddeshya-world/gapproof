@@ -1,0 +1,3 @@
+# Gapproof is a command-line tool: it has no agents and no agentic tool use.
+# Vendor-declared (here, the project itself); the report says so.
+agents: []

@@ -26,7 +26,7 @@ STATICCHECK := honnef.co/go/tools/cmd/staticcheck@v0.8.2
 MAX_BIN_BYTES := 26214400
 BIN := bin/gapproof
 
-.PHONY: build test lint e2e size clean harness demo demo-images demo-scan demo-e2e
+.PHONY: build test lint e2e size clean harness demo demo-images demo-scan demo-e2e selfscan
 
 build: ## static binary in FIPS 140-3 module mode
 	CGO_ENABLED=0 GOFIPS140=$(GOFIPS140) go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/gapproof
@@ -100,6 +100,19 @@ demo-scan:
 demo-e2e: ## after `make demo`: assert levels + findings, rescan both and require byte-identical evidence.json
 	GAPPROOF_DEMO_E2E=1 DEMO_OBSERVE=$(DEMO_OBSERVE) DEMO_ARCH=$(DEMO_ARCH) DEMO_TAG=$(DEMO_TAG) \
 	  go test -count=1 -timeout 30m -run TestDemoApps -v ./cmd/gapproof
+
+# Self-scan (M8): scan Gapproof's own release binary in a scratch image, one-shot, and
+# require AGR-4 (the manifest declares no agents). Needs Docker or Podman and a loaded
+# harness: make harness build && bin/gapproof harness load $(HARNESS_TAR)
+SELFSCAN_TAG ?= gapproof-selfscan:dev
+SELFSCAN_MIN ?= 4
+selfscan: ## scan gapproof's own image with --one-shot and gate on AGR-$(SELFSCAN_MIN)
+	rm -rf dist/selfscan-ctx evidence/selfscan && mkdir -p dist/selfscan-ctx evidence
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(HARNESS_ARCH) GOFIPS140=$(GOFIPS140) go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o dist/selfscan-ctx/gapproof ./cmd/gapproof
+	cp deploy/selfscan/Dockerfile dist/selfscan-ctx/
+	$(DEMO_BUILD) --platform linux/$(HARNESS_ARCH) -t $(SELFSCAN_TAG) dist/selfscan-ctx
+	./$(BIN) scan --image $(SELFSCAN_TAG) --one-shot --observe 20s --agents deploy/selfscan/agents.yaml \
+	  --min-agr $(SELFSCAN_MIN) --out evidence/selfscan
 
 clean:
 	rm -rf bin dist release-assets

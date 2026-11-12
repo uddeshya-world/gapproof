@@ -19,6 +19,7 @@ make test              # go test ./... with coverage
 make lint              # gofmt, go vet, staticcheck (against GOOS=linux)
 make e2e               # container tests; needs Docker or Podman (it builds the harness first)
 go test -short ./...   # quick loop, skips the container tests
+make selfscan          # scans gapproof's own image one-shot and requires AGR-4 (needs a loaded harness)
 ```
 Before you open a PR: `gofmt -l .` prints nothing, and `go vet ./...`, `go test -short ./...` and `make lint` pass. Reproduce CI's toolchain with `GOTOOLCHAIN=go1.26.10 go test -short ./...`. Most changes don't need the container tests; say in the PR if you ran them.
 
