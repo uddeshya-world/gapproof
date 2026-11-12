@@ -392,3 +392,11 @@ Without the flag nothing changes: exiting early still fails a long-running targe
 - **Expired waivers keep the exactly-one rule.** A waiver that matches more than one finding is a usage error whether or not it has expired. Expiry is checked after the match count.
 
 **Consequences.** All four changes can turn a previously passing run or load into an error or a lower level, never the reverse. AGR_SPEC keeps its meaning (section 2 already says private CIDRs and names are declared up front); its text is clarified.
+
+## D-043 (2026-11-12): DCO sign-off, no CLA
+
+**Context.** The repo is public under Apache-2.0 and takes outside contributions, mostly phone-home rules and fixes.
+
+**Decision.** Contributors sign commits off under the Developer Certificate of Origin (`git commit -s`). No CLA. The Code of Conduct is the Contributor Covenant 2.1 by reference. Enforcement is by reviewer checklist (PR template), not a bot yet.
+
+**Consequences.** Low friction for contributors. Contributions stay licensed Apache-2.0 under the inbound=outbound rule; the project can't relicense contributed code without the contributors' agreement. If the owner later wants that flexibility, move to a CLA before accepting significant outside code.

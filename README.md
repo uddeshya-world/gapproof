@@ -86,6 +86,7 @@ Gapproof produces an **inventory and findings**. It does not certify FIPS 140-3,
 - What it builds: `docs/02_SPEC.md`
 - How levels are computed: `docs/AGR_SPEC.md` (CC-BY-4.0)
 - Design decisions: `docs/DECISIONS.md`. Dependencies: `docs/DEPENDENCIES.md`
+- Contributing (including how to add a phone-home rule): `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
 - Reporting a vulnerability: `SECURITY.md`
 
 Licence: Apache-2.0.

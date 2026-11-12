@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Added (community files, D-043)
+- `CONTRIBUTING.md` (build/test/lint, rule contribution guide, DCO sign-off), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue templates (bug, false positive / rule request) and a pull request template.
+
 ### Changed (docs)
 - README states precisely what the Go Cryptographic Module (CMVP #5247) status does and doesn't mean for Gapproof's own crypto (checked against NIST's certificate page and go.dev/doc/security/fips140, 2026-11-12).
 

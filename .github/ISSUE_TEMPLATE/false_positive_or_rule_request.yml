@@ -1,0 +1,39 @@
+name: False positive or rule request
+description: A finding is wrong, or a phone-home path is missing from the rule pack
+labels: [rules]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this?
+      options:
+        - False positive
+        - False negative (missed behaviour)
+        - New rule request
+    validations:
+      required: true
+  - type: input
+    id: rule
+    attributes:
+      label: Rule id (e.g. PH-WANDB-ONLINE), if one exists
+  - type: input
+    id: version
+    attributes:
+      label: Output of `gapproof version`
+    validations:
+      required: true
+  - type: textarea
+    id: upstream
+    attributes:
+      label: Upstream behaviour, with source
+      description: Permalinks at a pinned tag or commit showing what the software does (endpoint, trigger, the setting that turns it off), and the date you checked. Say what you did not verify.
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Minimal fixture
+      description: The package name and version, the env vars, or the few files that trigger (or wrongly trigger) the rule. Not the whole image.
+  - type: markdown
+    attributes:
+      value: See "Contributing a phone-home rule" in CONTRIBUTING.md; a PR with fixtures is the fastest route.
