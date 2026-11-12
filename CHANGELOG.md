@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed (docs)
+- README states precisely what the Go Cryptographic Module (CMVP #5247) status does and doesn't mean for Gapproof's own crypto (checked against NIST's certificate page and go.dev/doc/security/fips140, 2026-11-12).
+
 ### Changed (release hygiene)
 - Every GitHub Action is pinned to a full commit SHA with a version comment.
 - Releases sign `checksums.sha256` with keyless cosign (`.sigstore.json` bundle) and publish a build-provenance attestation for the archives (README, "Verifying a release").

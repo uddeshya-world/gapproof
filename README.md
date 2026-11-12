@@ -71,7 +71,13 @@ gh attestation verify gapproof_<version>_<os>_<arch>.tar.gz --repo uddeshya-worl
 ```
 
 ## Crypto Gapproof itself uses
-SHA-256 (hashing evidence and artefacts) and Ed25519 (signing). Release builds use Go's FIPS 140-3 module mode (`GOFIPS140=v1.0.0`), and `gapproof version` prints the mode and module version. This describes how Gapproof is built. It isn't a claim about any product Gapproof scans.
+SHA-256 (hashing evidence and artefacts) and Ed25519 (signing). Release builds use Go's FIPS 140-3 module mode (`GOFIPS140=v1.0.0`), and `gapproof version` prints the mode and module version.
+
+What that does and doesn't mean:
+- The Go Cryptographic Module v1.0.0 is listed on NIST's CMVP as certificate #5247 (status Active on 2026-11-12, security level 1, "when operated in approved mode"). Source: https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/5247 and https://go.dev/doc/security/fips140.
+- Gapproof is **not** a validated product. Building against a validated module doesn't validate the program, and a validation applies to the tested operating environments listed in the CMVP record, which we haven't matched to your platform. Whether this satisfies a requirement of yours is for you and your assessor to decide.
+- The module version Gapproof is built with, v1.0.0, is the validated one. Newer module versions (v1.26.0) are not yet validated.
+- This describes how Gapproof is built. It isn't a claim about any product Gapproof scans.
 
 ## What Gapproof is not
 Gapproof produces an **inventory and findings**. It does not certify FIPS 140-3, grant an ATO, or guarantee anything. Its control mappings (NIST 800-53) are informative, and every report says so.
