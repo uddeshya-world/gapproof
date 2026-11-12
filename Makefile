@@ -79,9 +79,14 @@ demo: harness ## build both demo images, then scan them into evidence/{leaky,fix
 	./$(BIN) harness load $(HARNESS_TAR)
 	@$(MAKE) --no-print-directory demo-images demo-scan
 
+# No provenance/SBOM attestations: with them, `docker save` writes an OCI index
+# whose identity gapproof can't match to the loaded image (see demo/README.md).
+DEMO_BUILD = $(ENGINE) build --provenance=false --sbom=false
+
 demo-images:
-	$(ENGINE) build -t gapproof-demo/leaky-rag:$(DEMO_TAG) demo/leaky-rag
-	$(ENGINE) build -t gapproof-demo/fixed-rag:$(DEMO_TAG) demo/fixed-rag
+	-$(ENGINE) rmi gapproof-demo/leaky-rag:$(DEMO_TAG) gapproof-demo/fixed-rag:$(DEMO_TAG) 2>/dev/null
+	$(DEMO_BUILD) -t gapproof-demo/leaky-rag:$(DEMO_TAG) demo/leaky-rag
+	$(DEMO_BUILD) -t gapproof-demo/fixed-rag:$(DEMO_TAG) demo/fixed-rag
 
 demo-scan:
 	rm -rf evidence/leaky-rag evidence/fixed-rag && mkdir -p evidence

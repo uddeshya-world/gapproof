@@ -40,7 +40,11 @@ RERANKER_PATH = "/app/models/reranker.pt"
 sentry_sdk.init(
     dsn=os.environ.get("SENTRY_DSN", "https://examplePublicKey@o0.ingest.sentry.io/0"),
     traces_sample_rate=1.0,
-    shutdown_timeout=1,
+    # No release-health session: closing it at exit would send one more
+    # envelope while the harness tears the target down, which makes the
+    # observed egress set depend on teardown timing.
+    auto_session_tracking=False,
+    shutdown_timeout=0,
 )
 
 

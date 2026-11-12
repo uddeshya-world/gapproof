@@ -18,7 +18,7 @@ embeddings ("degraded mode") within ~10 s.
 ## Run it
 
 ```sh
-make demo        # harness + pinned binary, build both images, scan both (≈ 10 min)
+make demo        # harness + pinned binary, build both images, scan both (≈ 7 min with cached images)
 make demo-e2e    # assert levels and finding rules, rescan, require identical evidence.json
 open evidence/leaky-rag/report.html evidence/fixed-rag/report.html
 ```
@@ -49,7 +49,7 @@ is gitignored), carry the tars over, then `docker load` them and run
 | | `CRYPTO-WEAK-HASH` | `hashlib.md5` cache keys in `app/main.py` |
 | models | `MODEL-PICKLE-CODE-EXEC` (critical) | `/app/models/reranker.pt` → `builtins.print` (GLOBAL + REDUCE in `reranker/data.pkl`) |
 | | `MODEL-PICKLE-CODE-EXEC`, `MODEL-PICKLE-UNKNOWN-IMPORT`, `MODEL-NUMPY-OBJECT-ARRAY` | numpy's own test fixtures in site-packages (real images ship these too) |
-| agents | `AGENT-INV01-PATH` ×4 | `analyst`: `read_file`/`search_docs` (sensitive) → `http_post`/`run_python`, no gate. Smallest fix: gate `http_post`, remove `run_python` |
+| agents | `AGENT-INV01-analyst` (high) | `analyst` holds private data (`read_file`, `search_docs`), untrusted input (`fetch_url`) and ungated egress (`http_post`, `run_python`): all three MESA lattice components reach the production threshold (D-032) |
 
 ### fixed-rag (AGR-4)
 | Change | Fixes |
@@ -60,10 +60,10 @@ is gitignored), carry the tars over, then `docker load` them and run
 | `hashlib.sha256` cache keys | weak hash |
 | reranker shipped as `models/reranker.safetensors`, verified against `models/SHA256SUMS` at startup | pickle code execution |
 | numpy test fixtures stripped from the image | unwaivable pickle findings in site-packages |
-| `agents.yaml`: `http_post` behind `human_approval`, `run_python` removed | INV-01 |
+| `agents.yaml`: `http_post` behind `human_approval`, `run_python` removed | INV-01. `AGENT-NEARMISS-analyst` (info) remains: private data and untrusted input, but no ungated egress. Info doesn't block AGR-4 |
 | `gapproof.waivers.<arch>.yaml` | the 4 crypto modules a slim Python + chromadb image can't drop (accepted risk, expires 2027-06-30) |
 
-What stays open: `PH-TELEMETRY-SDK` (medium). chromadb 1.5.2 hard-depends on posthog, but
+What stays open: `PH-TELEMETRY-SDK` (medium) and the agents near miss (info). chromadb 1.5.2 hard-depends on posthog, but
 with telemetry off nothing calls it. Medium findings don't block AGR-3.
 
 Waived crypto modules (linux/arm64 paths; amd64 swaps `aarch64` for `x86_64`):
@@ -102,9 +102,7 @@ leaky-rag/ fixed-rag/
   requirements.txt   every distribution pinned
   app/main.py        the service (GET /health, POST /ingest, POST /query)
   models/            leaky: reranker.pt (pickle) · fixed: reranker.safetensors + SHA256SUMS
-  agents.yaml        internal/agents/testdata/{leaky,fixed}.yaml; leaky adds fetch_url
-                     (reads: public), the untrusted-input source the MESA lattice
-                     form of INV-01 (D-032) needs to flag the agent
+  agents.yaml        identical to internal/agents/testdata/{leaky,fixed}.yaml
   workload.sh        POSIX sh + curl (or busybox wget); $GAPPROOF_TARGET=host:port
 fixed-rag/gapproof.waivers.{arm64,amd64}.yaml, gapproof.scope.yaml
 tools/gen_models.py  writes both model files deterministically (bytes only, never unpickles)
@@ -126,4 +124,24 @@ document. It exits 0 only if all of that holds.
 
 ## Measured (2026-11-12, OrbStack on Apple silicon, linux/arm64)
 
-RESULTS_PLACEHOLDER
+| | leaky-rag | fixed-rag |
+|---|---|---|
+| Image (unpacked / `docker save` tar) | 858 MB / 175 MB | 819 MB / 170 MB |
+| Cold build (pip downloads dominate; network-bound) | 106 s | 1046 s on a slow link |
+| Cached rebuild | < 5 s | < 5 s |
+| Level | AGR-1 | AGR-4 |
+| Findings | 34 open | 1 medium + 1 info open, 4 waived |
+| Egress attempts | 8 out of scope (DNS + TLS to the 4 hosts above) | 0 |
+| Scan time at `--observe 3m` | ≈ 3.5 min | ≈ 3.3 min |
+
+`make demo` with cached images took 6 min 45 s. `make demo-e2e` (two more
+scans, then a byte-identical `evidence.json` check) took 6 min 38 s.
+
+Offline smoke test without the harness (`docker run --network none`, then the
+workload run from a busybox container sharing the netns) passes for both. The
+leaky app reaches `/health` in about 12 s. fixed-rag's logs show no outbound
+attempt during startup, the workload, or 30 s idle.
+
+Also seen in the egress table: `udp 127.0.0.11:53 (in scope)`. Docker's
+embedded resolver address is in the target's `resolv.conf`, and the sinkhole
+redirects it like any other port-53 packet.

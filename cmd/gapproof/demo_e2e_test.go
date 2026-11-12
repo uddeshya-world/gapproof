@@ -39,7 +39,7 @@ func TestDemoApps(t *testing.T) {
 			app:   "leaky-rag",
 			level: "AGR-1",
 			rules: []string{
-				"AGENT-INV01-PATH",
+				"AGENT-INV01-analyst",
 				"CRYPTO-UNKNOWN-MODULE",
 				"CRYPTO-UNVALIDATED-MODULE",
 				"CRYPTO-WEAK-HASH",
@@ -64,7 +64,7 @@ func TestDemoApps(t *testing.T) {
 				"--scope", filepath.Join(root, "demo/fixed-rag/gapproof.scope.yaml"),
 				"--waivers", filepath.Join(root, "demo/fixed-rag/gapproof.waivers."+arch+".yaml"),
 			},
-			rules:  []string{"CRYPTO-UNKNOWN-MODULE", "CRYPTO-UNVALIDATED-MODULE", "PH-TELEMETRY-SDK"},
+			rules:  []string{"AGENT-NEARMISS-analyst", "CRYPTO-UNKNOWN-MODULE", "CRYPTO-UNVALIDATED-MODULE", "PH-TELEMETRY-SDK"},
 			waived: []string{"CRYPTO-UNKNOWN-MODULE", "CRYPTO-UNVALIDATED-MODULE"},
 		},
 	}
