@@ -74,5 +74,5 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Rules: `go test ./internal/phonehome -run TestRuleFixtures -update` regenerates rule fixtures and goldens.
 - Fixtures: `go test ./internal/models -run 'TestFixturesUpToDate|TestScanGolden' -update` regenerates them. Review the golden diff before committing.
 - Module path: `github.com/uddeshya-world/gapproof` (confirm it's the personal account).
-- MESA INV-01 source isn't in the workspace; the owner points to it before M5.
+- 2026-11-12: INV-01 restated against MESA (mesa-ibi-scanner v0.3.2 LATTICE.md), D-032. The Go port is on branch `m5-mesa-inv01`; AGR fail-closed fixes are in D-033; bundle hardening is on `m6-bundle-harden`.
 - Still open from the review (P1): `verify --rescan`.
