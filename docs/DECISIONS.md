@@ -187,7 +187,7 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - **Lint target.** staticcheck analyses the Linux build, which is the one that ships.
 
 ## D-032 (2026-11-12): INV-01 restated against MESA (supersedes D-030's semantics)
-**Source:** MESA Invariant 1 as defined in `mesa-ibi-scanner` v0.3.2, `docs/LATTICE.md` §1–8 and `thresholds/zones.json` (github.com/uddeshya-world/mesa-ibi-scanner, Apache-2.0, same author). D-030's two-label path rule was a working assumption; it had no untrusted-input dimension, so it was not MESA's invariant.
+**Source:** MESA Invariant 1 as defined in `mesa-ibi-scanner` 0.4.0 (untagged, commit `b9cb325`), `docs/LATTICE.md` §1–8 and `thresholds/zones.json` (github.com/uddeshya-world/mesa-ibi-scanner, Apache-2.0, same author). D-030's two-label path rule was a working assumption; it had no untrusted-input dimension, so it was not MESA's invariant.
 
 **Invariant (MESA LATTICE §4–5).** Each vertex has a level vector `L = (P, U, E)`, each component 0–3 (privilege, untrusted input, egress). Remove every gated edge, then take the least fixpoint `Cl(v) = L(v) ⊔ ⊔ attenuate(Cl(u), cap(e))` over edges `u → v`. Agent `a` violates INV-01 when `Cl(a) ≥ T` component-wise. It is a near miss when exactly one component is below `T`.
 
