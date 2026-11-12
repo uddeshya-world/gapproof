@@ -82,8 +82,8 @@ func (o *scanOpts) validate() error {
 		return usagef("--image and --rootfs are mutually exclusive")
 	case o.out == "":
 		return usagef("--out is required")
-	case o.observe <= 0:
-		return usagef("--observe must be > 0")
+	case o.observe < time.Second:
+		return usagef("--observe must be at least 1s")
 	case o.minAGR < -1 || o.minAGR > 4:
 		return usagef("--min-agr must be between 0 and 4")
 	}

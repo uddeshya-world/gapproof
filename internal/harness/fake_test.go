@@ -105,7 +105,10 @@ func TestResultPassed(t *testing.T) {
 		{Result{TargetStarted: true, TargetRunning: true}, true},
 		{Result{TargetStarted: true, TargetRunning: true, TargetHealth: "unhealthy"}, false},
 		{Result{TargetStarted: true, TargetRunning: false}, false},
-		{Result{TargetStarted: true, WorkloadRan: true, WorkloadPassed: true}, true},
+		{Result{TargetStarted: true, TargetRunning: true, WorkloadRan: true, WorkloadPassed: true}, true},
+		// A crashed or unhealthy target with a passing workload is not AGR-1.
+		{Result{TargetStarted: true, WorkloadRan: true, WorkloadPassed: true}, false},
+		{Result{TargetStarted: true, TargetRunning: true, TargetHealth: "unhealthy", WorkloadRan: true, WorkloadPassed: true}, false},
 		{Result{TargetStarted: true, TargetRunning: true, WorkloadRan: true}, false},
 	}
 	for i, c := range cases {

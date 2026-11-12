@@ -264,3 +264,45 @@ waivers:
 		t.Errorf("skipped egress module: %s", got.Level)
 	}
 }
+
+// Validation findings (AGR vs spec audit, 2026-11-12).
+func TestComputeFailsClosed(t *testing.T) {
+	cases := []struct {
+		name  string
+		mut   func(*AGRInput)
+		level string
+	}{
+		{"zero window is not silence", func(in *AGRInput) { in.ObservedWindowS = 0 }, LevelAGR1},
+		{"negative window", func(in *AGRInput) { in.ObservedWindowS = -5 }, LevelAGR1},
+		{"non-INV01 agents finding is unwaivable", func(in *AGRInput) {
+			in.Findings = []Finding{fnd("A1", "AGENT-MANIFEST-BAD", Critical, StatusOpen)}
+		}, LevelAGR2},
+		{"agents info note does not gate", func(in *AGRInput) {
+			in.Findings = []Finding{fnd("A1", "AGENT-NEARMISS-x", Info, StatusOpen)}
+		}, LevelAGR4},
+		{"unknown severity ranks as critical", func(in *AGRInput) {
+			in.Findings = []Finding{fnd("P1", "PH-X", Severity("HIGH"), StatusOpen)}
+		}, LevelAGR2},
+		{"empty severity ranks as critical", func(in *AGRInput) {
+			in.Findings = []Finding{fnd("P1", "PH-X", "", StatusOpen)}
+		}, LevelAGR2},
+	}
+	for _, c := range cases {
+		in := agr4()
+		c.mut(&in)
+		if got := Compute(in).Level; got != c.level {
+			t.Errorf("%s: level %s, want %s", c.name, got, c.level)
+		}
+	}
+}
+
+func TestAllHashedNeedsHex(t *testing.T) {
+	m := &ModelsSection{Artifacts: []ModelArtifact{{SHA256: strings.Repeat("z", 64)}}}
+	if m.AllHashed() {
+		t.Error("64 non-hex chars counted as a hash")
+	}
+	m.Artifacts[0].SHA256 = strings.Repeat("a", 64)
+	if !m.AllHashed() {
+		t.Error("valid hex hash rejected")
+	}
+}

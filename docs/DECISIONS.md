@@ -210,3 +210,10 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 **Findings.** One `AGENT-INV01-<agent>` per violating agent, high and unwaivable (unchanged from D-030). It reports the closure, a witness path per dimension (MESA §8: shortest, ties broken by vertex id) and the minimal edge cut on one dimension (ties broken in the order P, U, E), worded as "gate `x` in `a`" or "remove `x` from `a`". Near misses are info findings that name the missing component; they don't affect AGR. Evidence records the threshold vector and the MESA spec version, so a change of definition is visible.
 
 **Golden parity.** The Go port must reproduce `mesa-ibi-scanner`'s verdicts, closures, witnesses and cuts on its public fixtures, after converting them to the gapproof form. The parity fixtures are checked in as test data.
+
+## D-033 (2026-11-12): AGR fails closed on edge inputs (AGR-vs-spec audit)
+- **Live target required.** A passing workload only counts if the target is still running and not unhealthy. A crashed target makes no egress and must not look silent.
+- **Observation window.** A window of 0s or less blocks AGR-2. `--observe` must be at least 1s, and the elapsed time is truncated, not rounded.
+- **Agents findings.** Only `AGENT-INV01-*` (which gates AGR-4) and info-level agents notes skip the AGR-3 checks. Any other `AGENT-*` finding is unwaivable.
+- **Unknown severities** rank as critical.
+- **Model hashes** must decode as 32 bytes of hex to count as hashed.

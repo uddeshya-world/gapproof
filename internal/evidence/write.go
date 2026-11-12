@@ -3,6 +3,7 @@ package evidence
 import (
 	"bytes"
 	"cmp"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -113,7 +114,7 @@ func (m *ModelsSection) AllHashed() bool {
 		return false
 	}
 	for _, a := range m.Artifacts {
-		if len(a.SHA256) != 64 {
+		if b, err := hex.DecodeString(a.SHA256); err != nil || len(b) != 32 {
 			return false
 		}
 	}
