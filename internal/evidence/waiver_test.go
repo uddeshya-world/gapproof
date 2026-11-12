@@ -3,6 +3,7 @@ package evidence
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -258,5 +259,27 @@ func TestAssignIDsIgnoresInputOrder(t *testing.T) {
 		if !slices.Equal(ids, want) || got[1].Title != "a" {
 			t.Fatalf("ids %q (titles %s,%s)", ids, got[1].Title, got[2].Title)
 		}
+	}
+}
+
+// Regression (demo determinism): a teardown connection seen only by NFLOG
+// (no SNI, hint unknown) to an endpoint already seen with full detail must
+// not add an entry; whether it happens is a race. Scope stays fail-closed,
+// and a bare entry with no detailed twin is kept.
+func TestDedupeFoldsBareTeardownFlows(t *testing.T) {
+	tls := EgressAttempt{Kind: KindTCP, Name: "o0.ingest.sentry.io", OrigDstIP: "198.18.0.2", Port: 443, ProtoHint: "tls", SNI: "o0.ingest.sentry.io", InScope: true}
+	bare := EgressAttempt{Kind: KindTCP, Name: "o0.ingest.sentry.io", OrigDstIP: "198.18.0.2", Port: 443, ProtoHint: "unknown"}
+	lone := EgressAttempt{Kind: KindTCP, Name: "x.example", OrigDstIP: "198.18.0.3", Port: 443, ProtoHint: "unknown"}
+	with := DedupeAttempts([]EgressAttempt{tls, bare, lone})
+	without := DedupeAttempts([]EgressAttempt{tls, lone})
+	if len(with) != 2 || with[0].SNI != "o0.ingest.sentry.io" || with[1].Name != "x.example" {
+		t.Fatalf("got %+v", with)
+	}
+	if with[0].InScope {
+		t.Error("folded entry must inherit the bare copy's out-of-scope status")
+	}
+	without[0].InScope = false
+	if !reflect.DeepEqual(with, without) {
+		t.Errorf("set depends on the teardown race:\n%+v\n%+v", with, without)
 	}
 }

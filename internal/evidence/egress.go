@@ -57,6 +57,12 @@ func compareAttempts(a, b EgressAttempt) int {
 // that share a key are merged: ALPN values are unioned, the most specific
 // proto hint wins (any known hint beats "unknown", ties go to the smallest),
 // and the entry is in scope only if every merged attempt was (fail closed).
+//
+// A bare entry (no SNI, Host header or ALPN, hint unknown or empty) for the
+// same kind, name, address and port as a detailed entry is folded into it.
+// That is a connection cut before its first bytes, typically a telemetry
+// flush killed at container stop and seen only by NFLOG; whether a target
+// gets that far at teardown is a race, and it must not change the set.
 func DedupeAttempts(in []EgressAttempt) []EgressAttempt {
 	out := make([]EgressAttempt, 0, len(in))
 	for _, a := range in {
@@ -75,6 +81,7 @@ func DedupeAttempts(in []EgressAttempt) []EgressAttempt {
 		}
 		merged = append(merged, a)
 	}
+	merged = foldBare(merged)
 	for i := range merged {
 		slices.Sort(merged[i].ALPN)
 		merged[i].ALPN = slices.Compact(merged[i].ALPN)
@@ -83,6 +90,44 @@ func DedupeAttempts(in []EgressAttempt) []EgressAttempt {
 		}
 	}
 	return merged
+}
+
+func isBare(a EgressAttempt) bool {
+	return a.SNI == "" && a.HTTPHost == "" && len(a.ALPN) == 0 && (a.ProtoHint == "" || a.ProtoHint == "unknown")
+}
+
+func sameEndpoint(a, b EgressAttempt) bool {
+	return a.Kind == b.Kind && a.Name == b.Name && a.ipOrName() == b.ipOrName() && a.Port == b.Port
+}
+
+// foldBare drops bare entries that a detailed entry for the same endpoint
+// explains; the detailed entries inherit their scope (fail closed). in is
+// sorted, so entries for one endpoint are adjacent.
+func foldBare(in []EgressAttempt) []EgressAttempt {
+	out := make([]EgressAttempt, 0, len(in))
+	for i := 0; i < len(in); {
+		j := i
+		for j < len(in) && sameEndpoint(in[i], in[j]) {
+			j++
+		}
+		group := in[i:j]
+		detailed := slices.ContainsFunc(group, func(a EgressAttempt) bool { return !isBare(a) })
+		scope := true
+		for _, a := range group {
+			scope = scope && a.InScope
+		}
+		for _, a := range group {
+			if detailed && isBare(a) {
+				continue
+			}
+			if detailed {
+				a.InScope = scope
+			}
+			out = append(out, a)
+		}
+		i = j
+	}
+	return out
 }
 
 func betterHint(a, b string) string {
