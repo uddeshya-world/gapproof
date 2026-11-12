@@ -165,8 +165,8 @@ func (r *WaiverResult) Warnings() []string {
 // Finalize prepares a run's findings: it sorts them, assigns IDs, marks
 // every finding open, then applies the waivers valid on runDate. A waiver
 // must match exactly one finding: zero is reported as stale, several is a
-// *UsageError, as is a finding matched by two waivers. Expired waivers are
-// ignored and reported. Waived findings are kept with status "waived".
+// *UsageError (expired or not), as is a finding matched by two live
+// waivers. Expired waivers are ignored and reported. Waived findings are kept with status "waived".
 // w may be nil (no waivers file); the result is then nil too.
 func Finalize(findings []Finding, w *Waivers, runDate time.Time) ([]Finding, *WaiverResult, error) {
 	fs := slices.Clone(findings)
@@ -186,28 +186,29 @@ func Finalize(findings []Finding, w *Waivers, runDate time.Time) ([]Finding, *Wa
 	res := &WaiverResult{SHA256: w.SHA256, Applied: []AppliedWaiver{}, Stale: []Waiver{}, Expired: []Waiver{}}
 	waivedBy := map[int]Waiver{}
 	for _, wv := range w.Waivers {
-		if wv.Expires < today {
-			res.Expired = append(res.Expired, wv)
-			continue
-		}
 		var hits []int
 		for i, f := range fs {
 			if f.Rule == wv.Rule && wv.Match.matches(f.Evidence) {
 				hits = append(hits, i)
 			}
 		}
-		switch len(hits) {
-		case 0:
-			res.Stale = append(res.Stale, wv)
-			continue
-		case 1:
-		default:
+		// The exactly-one rule holds for every waiver, expired or not: an
+		// ambiguous waiver is a mistake in the file whether or not it is live.
+		if len(hits) > 1 {
 			ids := make([]string, len(hits))
 			for k, i := range hits {
 				ids[k] = fs[i].ID
 			}
 			return nil, nil, usagef("%s matches %d findings (%s); a waiver must match exactly one, so narrow its match",
 				wv.label(), len(hits), strings.Join(ids, ", "))
+		}
+		if wv.Expires < today {
+			res.Expired = append(res.Expired, wv)
+			continue
+		}
+		if len(hits) == 0 {
+			res.Stale = append(res.Stale, wv)
+			continue
 		}
 		i := hits[0]
 		if prev, dup := waivedBy[i]; dup {

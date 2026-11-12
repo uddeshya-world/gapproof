@@ -3,7 +3,7 @@
     "rule": "PH-WANDB-ONLINE",
     "severity": "high",
     "title": "Weights \u0026 Biases syncs online",
-    "explanation": "wandb is installed and WANDB_MODE isn't offline or disabled, so any wandb.init() call syncs runs, metrics and artifacts to the W\u0026B service.",
+    "explanation": "wandb is installed and WANDB_MODE isn't offline, dryrun or disabled, so any wandb.init() call syncs runs, metrics and artifacts to the W\u0026B service. The default mode is \"online\".",
     "evidence": {
       "path": "usr/local/lib/python3.12/site-packages/wandb-0.18.7.dist-info/METADATA",
       "sha256": "9decaf3b83a2d6a279f2404af31b7a9dcc550e4f829353556b854300d38b48ae",

@@ -46,6 +46,16 @@ var (
 	syntheticRange = netip.MustParsePrefix("198.18.0.0/15")
 )
 
+// privateTLDs may be wildcarded at a single label: reserved names (RFC 6761,
+// RFC 8375, ICANN's .internal) plus common private conventions.
+var privateTLDs = map[string]bool{
+	"internal": true, "local": true, "lan": true, "corp": true, "home": true,
+	"intranet": true, "private": true, "localdomain": true, "test": true,
+	"invalid": true, "example": true, "arpa": true,
+}
+
+const privateTLDList = "internal, local, lan, corp, home, intranet, private, localdomain, test, invalid, example, arpa"
+
 // readConfig reads a small user-supplied file; failures are usage errors.
 func readConfig(path, what string) ([]byte, error) {
 	f, err := os.Open(path)
@@ -136,6 +146,15 @@ func normalizeScopeName(n string) (string, error) {
 	if base == "" || strings.Contains(base, "*") {
 		return "", usagef("scope file: internal_names: %q: use an exact name or a leading \"*.\" wildcard", n)
 	}
+	if strings.HasPrefix(base, ".") || strings.HasSuffix(base, ".") || strings.Contains(base, "..") {
+		return "", usagef("scope file: internal_names: %q has an empty label", n)
+	}
+	// A wildcard over a whole top-level label ("*.com") would put most of the
+	// internet in scope. Only reserved or conventionally private TLDs may be
+	// wildcarded at one label; anything else needs at least two labels.
+	if norm != base && !strings.Contains(base, ".") && !privateTLDs[base] {
+		return "", usagef("scope file: internal_names: %q is too broad; a wildcard needs at least two labels (e.g. \"*.corp.example\") unless it covers a private TLD (%s)", n, privateTLDList)
+	}
 	for _, r := range base {
 		if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '.' || r == '-' || r == '_') {
 			return "", usagef("scope file: internal_names: %q contains %q", n, r)
@@ -151,10 +170,6 @@ func isPrivatePrefix(p netip.Prefix) bool {
 		}
 	}
 	return false
-}
-
-func isPrivateAddr(ip netip.Addr) bool {
-	return isPrivatePrefix(netip.PrefixFrom(ip, ip.BitLen()))
 }
 
 func normalizeName(n string) string {
@@ -215,8 +230,9 @@ func hostOnly(h string) string {
 // judged by that name. localhost and targetHostname are always in scope.
 //
 // DNS queries are judged by the queried name. The resolver they were sent to
-// must also be loopback, private or declared: a hard-coded public resolver
-// is out of scope even for an internal name.
+// must also be loopback or inside a declared internal CIDR: a hard-coded
+// resolver anywhere else, public or merely private but undeclared, is out of
+// scope even for an internal name.
 func (s *Scope) Contains(a EgressAttempt, targetHostname string) bool {
 	var names []string
 	for _, n := range []string{a.Name, a.SNI, hostOnly(a.HTTPHost)} {
@@ -244,7 +260,10 @@ func (s *Scope) Contains(a EgressAttempt, targetHostname string) bool {
 		if len(names) == 0 {
 			return false
 		}
-		return !hasIP || ip.IsLoopback() || ip.IsLinkLocalUnicast() || isPrivateAddr(ip) || s.cidrIn(ip)
+		// The resolver must be loopback (the container's own resolver) or inside
+		// a declared internal CIDR. A private address that was not declared is
+		// not trusted: it may be a resolver on a shared network (D-042).
+		return !hasIP || ip.IsLoopback() || s.cidrIn(ip)
 	}
 	if !hasIP {
 		return len(names) > 0

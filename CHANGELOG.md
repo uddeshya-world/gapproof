@@ -4,6 +4,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Fixed (models, D-044)
+- A text `.pth` path-configuration file in `site-packages` or `dist-packages` is no longer scanned as a PyTorch checkpoint (it produced a high `MODEL-PARSE-FAILED`). Real checkpoints, and `.pth` files elsewhere, are still scanned.
+
+### Added (self-scan, M8)
+- `make selfscan` scans Gapproof's own release binary in a scratch image with `--one-shot` and gates on AGR-4 (`deploy/selfscan/`). The result is AGR-4 (observed 20s): the binary exits 0 with all egress blocked and makes no network attempt, the Go cryptographic module matches CMVP certificate 5247 in the snapshot, and `agents: []` is a vendor-declared manifest ("no agentic tool use, vendor-declared"). Needs Docker and a loaded harness.
+
+### Added (phone-home rules)
+- `PH-MLFLOW-TELEMETRY` (MLflow >= 3.2.0 usage telemetry), `PH-MLFLOW-REMOTE-TRACKING` (MLFLOW_TRACKING_URI on a public host) and `PH-VLLM-USAGE-STATS` (vLLM usage stats to stats.vllm.ai). Each is high confidence, checked against upstream source at a pinned tag on 2026-11-12, with permalinks and fixtures.
+
+### Changed (phone-home rules, re-verified against source)
+- `PH-LANGSMITH-TRACING`: the SDK enables tracing only for exactly `true`, so `1`, `yes` and `on` no longer match; `LANGSMITH_TRACING_V2` and `LANGCHAIN_TRACING` are now recognised (langsmith-sdk v0.14.9).
+- `PH-GRADIO-ANALYTICS` (gradio 6.31.0) and `PH-WANDB-ONLINE` (wandb 0.31.0) keep their logic and now cite source at pinned tags.
+
+### Added (community files, D-043)
+- `CONTRIBUTING.md` (build/test/lint, rule contribution guide, DCO sign-off), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue templates (bug, false positive / rule request) and a pull request template.
+
+### Changed (docs)
+- README states precisely what the Go Cryptographic Module (CMVP #5247) status does and doesn't mean for Gapproof's own crypto (checked against NIST's certificate page and go.dev/doc/security/fips140, 2026-11-12).
+
+### Changed (release hygiene)
+- Every GitHub Action is pinned to a full commit SHA with a version comment.
+- Releases sign `checksums.sha256` with keyless cosign (`.sigstore.json` bundle) and publish a build-provenance attestation for the archives (README, "Verifying a release").
+
+### Changed (validators fail closed, D-042)
+- `evidence.Load` recomputes the AGR level, window and blocking list from the recorded findings and rejects evidence whose stored level disagrees.
+- Scope files reject single-label wildcards such as `*.com` (private TLDs like `*.internal` stay allowed).
+- A DNS query counts as in scope only if its resolver is loopback or inside a declared internal CIDR; an undeclared private resolver no longer qualifies.
+- A waiver that matches several findings is a usage error even after it has expired.
+
 ## [0.1.0] - 2026-11-12
 
 Quiet release for design partners (D-001): no announcement.

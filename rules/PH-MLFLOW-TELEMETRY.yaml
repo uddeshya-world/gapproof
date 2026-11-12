@@ -1,0 +1,24 @@
+id: PH-MLFLOW-TELEMETRY
+title: MLflow usage telemetry may be on
+severity: medium
+confidence: high
+explanation: >-
+  MLflow 3.2.0 and later sends anonymous usage telemetry: the client fetches a config
+  from config.mlflow-telemetry.io and posts events to the ingestion URL it returns.
+  MLFLOW_DISABLE_TELEMETRY=true (or 1) or DO_NOT_TRACK=true turns it off. Upstream also
+  disables it when a CI environment variable (CI, GITHUB_ACTIONS, ...) is present; this
+  rule does not model that, so it can over-report in images that set CI.
+match:
+  python_package: [mlflow, mlflow-skinny]
+  python_package_version: ">=3.2.0"
+  unless_env:
+    MLFLOW_DISABLE_TELEMETRY: ["true", "1"]
+    DO_NOT_TRACK: ["true"]
+fix: Set MLFLOW_DISABLE_TELEMETRY=true and DO_NOT_TRACK=true in the image environment.
+controls: [CM-7, SC-7]
+source:
+  - "https://github.com/mlflow/mlflow/blob/v3.18.0/mlflow/telemetry/utils.py#L144-L158 (tag v3.18.0, commit ba41106d110b67096384da12b6b85473457598db; checked 2026-11-12; is_telemetry_disabled())"
+  - "https://github.com/mlflow/mlflow/blob/v3.18.0/mlflow/environment_variables.py#L1647-L1649 (same tag; MLFLOW_DISABLE_TELEMETRY, default False; boolean variables accept true/false/1/0)"
+  - "https://github.com/mlflow/mlflow/blob/v3.18.0/mlflow/telemetry/constant.py#L8-L9 (same tag; CONFIG_URL = https://config.mlflow-telemetry.io)"
+  - "https://github.com/mlflow/mlflow/blob/v3.18.0/mlflow/telemetry/client.py#L189-L191 and #L300-L302 (same tag; requests.get(config_url), requests.post(config.ingestion_url))"
+  - "https://github.com/mlflow/mlflow/blob/v3.2.0/mlflow/telemetry/client.py (version bound: this file exists at tag v3.2.0, commit e1de6be10b4044f4b4a493ae9dabc3e6827ad41e) and not at v3.1.0 or v3.1.4 (checked 2026-11-12 via the GitHub contents API). Inside Databricks, v3.2.0 disables telemetry, v3.18.0 forwards it to the workspace; not modelled)"

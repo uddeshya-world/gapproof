@@ -2,6 +2,7 @@ package evidence
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"os"
 	"path/filepath"
@@ -259,8 +260,55 @@ func TestLoadErrors(t *testing.T) {
 			}
 		})
 	}
-	if _, err := Load(write(t, ok, ok)); err != nil {
+	// A minimal file claiming AGR-1 with no recorded egress result fails closed.
+	if _, err := Load(write(t, ok, ok)); err == nil || !strings.Contains(err.Error(), "compute to unassessed") {
 		t.Errorf("minimal: %v", err)
+	}
+}
+
+// TestLoadRecomputesLevel: the stored AGR block is never trusted (review P1).
+func TestLoadRecomputesLevel(t *testing.T) {
+	tests := []struct {
+		name string
+		edit func(b *Bundle, s *Summary)
+		want string
+	}{
+		{"inflated level", func(b *Bundle, s *Summary) { b.AGR.Level, s.AGR.Level = LevelAGR4, LevelAGR4 }, "compute to"},
+		{"deflated level", func(b *Bundle, s *Summary) { b.AGR.Level, s.AGR.Level = LevelAGR0, LevelAGR0 }, "compute to"},
+		{"window", func(b *Bundle, s *Summary) { b.AGR.ObservedWindowS, s.AGR.ObservedWindowS = 1, 1 }, "observed window"},
+		{"blocking emptied", func(b *Bundle, s *Summary) { b.AGR.Blocking, s.AGR.Blocking = nil, nil }, "blocking list"},
+		{"unmodified", func(b *Bundle, s *Summary) {}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := WriteEvidence(dir, goldenBundle(t, false)); err != nil {
+				t.Fatal(err)
+			}
+			var b Bundle
+			var s Summary
+			if err := readJSON(filepath.Join(dir, EvidenceFile), &b); err != nil {
+				t.Fatal(err)
+			}
+			if err := readJSON(filepath.Join(dir, SummaryFile), &s); err != nil {
+				t.Fatal(err)
+			}
+			tt.edit(&b, &s)
+			eb, _ := json.Marshal(b)
+			sb, _ := json.Marshal(s)
+			os.WriteFile(filepath.Join(dir, EvidenceFile), eb, 0o644)
+			os.WriteFile(filepath.Join(dir, SummaryFile), sb, 0o644)
+			_, err := Load(dir)
+			if tt.want == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("err = %v, want %q", err, tt.want)
+			}
+		})
 	}
 }
 

@@ -138,6 +138,14 @@ func TestFinalizeWaiverConflicts(t *testing.T) {
 	if _, _, err := Finalize(findingsFixture(), multi, runDate); !isUsage(err) || !strings.Contains(err.Error(), "matches 2 findings (PH-0001, PH-0002)") {
 		t.Errorf("multiple match: %v", err)
 	}
+	// An expired waiver is held to the same exactly-one rule (review P1).
+	expMulti, err := ParseWaivers([]byte(waiverHead + waiverYAML("PH-SENTRY-DSN", "{path: app/main.py}", "2026-01-01")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Finalize(findingsFixture(), expMulti, runDate); !isUsage(err) || !strings.Contains(err.Error(), "matches 2 findings") {
+		t.Errorf("expired multiple match: %v", err)
+	}
 	overlap, err := ParseWaivers([]byte(waiverHead +
 		waiverYAML("PH-SENTRY-DSN", `{detail: "line 3"}`, "2027-01-01") +
 		waiverYAML("PH-SENTRY-DSN", `{path: app/main.py, detail: "line 3"}`, "2027-01-01")))

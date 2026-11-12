@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-VLLM-USAGE-STATS",
+    "severity": "medium",
+    "title": "vLLM usage statistics are on",
+    "explanation": "vLLM posts usage statistics (CPU, memory and GPU details, platform, model architecture, vLLM version and a random per-process id) to https://stats.vllm.ai when the engine starts, unless it is opted out. Setting VLLM_NO_USAGE_STATS=1, VLLM_DO_NOT_TRACK=1 or DO_NOT_TRACK=1 (exactly \"1\"), or creating ~/.config/vllm/do_not_track, turns it off. Note that upstream treats a set but non-\"1\" VLLM_DO_NOT_TRACK as overriding DO_NOT_TRACK; this rule does not model that.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/vllm-0.32.0.dist-info/METADATA",
+      "sha256": "c316968a67079b85de93562e6a936e9f235a77b5e9cb9af6b5e2c29ef7e2e84b",
+      "detail": "vllm 0.32.0 installed; not disabled in the image (none of DO_NOT_TRACK=1, VLLM_DO_NOT_TRACK=1, VLLM_NO_USAGE_STATS=1); no matching config file"
+    },
+    "fix": "Set VLLM_NO_USAGE_STATS=1 and DO_NOT_TRACK=1 in the image environment, or create /root/.config/vllm/do_not_track (the opt-out file) in the image.",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]

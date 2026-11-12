@@ -3,9 +3,10 @@ title: Gradio analytics are on
 severity: high
 confidence: high
 explanation: >-
-  Gradio sends usage analytics to Gradio's servers unless GRADIO_ANALYTICS_ENABLED is
-  set to something other than "True". Its own guide is inconsistent about the default,
-  but the API docs and source enable analytics when the variable is unset.
+  Gradio sends usage analytics to https://api.gradio.app and checks for a newer version
+  there, unless GRADIO_ANALYTICS_ENABLED is set to something other than "True" or the app
+  passes analytics_enabled=False. When the variable is unset analytics are on. Upstream
+  compares case-sensitively against "True", while this rule treats any casing of "true" as on.
 match:
   python_package: gradio
   unless_env:
@@ -13,5 +14,6 @@ match:
 fix: Set GRADIO_ANALYTICS_ENABLED=False in the image environment (and analytics_enabled=False in code).
 controls: [CM-7, SC-7]
 source:
-  - https://www.gradio.app/guides/environment-variables
-  - https://www.gradio.app/docs/gradio/blocks
+  - "https://github.com/gradio-app/gradio/blob/gradio%406.31.0/gradio/analytics.py#L31-L46 (tag gradio@6.31.0, commit 07341609c68bb98701e7db9ba9e2ad6c0fb2acb4; checked 2026-11-12; ANALYTICS_URL and analytics_enabled(), os.getenv('GRADIO_ANALYTICS_ENABLED', 'True') == 'True')"
+  - "https://github.com/gradio-app/gradio/blob/gradio%406.31.0/gradio/analytics.py#L88-L114 (same tag; version_check() GETs api.gradio.app/pkg-version; initiated_analytics() posts only if enabled)"
+  - "https://github.com/gradio-app/gradio/blob/gradio%406.31.0/gradio/blocks.py#L1394-L1402 (same tag; Blocks.__init__ resolves analytics_enabled and starts the version check thread when on)"

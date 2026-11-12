@@ -53,6 +53,20 @@ type ruleFixture struct{ pos, neg fixture }
 
 // extraNegatives are further negative cases, written to negative-2, -3, ...
 var extraNegatives = map[string][]fixture{
+	// MLflow telemetry arrived in 3.2.0; DO_NOT_TRACK is an independent opt-out; mlflow-skinny counts.
+	"PH-MLFLOW-TELEMETRY": {
+		{nil, withDist("mlflow", "3.1.4")},
+		{[]string{"DO_NOT_TRACK=true"}, withDist("mlflow-skinny", "3.18.0")},
+	},
+	// Opt-out by the documented file, and by DO_NOT_TRACK=1, as well as by VLLM_NO_USAGE_STATS.
+	"PH-VLLM-USAGE-STATS": {
+		{nil, withDist("vllm", "0.32.0", "root/.config/vllm/do_not_track", "")},
+		{[]string{"DO_NOT_TRACK=1"}, withDist("vllm", "0.32.0")},
+	},
+	"PH-LANGSMITH-TRACING": {
+		// The SDK compares to "true" only, so "1" does not enable tracing.
+		{[]string{"LANGSMITH_TRACING=1"}, files("app/main.py", "print('rag')\n")},
+	},
 	// D-036: the version bound and the env opt-out are independent negatives.
 	"PH-CHROMA-TELEMETRY": {
 		{[]string{"ANONYMIZED_TELEMETRY=False"}, withDist("chromadb", "1.5.2")},
@@ -93,6 +107,18 @@ var ruleFixtures = map[string]ruleFixture{
 	"PH-WANDB-ONLINE": {
 		fixture{nil, withDist("wandb", "0.18.7")},
 		fixture{[]string{"WANDB_MODE=disabled"}, withDist("wandb", "0.18.7")},
+	},
+	"PH-MLFLOW-TELEMETRY": {
+		fixture{nil, withDist("mlflow", "3.18.0")},
+		fixture{[]string{"MLFLOW_DISABLE_TELEMETRY=true"}, withDist("mlflow", "3.18.0")},
+	},
+	"PH-MLFLOW-REMOTE-TRACKING": {
+		fixture{[]string{"MLFLOW_TRACKING_URI=https://mlflow.vendor.example.com"}, files("app/main.py", "")},
+		fixture{[]string{"MLFLOW_TRACKING_URI=http://mlflow:5000"}, files("app/main.py", "")},
+	},
+	"PH-VLLM-USAGE-STATS": {
+		fixture{nil, withDist("vllm", "0.32.0")},
+		fixture{[]string{"VLLM_NO_USAGE_STATS=1"}, withDist("vllm", "0.32.0")},
 	},
 	"PH-SENTRY-INIT": {
 		fixture{nil, files("app/main.py", "import sentry_sdk\n\nsentry_sdk.init(dsn=\"https://key@o1.ingest.sentry.io/1\")\n")},

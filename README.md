@@ -56,12 +56,28 @@ The scanned image is never pulled, and the harness image is pinned by digest in 
 make build    # static binary at bin/gapproof, FIPS 140-3 module mode, size-gated
 make test     # unit tests
 make lint     # gofmt, go vet, staticcheck
-make harness  # build + pin the egress harness image (needs Docker or Podman)
+make harness  # build + pin the egress harness image (Docker is tested; Podman is untested, see D-017)
 make e2e      # container tests: no-egress, real images, the 9-attempt egress probe
 ```
 
+## Verifying a release
+Each release ships `checksums.sha256` with a keyless cosign signature (`checksums.sha256.sigstore.json`) and a GitHub build-provenance attestation for every archive. Both are checked online, by you, before the binary goes into the air gap; the binary itself never makes a network call.
+```sh
+sha256sum -c checksums.sha256 --ignore-missing
+cosign verify-blob checksums.sha256 --bundle checksums.sha256.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/uddeshya-world/gapproof/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify gapproof_<version>_<os>_<arch>.tar.gz --repo uddeshya-world/gapproof
+```
+
 ## Crypto Gapproof itself uses
-SHA-256 (hashing evidence and artefacts) and Ed25519 (signing). Release builds use Go's FIPS 140-3 module mode (`GOFIPS140=v1.0.0`), and `gapproof version` prints the mode and module version. This describes how Gapproof is built. It isn't a claim about any product Gapproof scans.
+SHA-256 (hashing evidence and artefacts) and Ed25519 (signing). Release builds use Go's FIPS 140-3 module mode (`GOFIPS140=v1.0.0`), and `gapproof version` prints the mode and module version.
+
+What that does and doesn't mean:
+- The Go Cryptographic Module v1.0.0 is listed on NIST's CMVP as certificate #5247 (status Active on 2026-11-12, security level 1, "when operated in approved mode"). Source: https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/5247 and https://go.dev/doc/security/fips140.
+- Gapproof is **not** a validated product. Building against a validated module doesn't validate the program, and a validation applies to the tested operating environments listed in the CMVP record, which we haven't matched to your platform. Whether this satisfies a requirement of yours is for you and your assessor to decide.
+- The module version Gapproof is built with, v1.0.0, is the validated one. Newer module versions (v1.26.0) are not yet validated.
+- This describes how Gapproof is built. It isn't a claim about any product Gapproof scans.
 
 ## What Gapproof is not
 Gapproof produces an **inventory and findings**. It does not certify FIPS 140-3, grant an ATO, or guarantee anything. Its control mappings (NIST 800-53) are informative, and every report says so.
@@ -70,6 +86,7 @@ Gapproof produces an **inventory and findings**. It does not certify FIPS 140-3,
 - What it builds: `docs/02_SPEC.md`
 - How levels are computed: `docs/AGR_SPEC.md` (CC-BY-4.0)
 - Design decisions: `docs/DECISIONS.md`. Dependencies: `docs/DEPENDENCIES.md`
+- Contributing (including how to add a phone-home rule): `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
 - Reporting a vulnerability: `SECURITY.md`
 
 Licence: Apache-2.0.

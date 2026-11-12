@@ -426,8 +426,32 @@ func Load(dir string) (*Bundle, error) {
 	if s.AGR.Level != ev.AGR.Level {
 		return nil, fmt.Errorf("%s says %s but %s says %s", SummaryFile, s.AGR.Level, EvidenceFile, ev.AGR.Level)
 	}
+	if err := ev.checkAGR(); err != nil {
+		return nil, err
+	}
 	ev.Run = s.Run
 	return &ev, nil
+}
+
+// checkAGR recomputes the level from the findings and results the evidence
+// records and rejects a stored level or blocking list that disagrees. The
+// stored AGR block is never trusted: an edited level fails closed here, so
+// report, diff and replay can't display a level the evidence doesn't support.
+func (ev *Bundle) checkAGR() error {
+	want := Compute(ev.AGRInput())
+	if ev.AGR.Level != want.Level {
+		return fmt.Errorf("%s: stored level %s, but the recorded findings and results compute to %s; the evidence was edited or is inconsistent",
+			EvidenceFile, ev.AGR.Level, want.Level)
+	}
+	if ev.AGR.ObservedWindowS != want.ObservedWindowS {
+		return fmt.Errorf("%s: stored observed window %ds, recorded egress result says %ds", EvidenceFile, ev.AGR.ObservedWindowS, want.ObservedWindowS)
+	}
+	a, _ := json.Marshal(orEmpty(ev.AGR.Blocking))
+	b, _ := json.Marshal(orEmpty(want.Blocking))
+	if !bytes.Equal(a, b) {
+		return fmt.Errorf("%s: stored blocking list differs from the one computed from the recorded findings", EvidenceFile)
+	}
+	return nil
 }
 
 // FormatWindow renders an observation window, e.g. 600 → "10m", 90 → "1m30s".

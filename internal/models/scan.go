@@ -251,6 +251,15 @@ func sniff(p string, h []byte) string {
 			return "keras-h5"
 		}
 		return ""
+	case ".pth":
+		// A .pth directly in site-packages is a Python path-configuration file
+		// (text), not a PyTorch checkpoint. A real checkpoint starts with a zip or
+		// pickle header and is still scanned wherever it lives.
+		if !isZip && !isPickle {
+			if dir := path.Base(path.Dir(p)); dir == "site-packages" || dir == "dist-packages" {
+				return ""
+			}
+		}
 	case ".bin":
 		switch {
 		case isZip:
