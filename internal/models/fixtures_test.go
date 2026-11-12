@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"flag"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -328,11 +329,47 @@ func TestFixturesUpToDate(t *testing.T) {
 	}
 	for _, n := range names {
 		got, _ := os.ReadFile(filepath.Join(fixtureDir, n))
-		if !bytes.Equal(got, want[n]) {
+		if !bytes.Equal(got, want[n]) && !sameZip(got, want[n]) {
 			t.Errorf("%s differs from its generator; run with -update", n)
 		}
 	}
 	if strings.Contains(string(printPayload()), "system") {
 		t.Fatal("the print payload must stay harmless")
 	}
+}
+
+// sameZip reports whether a and b are zips with the same members (name,
+// method, decompressed content) in the same order. compress/flate's output
+// differs between Go releases, and CI runs the minimum Go in go.mod, so zip
+// fixtures are compared by content; the scanners only see decompressed bytes.
+func sameZip(a, b []byte) bool {
+	za, err1 := zip.NewReader(bytes.NewReader(a), int64(len(a)))
+	zb, err2 := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err1 != nil || err2 != nil || len(za.File) != len(zb.File) {
+		return false
+	}
+	for i, fa := range za.File {
+		fb := zb.File[i]
+		if fa.Name != fb.Name || fa.Method != fb.Method {
+			return false
+		}
+		da, db := readMember(fa), readMember(fb)
+		if da == nil || db == nil || !bytes.Equal(da, db) {
+			return false
+		}
+	}
+	return true
+}
+
+func readMember(f *zip.File) []byte {
+	r, err := f.Open()
+	if err != nil {
+		return nil
+	}
+	defer r.Close()
+	b, err := io.ReadAll(io.LimitReader(r, 64<<20))
+	if err != nil {
+		return nil
+	}
+	return b
 }
