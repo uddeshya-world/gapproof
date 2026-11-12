@@ -157,7 +157,7 @@ The AI-BOM serial number and the OSCAL UUIDs use the version-5 UUID layout, but 
 ## D-029 (2026-11-11): Schema validation is test-only, in a container
 CycloneDX 1.6 and OSCAL 1.1.2 output is validated against the official schemas, vendored in `testdata/schemas` with their source URLs and SHA-256. The validator runs in a pinned `python:3.12-slim` container with `jsonschema==4.23.0` and `regex==2024.11.6`, because `re` can't handle the OSCAL `\p{L}` patterns. This replaces the proposed Go jsonschema dependency, so nothing new is linked.
 
-## D-030 (2026-11-11): Agent containment (INV-01) working form
+## D-030 (2026-11-11): Agent containment (INV-01) working form — semantics superseded by D-032
 INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in the workspace, so this must be restated against it before v0.2.
 
 **Graph semantics:**
@@ -185,3 +185,28 @@ INV-01 is implemented as written in spec §3.5. MESA's own definition isn't in t
 - **Rule-pack version.** `rule_pack_version` is a content hash of the embedded rules plus the CMVP snapshot.
 - **TTY output.** The terminal summary is rendered only from the evidence, so `scan --replay` reprints it exactly.
 - **Lint target.** staticcheck analyses the Linux build, which is the one that ships.
+
+## D-032 (2026-11-12): INV-01 restated against MESA (supersedes D-030's semantics)
+**Source:** MESA Invariant 1 as defined in `mesa-ibi-scanner` v0.3.2, `docs/LATTICE.md` §1–8 and `thresholds/zones.json` (github.com/uddeshya-world/mesa-ibi-scanner, Apache-2.0, same author). D-030's two-label path rule was a working assumption; it had no untrusted-input dimension, so it was not MESA's invariant.
+
+**Invariant (MESA LATTICE §4–5).** Each vertex has a level vector `L = (P, U, E)`, each component 0–3 (privilege, untrusted input, egress). Remove every gated edge, then take the least fixpoint `Cl(v) = L(v) ⊔ ⊔ attenuate(Cl(u), cap(e))` over edges `u → v`. Agent `a` violates INV-01 when `Cl(a) ≥ T` component-wise. It is a near miss when exactly one component is below `T`.
+
+**Fixed zone.** gapproof always uses the `production` threshold `T = (2, 2, 2)`, which is MESA's default for a missing zone. `agents.yaml` can't set a zone or thresholds. A vendor-declared manifest that picked its own zone could make any finding disappear (MESA LATTICE §5).
+
+**Mapping from `agents.yaml` (schema unchanged, one label added):**
+| agents.yaml | MESA |
+|---|---|
+| agent | vertex, kind agent, `L = (0,0,0)` |
+| tool | one vertex per (agent, tool), so a gate or removal is per-agent in the cut |
+| `reads: sensitive` / `internal` / `public` / `untrusted` (new) | P=3 / P=2 / U=2 (anonymous-external) / U=3 (public-writable) |
+| `sinks: boundary_crossing` | E=3, or E=2 when `targets` is a non-empty allowlist |
+| `sinks: internal` / `exec` | E=1 / E=3 |
+| tool → its agent | flow `read` (3,3,0) for the reads part, `proxy/egress` (0,0,3) for the sinks part |
+| `handoffs: [B]` on A | edge A → B, flow `read` (3,3,0): B receives A's data and untrusted content, not A's egress |
+| `gates: tool: human_approval` | `pdp_gate: true` on that tool's edges in every agent |
+
+**Consequence:** "reads: public" is no longer harmless. An agent that browses the web, reads internal data and can post anywhere is the trifecta, and violates. That is MESA's point.
+
+**Findings.** One `AGENT-INV01-<agent>` per violating agent, high and unwaivable (unchanged from D-030). It reports the closure, a witness path per dimension (MESA §8: shortest, ties broken by vertex id) and the minimal edge cut on one dimension (ties broken in the order P, U, E), worded as "gate `x` in `a`" or "remove `x` from `a`". Near misses are info findings that name the missing component; they don't affect AGR. Evidence records the threshold vector and the MESA spec version, so a change of definition is visible.
+
+**Golden parity.** The Go port must reproduce `mesa-ibi-scanner`'s verdicts, closures, witnesses and cuts on its public fixtures, after converting them to the gapproof form. The parity fixtures are checked in as test data.
