@@ -4,11 +4,14 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -155,5 +158,65 @@ func TestSparseMemberRejected(t *testing.T) {
 	}
 	if _, err := root.Stat("big"); err == nil {
 		t.Fatal("sparse member was written to disk")
+	}
+}
+
+// Regression (demo): Docker's index.json can list several entries
+// (attestation manifests, older builds of the same tag). Every entry pinned
+// to the scanned config is an acceptable engine ID; an entry for another
+// config never is, even when it is the only one.
+func TestIndexEntriesPinnedToConfig(t *testing.T) {
+	good := writeArchive(t, []layer{plain(t, file("a", "a"))}, archiveOpts{})
+	raw, err := os.ReadFile(good)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr := readTar(t, raw)
+	var cfgDigest string
+	for name, body := range tr {
+		if strings.HasPrefix(name, "blobs/sha256/") && strings.Contains(body, `"rootfs"`) {
+			cfgDigest = digest([]byte(body))
+		}
+	}
+	blob := func(m map[string]any) (string, ent) {
+		b, _ := json.Marshal(m)
+		d := digest(b)
+		return d, file("blobs/sha256/"+strings.TrimPrefix(d, "sha256:"), string(b))
+	}
+	other := "sha256:" + strings.Repeat("b", 64)
+	manD, manE := blob(map[string]any{"config": map[string]any{"digest": cfgDigest}})
+	attD, attE := blob(map[string]any{"config": map[string]any{"digest": other}})
+	idxD, idxE := blob(map[string]any{"manifests": []any{map[string]any{"digest": manD}, map[string]any{"digest": attD}}})
+	strayD, strayE := blob(map[string]any{"config": map[string]any{"digest": other}})
+
+	build := func(index ...string) *Image {
+		t.Helper()
+		var members []ent
+		for name, body := range tr {
+			members = append(members, file(name, body))
+		}
+		var ms []any
+		for _, d := range index {
+			ms = append(ms, map[string]any{"digest": d})
+		}
+		ij, _ := json.Marshal(map[string]any{"manifests": ms})
+		members = append(members, manE, attE, idxE, strayE, file("index.json", string(ij)))
+		p := filepath.Join(t.TempDir(), "image.tar")
+		if err := os.WriteFile(p, tarOf(t, members...), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		im, err := extract(t, p, DefaultLimits())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return im
+	}
+
+	im := build(strayD, idxD, manD)
+	if im.ImageID != idxD || !slices.Equal(im.AltImageIDs, []string{idxD, manD}) {
+		t.Errorf("ImageID=%s alt=%v; want %s then %s, never the stray entry", im.ImageID, im.AltImageIDs, idxD, manD)
+	}
+	if im := build(strayD); im.ImageID != "" || len(im.AltImageIDs) != 0 {
+		t.Errorf("single entry for another config accepted: %s %v", im.ImageID, im.AltImageIDs)
 	}
 }

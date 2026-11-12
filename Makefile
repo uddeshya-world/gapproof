@@ -7,11 +7,12 @@ DATE      ?= $(shell git log -1 --format=%cI 2>/dev/null || echo unknown)
 # Go Cryptographic Module snapshot. The Go toolchain marks v1.0.0 as "certified"
 # (GOROOT/lib/fips140/certified.txt); verify the CMVP certificate before claiming it.
 GOFIPS140 ?= v1.0.0
-# Harness image pin (spec §3.1): written by `make harness`, baked into later builds.
+# Harness image pin (spec §3.1): written by `make harness`. Recursive (=), so
+# `make harness build` in one invocation reads the pin after harness writes it.
 HARNESS_PIN_FILE ?= dist/harness.pin
-HARNESS_PIN := $(shell cat $(HARNESS_PIN_FILE) 2>/dev/null)
+HARNESS_PIN = $(shell cat $(HARNESS_PIN_FILE) 2>/dev/null)
 HPKG      := github.com/uddeshya-world/gapproof/internal/harness
-LDFLAGS   := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) \
+LDFLAGS   = -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) \
              $(if $(HARNESS_PIN),-X $(HPKG).PinnedConfigDigest=$(word 1,$(HARNESS_PIN)) -X $(HPKG).PinnedLayers=$(word 2,$(HARNESS_PIN))) \
              $(if $(LICENCE_PUB),-X github.com/uddeshya-world/gapproof/internal/licence.PublicKey=$(LICENCE_PUB))
 # LICENCE_PUB: base64 Ed25519 public key that release builds pin for Pro licences

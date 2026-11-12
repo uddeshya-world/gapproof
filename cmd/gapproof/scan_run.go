@@ -371,7 +371,7 @@ func (s *scanRun) runEgress(ctx context.Context, e *harness.Engine, tarPath stri
 	if err != nil {
 		return err
 	}
-	if id != s.im.ConfigDigest && id != s.im.ImageID {
+	if id != s.im.ConfigDigest && id != s.im.ImageID && !slices.Contains(s.im.AltImageIDs, id) {
 		return fmt.Errorf("the engine loaded image %s, but the scanned archive is %s: refusing to observe a different image", id, s.im.ConfigDigest)
 	}
 	s.logf("egress: observing for %s with all egress blocked", s.o.observe)

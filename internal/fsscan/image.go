@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -29,7 +30,10 @@ type Image struct {
 	// archive is in OCI layout (Docker 25+/containerd store): the top-level
 	// index or manifest digest, i.e. the registry digest. Verified against
 	// its blob. Empty for legacy archives, where the engine ID is ConfigDigest.
-	ImageID      string   `json:"image_id,omitempty"`
+	ImageID string `json:"image_id,omitempty"`
+	// AltImageIDs are every index.json entry pinned to ConfigDigest (ImageID
+	// is the first); any of them may be what the engine reports after load.
+	AltImageIDs  []string `json:"-"`
 	RepoTags     []string `json:"repo_tags,omitempty"`
 	OS           string   `json:"os,omitempty"`
 	Architecture string   `json:"architecture,omitempty"`
@@ -134,9 +138,13 @@ func ExtractImage(ctx context.Context, archive string, lim Limits) (_ *Image, er
 
 	// Everything that can fail before extraction runs before the temp dir
 	// exists, so an early error never leaks it (rule 3: remove it on exit).
-	imageID, err := a.topDigest()
+	imageIDs, err := a.topDigests(cfgDigest)
 	if err != nil {
 		return nil, err
+	}
+	imageID := ""
+	if len(imageIDs) > 0 {
+		imageID = imageIDs[0]
 	}
 	dir, err := os.MkdirTemp("", "gapproof-rootfs-*")
 	if err != nil {
@@ -144,6 +152,7 @@ func ExtractImage(ctx context.Context, archive string, lim Limits) (_ *Image, er
 	}
 	im := &Image{
 		ImageID:      imageID,
+		AltImageIDs:  imageIDs,
 		Dir:          dir,
 		owned:        true,
 		ConfigDigest: cfgDigest,
@@ -414,31 +423,73 @@ func (a *outer) ociRefs() (imageRefs, error) {
 	return imageRefs{}, errors.New("OCI index nested too deeply")
 }
 
-// topDigest returns the digest index.json points at, verified against its
-// blob, or "" when the archive has no (single-entry) index.json.
-func (a *outer) topDigest() (string, error) {
+// topDigests returns the index.json entries the engine may report as the
+// image ID after `docker load`, each verified against its blob and pinned to
+// cfgDigest (a manifest whose config is cfgDigest, or an index listing such a
+// manifest). An index.json can list several entries (attestation manifests,
+// earlier builds of the same tag); entries that don't pin the scanned config
+// are dropped, so the harness can never accept a different image. Nil when
+// the archive has no index.json.
+func (a *outer) topDigests(cfgDigest string) ([]string, error) {
 	if _, err := a.member("index.json"); err != nil {
-		return "", nil
+		return nil, nil
 	}
 	raw, err := a.read("index.json", a.lim.MaxMetadataSize)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	var idx struct{ Manifests []ociDescriptor }
 	if err := json.Unmarshal(raw, &idx); err != nil {
-		return "", fmt.Errorf("index.json: %w", err)
+		return nil, fmt.Errorf("index.json: %w", err)
 	}
-	if len(idx.Manifests) != 1 {
-		return "", nil
+	if len(idx.Manifests) > 64 {
+		return nil, &LimitError{"index.json entries", fmt.Sprintf("%d (limit 64)", len(idx.Manifests))}
 	}
-	d := idx.Manifests[0].Digest
+	var out []string
+	for _, m := range idx.Manifests {
+		ok, err := a.pins(m.Digest, cfgDigest, 1)
+		if err != nil {
+			return nil, err
+		}
+		if ok && !slices.Contains(out, m.Digest) {
+			out = append(out, m.Digest)
+		}
+	}
+	return out, nil
+}
+
+// pins reports whether the manifest or index blob d (if shipped) refers to
+// the config cfgDigest, following at most depth nested index levels.
+func (a *outer) pins(d, cfgDigest string, depth int) (bool, error) {
+	if !digestRe.MatchString(d) {
+		return false, nil
+	}
 	if _, err := a.member("blobs/sha256/" + strings.TrimPrefix(d, "sha256:")); err != nil {
-		return "", nil // referenced but not shipped: nothing to verify against
+		return false, nil // referenced but not shipped: nothing to verify against
 	}
-	if _, err := a.blob(d); err != nil {
-		return "", err
+	raw, err := a.blob(d)
+	if err != nil {
+		return false, err
 	}
-	return d, nil
+	var doc struct {
+		Config    *ociDescriptor  `json:"config"`
+		Manifests []ociDescriptor `json:"manifests"`
+	}
+	if json.Unmarshal(raw, &doc) != nil {
+		return false, nil
+	}
+	if doc.Config != nil {
+		return doc.Config.Digest == cfgDigest, nil
+	}
+	if depth == 0 || len(doc.Manifests) > 64 {
+		return false, nil
+	}
+	for _, c := range doc.Manifests {
+		if ok, err := a.pins(c.Digest, cfgDigest, depth-1); ok || err != nil {
+			return ok, err
+		}
+	}
+	return false, nil
 }
 
 // caseInsensitive reports whether dir lives on a case-insensitive filesystem.
