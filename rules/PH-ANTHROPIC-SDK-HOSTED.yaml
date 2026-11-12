@@ -1,7 +1,7 @@
 id: PH-ANTHROPIC-SDK-HOSTED
 title: Anthropic client defaults to the hosted API
 severity: medium
-confidence: low
+confidence: high
 explanation: >-
   The anthropic package is installed and ANTHROPIC_BASE_URL isn't set, so clients
   created without base_url call api.anthropic.com. Code may still pass base_url
@@ -13,4 +13,4 @@ match:
 fix: Set ANTHROPIC_BASE_URL to an in-enclave gateway, or remove the hosted dependency.
 controls: [SC-7, AC-4]
 source:
-  - https://github.com/anthropics/anthropic-sdk-python
+  - https://github.com/anthropics/anthropic-sdk-python/blob/v2.8.0/src/anthropic/_client.py#L241-L248 (v2.8.0, commit 5139cf2e7d07aa618a6c30b7e0c712f10ccb5ad9; checked 2026-11-12, base_url falls back to the ANTHROPIC_BASE_URL environment variable, then to https://api.anthropic.com)

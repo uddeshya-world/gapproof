@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Changed (rule promotion)
+- Phone-home: `PH-ANTHROPIC-SDK-HOSTED`, `PH-OPENAI-SDK-HOSTED` and `PH-UNSTRUCTURED-ANALYTICS` are now high confidence, each checked against upstream source (anthropic-sdk-python v2.8.0, openai-python v3.49.0, unstructured 0.27.37, on 2026-11-12) with permalinks in `source`. `PH-UNSTRUCTURED-ANALYTICS` now treats any non-empty `SCARF_NO_ANALYTICS` or `DO_NOT_TRACK` as opted out, as upstream does.
+
 ### Changed (demo follow-ups, D-035…D-038)
 - Models: `builtins.range` and the other side-effect-free value constructors (`int`, `float`, `bool`, `str`, `bytes`, `tuple`, `list`, `dict`, plus the Python 2 `xrange`/`unicode`/`long`) are safe pickle imports. Every other builtin and every dotted name stays critical. There is no path-based exemption for test fixtures (D-035).
 - Phone-home: rules take `python_package_version` (a PEP 440 range that fails closed). `PH-CHROMA-TELEMETRY` is bounded to `<1.5.4`, because upstream made telemetry a no-op and dropped posthog (D-036).

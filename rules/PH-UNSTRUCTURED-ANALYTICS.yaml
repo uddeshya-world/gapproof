@@ -1,17 +1,18 @@
 id: PH-UNSTRUCTURED-ANALYTICS
 title: Unstructured library analytics may be on
 severity: medium
-confidence: low
+confidence: high
 explanation: >-
-  The unstructured library is reported to send a Scarf analytics ping by default,
-  disabled by SCARF_NO_ANALYTICS or DO_NOT_TRACK. Only a third-party source confirms
-  this, so the rule is low confidence until checked against upstream.
+  The unstructured library sends an analytics ping to packages.unstructured.io when it
+  is imported, and a usage event after partition calls. Setting SCARF_NO_ANALYTICS or
+  DO_NOT_TRACK to any non-empty value turns both off.
 match:
   python_package: unstructured
   unless_env:
-    SCARF_NO_ANALYTICS: ["1", "true", "yes", "on"]
-    DO_NOT_TRACK: ["1", "true", "yes", "on"]
+    SCARF_NO_ANALYTICS: ["*"]
+    DO_NOT_TRACK: ["*"]
 fix: Set SCARF_NO_ANALYTICS=true and DO_NOT_TRACK=true in the image environment.
 controls: [CM-7, SC-7]
 source:
-  - https://www.everydev.ai/tools/unstructured
+  - https://github.com/Unstructured-IO/unstructured/blob/0.27.37/unstructured/utils.py#L187-L233 (tag 0.27.37, commit 293d235cfcd5f5e89c3cc5ff85562005e182ae33; checked 2026-11-12, _telemetry_opt_out() and scarf_analytics(), GET https://packages.unstructured.io/python-telemetry)
+  - https://github.com/Unstructured-IO/unstructured/blob/0.27.37/unstructured/telemetry.py (same tag; _ENDPOINT, init_telemetry() called from unstructured/__init__.py, partition runtime events)
