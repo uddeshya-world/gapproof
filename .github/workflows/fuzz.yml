@@ -1,0 +1,57 @@
+name: fuzz
+
+# Nightly run of every Fuzz* target for a few minutes each. A crash input is
+# uploaded as an artifact; copy it into the package's testdata/fuzz/<Target>/
+# as a permanent regression seed. The package list below is checked against the
+# repo by TestFuzzWorkflowCoversEveryFuzzPackage.
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      fuzztime:
+        description: "Time per fuzz target (Go duration)"
+        default: "3m"
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg:
+          - agents
+          - crypto
+          - fsscan
+          - licence
+          - models
+          - phonehome
+          - sinkhole
+    env:
+      FUZZTIME: ${{ inputs.fuzztime || '3m' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: fuzz every target in internal/${{ matrix.pkg }}
+        run: |
+          set -eu
+          pkg=./internal/${{ matrix.pkg }}
+          targets=$(go test -list '^Fuzz' "$pkg" | grep '^Fuzz' || true)
+          test -n "$targets" || { echo "no Fuzz targets in $pkg"; exit 1; }
+          for t in $targets; do
+            echo "::group::$pkg $t ($FUZZTIME)"
+            go test "$pkg" -run '^$' -fuzz "^${t}\$" -fuzztime "$FUZZTIME"
+            echo "::endgroup::"
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: fuzz-crashers-${{ matrix.pkg }}
+          path: internal/${{ matrix.pkg }}/testdata/fuzz/
+          if-no-files-found: ignore

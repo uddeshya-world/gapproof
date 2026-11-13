@@ -17,3 +17,4 @@ release-assets/
 
 # demo scan output (make demo)
 /evidence/
+/.demo-baseline/

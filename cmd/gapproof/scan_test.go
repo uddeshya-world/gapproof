@@ -196,3 +196,45 @@ func TestScanValidatesInputsBeforeWriting(t *testing.T) {
 		t.Error("evidence.json depends on how the input paths are spelled")
 	}
 }
+
+func TestParseMinAGR(t *testing.T) {
+	for in, want := range map[string]int{"": -1, "0": 0, "2": 2, "4": 4, "AGR-2": 2, "agr-3": 3, "Agr-4": 4, " AGR-1 ": 1} {
+		if got, err := parseMinAGR(in); err != nil || got != want {
+			t.Errorf("parseMinAGR(%q) = %d, %v; want %d", in, got, err, want)
+		}
+	}
+	for _, in := range []string{"5", "-1", "AGR-5", "AGR-", "AGR", "AGR--1", "AGR-+1", "two", "AGR-2x", "1.5"} {
+		if _, err := parseMinAGR(in); err == nil {
+			t.Errorf("parseMinAGR(%q) accepted", in)
+		}
+	}
+}
+
+// --min-agr on --replay gates the saved level instead of being ignored.
+func TestReplayMinAGR(t *testing.T) {
+	rootfs := t.TempDir()
+	if err := os.WriteFile(filepath.Join(rootfs, "x"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(t.TempDir(), "e")
+	var so, se bytes.Buffer
+	if code := run([]string{"scan", "--rootfs", rootfs, "--skip", "egress", "--out", out}, &so, &se); code != exitOK {
+		t.Fatalf("scan exit %d: %s", code, se.String())
+	}
+	// A static-only run is unassessed: below every threshold, in either spelling.
+	for _, v := range []string{"1", "AGR-1", "agr-4"} {
+		so.Reset()
+		se.Reset()
+		if code := run([]string{"scan", "--replay", out, "--replay-speed", "1000", "--min-agr", v}, &so, &se); code != exitBelowThreshold {
+			t.Errorf("replay --min-agr %s: exit %d, want %d (%s)", v, code, exitBelowThreshold, se.String())
+		}
+	}
+	so.Reset()
+	se.Reset()
+	if code := run([]string{"scan", "--replay", out, "--replay-speed", "1000"}, &so, &se); code != exitOK {
+		t.Errorf("replay without --min-agr: exit %d", code)
+	}
+	if code := run([]string{"scan", "--replay", out, "--min-agr", "9"}, &so, &se); code != exitUsage {
+		t.Errorf("replay --min-agr 9: exit %d, want usage", code)
+	}
+}

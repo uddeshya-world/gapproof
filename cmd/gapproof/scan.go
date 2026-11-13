@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +17,8 @@ type scanOpts struct {
 	observe                                 time.Duration
 	oneShot                                 bool
 	skip                                    []string
-	minAGR                                  int
+	minAGRFlag                              string // raw --min-agr; parsed into minAGR by validate
+	minAGR                                  int    // -1: no threshold
 	pcap                                    bool
 
 	replay      string
@@ -39,7 +41,7 @@ func newScanCmd() *cobra.Command {
 				return err
 			}
 			if o.replay != "" {
-				return replay(cmd.OutOrStdout(), o.replay, o.only, o.replaySpeed)
+				return replay(cmd.OutOrStdout(), o.replay, o.only, o.replaySpeed, o.minAGR)
 			}
 			return o.run(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 		}),
@@ -53,7 +55,7 @@ func newScanCmd() *cobra.Command {
 	f.BoolVar(&o.oneShot, "one-shot", false, "the target is a batch job or CLI: it passes by exiting 0 inside the window, not by staying up")
 	f.StringVar(&o.agents, "agents", "", "agents.yaml or MCP tools/list JSON dump")
 	f.StringSliceVar(&o.skip, "skip", nil, "modules to skip: "+strings.Join(scanModules, "|"))
-	f.IntVar(&o.minAGR, "min-agr", -1, "CI gate: exit 1 if the result is below AGR-N (0-4)")
+	f.StringVar(&o.minAGRFlag, "min-agr", "", "CI gate: exit 1 if the result is below this level; N or AGR-N, 0-4 (also applies to --replay)")
 	f.StringVar(&o.scope, "scope", "", "gapproof.scope.yaml: declared internal names/CIDRs (docs/AGR_SPEC.md §2)")
 	f.StringVar(&o.waivers, "waivers", "", "gapproof.waivers.yaml: accepted risks (docs/AGR_SPEC.md §3)")
 	f.BoolVar(&o.pcap, "pcap", false, "also save egress.pcapng (NFLOG packets, first 256 bytes)")
@@ -64,7 +66,28 @@ func newScanCmd() *cobra.Command {
 	return cmd
 }
 
+// parseMinAGR accepts "2", "AGR-2" and "agr-2" (any case); "" means no threshold (-1).
+func parseMinAGR(s string) (int, error) {
+	t := strings.TrimSpace(s)
+	if t == "" {
+		return -1, nil
+	}
+	if len(t) > 4 && strings.EqualFold(t[:4], "agr-") {
+		t = t[4:]
+	}
+	n, err := strconv.Atoi(t)
+	if err != nil || n < 0 || n > 4 || strings.HasPrefix(t, "+") {
+		return 0, usagef("--min-agr must be between 0 and 4 (N or AGR-N), got %q", s)
+	}
+	return n, nil
+}
+
 func (o *scanOpts) validate() error {
+	n, err := parseMinAGR(o.minAGRFlag)
+	if err != nil {
+		return err
+	}
+	o.minAGR = n
 	if o.replay != "" {
 		if o.image != "" || o.rootfs != "" || o.out != "" {
 			return usagef("--replay cannot be combined with --image, --rootfs or --out")
@@ -86,8 +109,6 @@ func (o *scanOpts) validate() error {
 		return usagef("--out is required")
 	case o.observe < time.Second:
 		return usagef("--observe must be at least 1s")
-	case o.minAGR < -1 || o.minAGR > 4:
-		return usagef("--min-agr must be between 0 and 4")
 	}
 	if o.rootfs != "" && !slices.Contains(o.skip, "egress") {
 		// A bare rootfs can't be run, so egress can't be observed (AGR_SPEC §5).

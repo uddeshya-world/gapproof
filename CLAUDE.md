@@ -50,6 +50,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
+- 2026-11-13: Branch `fix/audit-findings` (audit fixes, not merged): fixed-rag now uses a numpy store instead of chromadb (D-045; the 1-in-4 raw.githubusercontent egress was never traced to a code path); new rule `PH-CHROMA-RUST-INSTALL`; FuzzScanELF fixed by validating ELF headers against file size; `--min-agr` takes `N` or `AGR-N` and gates `--replay`; `demo` workflow has `repeat`; nightly `fuzz.yml`; Podman e2e CI job (docker shim). Verified locally (arm64, b75fce2): make e2e 7/7, make demo + demo-e2e pass, 3 extra fixed-rag scans AGR-4 with byte-identical evidence.json, make selfscan AGR-4; CI demo repeat=10 all matched. Ready to merge PR #1.
 - 2026-11-12: Merged `m12-gaps` (after v0.1.0):
   - Validators fail closed (D-042): `Load` recomputes AGR and rejects edited levels; single-label `*.com` scopes are rejected; only loopback or declared-CIDR resolvers are trusted; expired waivers are held to the exactly-one rule.
   - Community files with DCO (D-043).

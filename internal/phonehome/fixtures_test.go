@@ -72,6 +72,11 @@ var extraNegatives = map[string][]fixture{
 		{[]string{"ANONYMIZED_TELEMETRY=False"}, withDist("chromadb", "1.5.2")},
 		{nil, withDist("chromadb", "2.0.0")},
 	},
+	// Only 1.5.2 was checked against the upstream source; other versions do not match.
+	"PH-CHROMA-RUST-INSTALL": {
+		{nil, withDist("chromadb", "1.5.4")},
+		{nil, withDist("chromadb", "1.5.1")},
+	},
 }
 
 var ruleFixtures = map[string]ruleFixture{
@@ -95,6 +100,11 @@ var ruleFixtures = map[string]ruleFixture{
 		fixture{nil, withDist("chromadb", "1.5.2")},
 		// 1.5.4 dropped posthog; its client is a no-op (D-036).
 		fixture{nil, withDist("chromadb", "1.5.4")},
+	},
+	"PH-CHROMA-RUST-INSTALL": {
+		// ANONYMIZED_TELEMETRY does not affect the CLI's GitHub fetches.
+		fixture{[]string{"ANONYMIZED_TELEMETRY=False"}, withDist("chromadb", "1.5.2")},
+		fixture{nil, withDist("numpy", "2.5.4")},
 	},
 	"PH-UNSTRUCTURED-ANALYTICS": {
 		fixture{nil, withDist("unstructured", "0.16.5")},

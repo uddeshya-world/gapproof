@@ -46,6 +46,7 @@ func TestDemoApps(t *testing.T) {
 				"EGRESS-ATTEMPT",
 				"MODEL-NUMPY-OBJECT-ARRAY",
 				"MODEL-PICKLE-CODE-EXEC",
+				"PH-CHROMA-RUST-INSTALL",
 				"PH-CHROMA-TELEMETRY",
 				"PH-HF-HUB-ONLINE",
 				"PH-HF-TELEMETRY",
@@ -63,7 +64,7 @@ func TestDemoApps(t *testing.T) {
 				"--scope", filepath.Join(root, "demo/fixed-rag/gapproof.scope.yaml"),
 				"--waivers", filepath.Join(root, "demo/fixed-rag/gapproof.waivers."+arch+".yaml"),
 			},
-			rules:  []string{"AGENT-NEARMISS-analyst", "CRYPTO-UNKNOWN-MODULE", "CRYPTO-UNVALIDATED-MODULE", "PH-TELEMETRY-SDK"},
+			rules:  []string{"AGENT-NEARMISS-analyst", "CRYPTO-UNKNOWN-MODULE", "CRYPTO-UNVALIDATED-MODULE"},
 			waived: []string{"CRYPTO-UNKNOWN-MODULE", "CRYPTO-UNVALIDATED-MODULE"},
 		},
 	}
@@ -113,7 +114,10 @@ func TestDemoApps(t *testing.T) {
 			if !bytes.Equal(a, b) {
 				t.Errorf("evidence.json differs between two runs (%d vs %d bytes); diff %s %s",
 					len(a), len(b), first, filepath.Join(out, "evidence.json"))
-				_ = os.WriteFile(first+".rerun", b, 0o644)
+				// Keep the rerun out of evidence/: a stray file there blocks `sign`.
+				rerun := filepath.Join(t.TempDir(), "evidence.json.rerun")
+				_ = os.WriteFile(rerun, b, 0o644)
+				t.Logf("rerun written to %s", rerun)
 			}
 		})
 	}

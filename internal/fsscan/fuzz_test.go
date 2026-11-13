@@ -38,7 +38,7 @@ func FuzzExtractImage(f *testing.F) {
 		{tarOf(t, dir("app"), file("app/a.txt", "a"), symlink("app/l", "/etc/passwd"), hardlink("app/h", "app/a.txt")),
 			tarOf(t, file("app/.wh.a.txt", ""), file("app/.wh..wh..opq", ""), file("app/b", "b"))},
 		{tarOf(t, file("../../etc/passwd", "x")), tarOf(t, symlink("esc", "../../.."), file("esc/out", "x"))},
-		{tarOf(t, symlink("d", "/"), file("d/tmp/x", "x")), gz(t, tarOf(t, file("big", strings.Repeat("0", 4096))))},
+		{tarOf(t, symlink("d", "/"), file("d/tmp/x", "x")), gz(t, tarOf(t, file("big", strings.Repeat("0", 32<<10))))},
 		{tarOf(t, ent{name: "dev", typ: tar.TypeChar}, ent{name: "fifo", typ: tar.TypeFifo}), nil},
 	}
 	for _, s := range seeds {
@@ -58,13 +58,16 @@ func FuzzExtractImage(f *testing.F) {
 	f.Setenv("TMPDIR", tmp)
 	expected := []string{"a", "a/b", "a/b/in", "a/b/in/image.tar", "a/b/tmp"}
 
+	// Small limits keep each input cheap (the target is I/O bound: it writes the
+	// archive, extracts into a temp dir and walks the sandbox). The limit logic
+	// is the same at any scale, and the seeds below still cross every limit.
 	lim := DefaultLimits()
-	lim.MaxEntries = 2000
-	lim.MaxFileSize = 1 << 20
-	lim.MaxTotalSize = 4 << 20
-	lim.RatioFloor = 256 << 10
-	lim.MaxMetadataSize = 1 << 20
-	lim.MaxOuterMembers = 100
+	lim.MaxEntries = 256
+	lim.MaxFileSize = 64 << 10
+	lim.MaxTotalSize = 256 << 10
+	lim.RatioFloor = 16 << 10
+	lim.MaxMetadataSize = 64 << 10
+	lim.MaxOuterMembers = 32
 
 	f.Fuzz(func(t *testing.T, l1, l2 []byte, raw bool) {
 		archive := l1
@@ -84,7 +87,7 @@ func FuzzExtractImage(f *testing.F) {
 		im, err := ExtractImage(context.Background(), p, lim)
 		watchdog.Stop()
 		runtime.ReadMemStats(&after)
-		if got, budget := after.TotalAlloc-before.TotalAlloc, uint64(64<<20+64*len(archive)); got > budget {
+		if got, budget := after.TotalAlloc-before.TotalAlloc, uint64(32<<20+64*len(archive)); got > budget {
 			t.Errorf("extracting a %d-byte archive allocated %d bytes (budget %d)", len(archive), got, budget)
 		}
 

@@ -1,9 +1,8 @@
 # fixed-rag accepted risks, linux/arm64 build (paths contain the target triple).
-# These are the crypto modules a python:3.12-slim + chromadb image can't drop:
+# These are the crypto modules a python:3.12-slim + cryptography image can't drop:
 # the system OpenSSL (no FIPS provider in Debian slim), nettle (pulled in by
-# the base image's GnuTLS), the OpenSSL bundled in the cryptography wheel and
-# the BoringSSL bundled in grpcio (a chromadb dependency). Each is an accepted
-# risk in writing, not a fix. `make demo` picks the file for the host arch.
+# the base image's GnuTLS) and the OpenSSL bundled in the cryptography wheel.
+# Each is an accepted risk in writing, not a fix. `make demo` picks the file for the host arch.
 waivers_version: 1
 waivers:
   - rule: CRYPTO-UNVALIDATED-MODULE
@@ -19,10 +18,5 @@ waivers:
   - rule: CRYPTO-UNVALIDATED-MODULE
     match: { path: "usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so" }
     justification: "cryptography wheel (bundled OpenSSL) is used only for an HMAC integrity tag on citations, not for confidentiality or authentication across the boundary. Rebuild against a FIPS-provider OpenSSL is tracked."
-    owner: "security@vendor.example"
-    expires: 2027-06-30
-  - rule: CRYPTO-UNVALIDATED-MODULE
-    match: { path: "usr/local/lib/python3.12/site-packages/grpc/_cython/cygrpc.cpython-312-aarch64-linux-gnu.so" }
-    justification: "grpcio is a transitive chromadb dependency (OTLP exporter). Telemetry and OTLP export are disabled in this build, so its bundled BoringSSL carries no traffic."
     owner: "security@vendor.example"
     expires: 2027-06-30

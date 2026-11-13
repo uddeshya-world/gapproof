@@ -58,7 +58,12 @@ func TestRealDockerSave(t *testing.T) {
 	t.Logf("config %s, image ID %s, %d layers, stats %+v", im.ConfigDigest, im.ImageID, len(im.Layers), im.Stats)
 	// Classic store: engine ID = config digest. containerd store: engine ID =
 	// the index/manifest digest that index.json points at.
-	if got := string(id[:len(id)-1]); got != im.ConfigDigest && !slices.Contains(im.AltImageIDs, got) {
+	// Podman prints the ID without the "sha256:" prefix.
+	got := strings.TrimSpace(string(id))
+	if !strings.HasPrefix(got, "sha256:") {
+		got = "sha256:" + got
+	}
+	if got != im.ConfigDigest && !slices.Contains(im.AltImageIDs, got) {
 		t.Errorf("engine image ID %s matches neither config digest %s nor image ID %s", got, im.ConfigDigest, im.ImageID)
 	}
 }
@@ -70,6 +75,10 @@ func TestRealDockerSave(t *testing.T) {
 func TestRealDockerSaveAttested(t *testing.T) {
 	if testing.Short() {
 		t.Skip("container test skipped in -short mode")
+	}
+	// Podman (also reachable as `docker`) has no buildx attestations.
+	if out, err := exec.Command("docker", "--version").Output(); err != nil || !strings.HasPrefix(string(out), "Docker version") {
+		t.Skip("not Docker: provenance attestations are Docker-only")
 	}
 	if exec.Command("docker", "buildx", "version").Run() != nil {
 		t.Skip("no docker buildx: provenance attestations are Docker-only")

@@ -12,7 +12,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # TODO(M8): pin actions to full commit SHAs.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
@@ -41,6 +40,43 @@ jobs:
         run: docker pull alpine:3.20 && docker pull python:3.12-slim
       - name: e2e (TestNoEgress, harness image build + load, 9-attempt egress probe, host-side leak capture, cleanup)
         run: make e2e
+
+  e2e-podman:
+    # The same `make e2e` under Podman (preinstalled on ubuntu-latest). The test
+    # helpers and the Makefile look for `docker` first, so a `docker` shim that is
+    # the podman binary, placed first on PATH, stands in for it, as the podman-docker
+    # package does (the shim shadows the runner's real Docker).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: podman as the only engine
+        run: |
+          set -eu
+          podman version
+          # Rootless Podman can't start the harness (crun fails writing
+          # net.ipv4.ping_group_range in a fresh netns under --cap-drop ALL), so use
+          # rootful Podman: the shim runs `sudo podman`.
+          real=$(command -v podman)
+          mkdir -p "$RUNNER_TEMP/shim"
+          printf '#!/bin/sh\nexec sudo -E %s "$@"\n' "$real" > "$RUNNER_TEMP/shim/docker"
+          cp "$RUNNER_TEMP/shim/docker" "$RUNNER_TEMP/shim/podman"
+          chmod +x "$RUNNER_TEMP/shim/docker" "$RUNNER_TEMP/shim/podman"
+          echo "$RUNNER_TEMP/shim" >> "$GITHUB_PATH"
+          PATH="$RUNNER_TEMP/shim:$PATH"
+          cat "$RUNNER_TEMP/shim/docker"
+          docker version --format '{{.Server.Version}}'
+          docker info --format '{{.Host.Security.Rootless}} rootless; {{.Host.OCIRuntime.Name}}'
+      - name: pre-pull the test images (test infra, not gapproof)
+        run: |
+          set -eu
+          podman pull gcr.io/distroless/static-debian12:nonroot
+          podman pull docker.io/library/alpine:3.20
+          podman pull docker.io/library/python:3.12-slim
+      - name: e2e under Podman
+        run: make e2e ENGINE=podman
 
   action-smoke:
     # The gapproof-scan action from this checkout, on a tiny image, with a locally built
