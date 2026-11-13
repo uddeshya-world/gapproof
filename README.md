@@ -83,7 +83,7 @@ Verify before the binary goes into the air gap. These steps use the network, onc
 # 1. The checksum of the archive you downloaded (and of the harness image)
 sha256sum -c checksums.sha256 --ignore-missing                                   # Linux
 sha256sum -c harness-checksums.sha256 --ignore-missing                           # the harness image (the binary also refuses any harness that doesn't match the digest pinned into it)
-grep gapproof_<version>_darwin_arm64.tar.gz checksums.sha256 | shasum -a 256 -c -   # macOS (use your archive's name)
+grep ' gapproof_<version>_darwin_arm64.tar.gz$' checksums.sha256 | shasum -a 256 -c -   # macOS (use your archive's name; the $ skips its .sbom.json line)
 
 # 2. The signature on checksums.sha256: keyless cosign, tied to this repo's release workflow
 cosign verify-blob checksums.sha256 --bundle checksums.sha256.sigstore.json \
@@ -95,7 +95,7 @@ gh attestation verify gapproof_<version>_<os>_<arch>.tar.gz --repo uddeshya-worl
 
 tar -xzf gapproof_<version>_<os>_<arch>.tar.gz && ./gapproof version
 ```
-Step 2 proves `checksums.sha256` came from this repository's release workflow on a `v*` tag; step 1 ties your archive to it. The cosign signature and the provenance attestation are wired into the release workflow but haven't been checked on a published release yet.
+Step 2 proves `checksums.sha256` came from this repository's release workflow on a `v*` tag; step 1 ties your archive to it. v0.2.0 is the first release with both; its provenance attestation was checked with `gh attestation verify` on 2026-11-13.
 
 ## Write your agents.yaml
 The agents module needs a declaration of what your agents can do. It checks that declaration; it doesn't discover agents by itself, so its result is only as good as the manifest. If you have an MCP server, start from its `tools/list` output:
