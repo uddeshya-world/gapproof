@@ -4,20 +4,33 @@
 
 ![it passes its own test: TestNoEgress](https://img.shields.io/badge/no--egress%20self--test-TestNoEgress-brightgreen)
 
-> Status: early. v0.1.0 is tagged and the demo apps work (leaky-rag scans at AGR-1, fixed-rag at AGR-4; `make demo`). The GitHub release for v0.1.0 is built but is still a draft until the maintainer publishes it, so until then build from source (see Build). Results are an inventory and findings, not a certification. See `docs/03_BUILD_PLAN.md`.
+> Status: early. v0.2.0 is the first public release: binaries for Linux and macOS (amd64, arm64) and the egress harness image on the [releases page](https://github.com/uddeshya-world/gapproof/releases). The demo apps scan at AGR-1 (leaky-rag) and AGR-4 (fixed-rag); `make demo` reproduces both. Results are an inventory and findings, not a certification. See `docs/03_BUILD_PLAN.md`.
 
 <!-- GIF placeholder: `gapproof scan --replay evidence/leaky-rag` then fixed-rag, recorded with asciinema/vhs. -->
 
-## 30-second quickstart
+## Quickstart
+You need Docker (or Podman) to run the egress check: Gapproof starts your image with every route blocked. Linux and macOS, amd64 and arm64.
+
 ```sh
-gapproof harness load gapproof-harness-<version>-linux-<arch>.oci.tar   # once; shipped with each release, never pulled
+# 1. Download the binary and the harness image for your platform (verify them first, see Install)
+V=0.2.0; OS=linux; ARCH=amd64          # OS: linux|darwin, ARCH: amd64|arm64
+curl -LO https://github.com/uddeshya-world/gapproof/releases/download/v$V/gapproof_${V}_${OS}_${ARCH}.tar.gz
+curl -LO https://github.com/uddeshya-world/gapproof/releases/download/v$V/gapproof-harness-v$V-linux-${ARCH}.oci.tar
+tar -xzf gapproof_${V}_${OS}_${ARCH}.tar.gz && ./gapproof version
+./gapproof harness load gapproof-harness-v$V-linux-${ARCH}.oci.tar    # once per release; loaded from the file, never pulled
+
+# 2. Scan your image. workload.sh exercises the app (see demo/leaky-rag/workload.sh); agents.yaml is optional
 docker save myapp:1.4 -o myapp.tar                                      # or pass the local ref directly
-gapproof scan --image myapp.tar --observe 10m --agents agents.yaml --out evidence/
-open evidence/report.html
-gapproof keygen --out vendor && gapproof sign --in evidence/ --key vendor.key
-gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar   # the approver, fully offline
+./gapproof scan --image myapp.tar --workload workload.sh --agents agents.yaml --observe 10m --out evidence/
+open evidence/report.html                                               # xdg-open on Linux
+
+# 3. Sign it, and let the approver verify it offline
+./gapproof keygen --out vendor && ./gapproof sign --in evidence/ --key vendor.key
+gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar            # the approver, fully offline
 gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar --rescan   # also re-run the static modules on the tar and diff against the evidence
 ```
+To see it work before scanning your own app, build from source and run `make demo` (under 15 minutes; see Build).
+
 `scan` runs five modules on the same image:
 - **egress:** runs the image with every packet blocked and logged, behind a sinkhole that owns its network namespace;
 - **phonehome:** static telemetry and hosted-API rules;
@@ -56,18 +69,20 @@ The scanned image is never pulled, and the harness image is pinned by digest in 
 make build    # static binary at bin/gapproof, FIPS 140-3 module mode, size-gated
 make test     # unit tests
 make lint     # gofmt, go vet, staticcheck
-make harness  # build + pin the egress harness image (Docker is tested; Podman is untested, see D-017)
+make harness  # build + pin the egress harness image (Docker; Podman is covered by a CI e2e job, rootful)
 make e2e      # container tests: no-egress, real images, the 9-attempt egress probe
+make demo     # build the leaky-rag and fixed-rag demo images and scan both into evidence/ (needs network for pip, scans never use it)
 ```
 
 ## Install
-Download from the [GitHub releases page](https://github.com/uddeshya-world/gapproof/releases) (once v0.1.0 is published; until then, `make build`). Each release has one archive per platform (`gapproof_<version>_<os>_<arch>.tar.gz`, linux and darwin, amd64 and arm64), a CycloneDX SBOM per archive, `checksums.sha256`, its cosign bundle `checksums.sha256.sigstore.json`, and the harness image tarballs (`gapproof-harness-<version>-linux-<arch>.oci.tar`) for `gapproof harness load`.
+Download from the [GitHub releases page](https://github.com/uddeshya-world/gapproof/releases), or build from source with Go 1.26 (`make harness && make build`). Each release has one archive per platform (`gapproof_<version>_<os>_<arch>.tar.gz`, linux and darwin, amd64 and arm64), a CycloneDX SBOM per archive, `checksums.sha256`, its cosign bundle `checksums.sha256.sigstore.json`, the harness image tarballs (`gapproof-harness-v<version>-linux-<arch>.oci.tar`, Linux images on both platforms: on macOS they run in Docker's Linux VM) for `gapproof harness load`, and `harness-checksums.sha256`.
 
 Verify before the binary goes into the air gap. These steps use the network, once, on your side; the binary itself never makes a network call.
 
 ```sh
-# 1. The checksum of the archive you downloaded
+# 1. The checksum of the archive you downloaded (and of the harness image)
 sha256sum -c checksums.sha256 --ignore-missing                                   # Linux
+sha256sum -c harness-checksums.sha256 --ignore-missing                           # the harness image (the binary also refuses any harness that doesn't match the digest pinned into it)
 grep gapproof_<version>_darwin_arm64.tar.gz checksums.sha256 | shasum -a 256 -c -   # macOS (use your archive's name)
 
 # 2. The signature on checksums.sha256: keyless cosign, tied to this repo's release workflow
