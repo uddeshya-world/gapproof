@@ -50,7 +50,8 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - Keep PRs reviewable (under ~800 lines of non-test code where possible).
 
 ## Current state & decisions  (newest first, dated)
-- 2026-11-13: Branch `fix/audit-findings` (audit fixes, not merged): fixed-rag now uses a numpy store instead of chromadb (D-045; the 1-in-4 raw.githubusercontent egress was never traced to a code path); new rule `PH-CHROMA-RUST-INSTALL`; FuzzScanELF fixed by validating ELF headers against file size; `--min-agr` takes `N` or `AGR-N` and gates `--replay`; `demo` workflow has `repeat`; nightly `fuzz.yml`; Podman e2e CI job (docker shim). Verified locally (arm64, b75fce2): make e2e 7/7, make demo + demo-e2e pass, 3 extra fixed-rag scans AGR-4 with byte-identical evidence.json, make selfscan AGR-4; CI demo repeat=10 all matched. Ready to merge PR #1.
+- 2026-11-13: **v0.2.0 published** (first public release, tag on `c9c8435`, PRs #2/#3). First release with a cosign bundle and build provenance; provenance checked with `gh attestation verify` (release.yml@refs/tags/v0.2.0). Downloaded darwin/arm64 binary: version OK, pinned harness loads, fixed-rag scan AGR-4 (observed 1m, with the demo's scope + arm64 waivers), sign + verify OK. README quickstart now downloads the release. The v0.1.0 draft release is left unpublished.
+- 2026-11-13: Branch `fix/audit-findings` (audit fixes, not merged): fixed-rag now uses a numpy store instead of chromadb (D-045; the 1-in-4 raw.githubusercontent egress was never traced to a code path); new rule `PH-CHROMA-RUST-INSTALL`; FuzzScanELF fixed by validating ELF headers against file size; `--min-agr` takes `N` or `AGR-N` and gates `--replay`; `demo` workflow has `repeat`; nightly `fuzz.yml`; Podman e2e CI job (docker shim). Verified locally (arm64, b75fce2): make e2e 7/7, make demo + demo-e2e pass, 3 extra fixed-rag scans AGR-4 with byte-identical evidence.json, make selfscan AGR-4; CI demo repeat=10 all matched. Merged as PR #1.
 - 2026-11-12: Merged `m12-gaps` (after v0.1.0):
   - Validators fail closed (D-042): `Load` recomputes AGR and rejects edited levels; single-label `*.com` scopes are rejected; only loopback or declared-CIDR resolvers are trusted; expired waivers are held to the exactly-one rule.
   - Community files with DCO (D-043).
@@ -72,7 +73,7 @@ Read before any work: `docs/02_SPEC.md` (what to build), `docs/AGR_SPEC.md` (how
 - 2026-11-08 — Kit imported into `projects/gapproof` (git init).
 
 ## Open questions / next steps
-- Publish the v0.1.0 draft release on GitHub (owner). Next release (v0.1.1/v0.2.0): check the cosign signature (`cosign verify-blob`) and the provenance (`gh attestation verify`). GitHub settings to apply: branch protection on `main` (require a PR and the `ci` checks, no force-push), private vulnerability reporting, read-only default workflow permissions, Dependabot for github-actions. D-001: v0.1 is quiet, so publishing the MESA newsletter makes it public; tag v0.2.0 first or accept that.
+- Not yet done: verify the v0.2.0 cosign bundle with `cosign verify-blob` (cosign isn't installed locally). Delete or keep the stale v0.1.0 draft release (owner's call). GitHub settings to apply: branch protection on `main` (require a PR and the `ci` checks, no force-push), private vulnerability reporting, read-only default workflow permissions, Dependabot for github-actions.
 - Demo follow-ups were decided in D-035 to D-039 (pickle builtin allowlist, chromadb `<1.5.4` bound with PEP 440 ranges, NFLOG duplicate-flow fix, amd64 waivers generated from arm64). Still open:
   - amd64 demo: verified via the manual `demo` workflow (`gh workflow run demo.yml`). Re-run it before each release.
 - Gotchas:
