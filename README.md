@@ -4,7 +4,7 @@
 
 ![it passes its own test: TestNoEgress](https://img.shields.io/badge/no--egress%20self--test-TestNoEgress-brightgreen)
 
-> Status: pre-release (M3–M7 built, demo apps and v0.1 tag pending). See `docs/03_BUILD_PLAN.md`.
+> Status: early. v0.1.0 is tagged and the demo apps work (leaky-rag scans at AGR-1, fixed-rag at AGR-4; `make demo`). The GitHub release for v0.1.0 is built but is still a draft until the maintainer publishes it, so until then build from source (see Build). Results are an inventory and findings, not a certification. See `docs/03_BUILD_PLAN.md`.
 
 <!-- GIF placeholder: `gapproof scan --replay evidence/leaky-rag` then fixed-rag, recorded with asciinema/vhs. -->
 
@@ -60,15 +60,48 @@ make harness  # build + pin the egress harness image (Docker is tested; Podman i
 make e2e      # container tests: no-egress, real images, the 9-attempt egress probe
 ```
 
-## Verifying a release
-Each release ships `checksums.sha256` with a keyless cosign signature (`checksums.sha256.sigstore.json`) and a GitHub build-provenance attestation for every archive. Both are checked online, by you, before the binary goes into the air gap; the binary itself never makes a network call.
+## Install
+Download from the [GitHub releases page](https://github.com/uddeshya-world/gapproof/releases) (once v0.1.0 is published; until then, `make build`). Each release has one archive per platform (`gapproof_<version>_<os>_<arch>.tar.gz`, linux and darwin, amd64 and arm64), a CycloneDX SBOM per archive, `checksums.sha256`, its cosign bundle `checksums.sha256.sigstore.json`, and the harness image tarballs (`gapproof-harness-<version>-linux-<arch>.oci.tar`) for `gapproof harness load`.
+
+Verify before the binary goes into the air gap. These steps use the network, once, on your side; the binary itself never makes a network call.
+
 ```sh
-sha256sum -c checksums.sha256 --ignore-missing
+# 1. The checksum of the archive you downloaded
+sha256sum -c checksums.sha256 --ignore-missing                                   # Linux
+grep gapproof_<version>_darwin_arm64.tar.gz checksums.sha256 | shasum -a 256 -c -   # macOS (use your archive's name)
+
+# 2. The signature on checksums.sha256: keyless cosign, tied to this repo's release workflow
 cosign verify-blob checksums.sha256 --bundle checksums.sha256.sigstore.json \
   --certificate-identity-regexp '^https://github.com/uddeshya-world/gapproof/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+# 3. Optional: the GitHub build-provenance attestation for the archive
 gh attestation verify gapproof_<version>_<os>_<arch>.tar.gz --repo uddeshya-world/gapproof
+
+tar -xzf gapproof_<version>_<os>_<arch>.tar.gz && ./gapproof version
 ```
+Step 2 proves `checksums.sha256` came from this repository's release workflow on a `v*` tag; step 1 ties your archive to it. The cosign signature and the provenance attestation are wired into the release workflow but haven't been checked on a published release yet.
+
+## Write your agents.yaml
+The agents module needs a declaration of what your agents can do. It checks that declaration; it doesn't discover agents by itself, so its result is only as good as the manifest. If you have an MCP server, start from its `tools/list` output:
+```sh
+gapproof agents import-mcp tools-list.json > agents.yaml   # a suggestion: every label is a low-confidence keyword guess
+```
+Then edit it by hand: split the tools into your real agents, set each tool's `reads` (`sensitive`, `untrusted`) and `sinks` (`boundary_crossing`, `exec`), add `handoffs`, and add `gates` where a human approves a call. A small example (it is `demo/fixed-rag/agents.yaml`):
+```yaml
+agents:
+  - name: analyst
+    tools: [read_file, search_docs, fetch_url, http_post]
+    handoffs: []
+tools:
+  read_file:   { reads: [sensitive] }
+  search_docs: { reads: [sensitive] }
+  fetch_url:   { reads: [untrusted] }
+  http_post:   { sinks: [boundary_crossing], targets: ["notes.internal"] }
+gates:
+  http_post: human_approval
+```
+Pass it with `--agents agents.yaml`. The report states that the agents result rests on a vendor-declared manifest. With no manifest the agents module doesn't run and the level stops at AGR-3.
 
 ## Crypto Gapproof itself uses
 SHA-256 (hashing evidence and artefacts) and Ed25519 (signing). Release builds use Go's FIPS 140-3 module mode (`GOFIPS140=v1.0.0`), and `gapproof version` prints the mode and module version.
