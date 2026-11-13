@@ -91,7 +91,6 @@ func TestDemoWaiversAmd64(t *testing.T) {
 		"usr/lib/x86_64-linux-gnu/libcrypto.so.3",
 		"usr/lib/x86_64-linux-gnu/libnettle.so.8.10",
 		"usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so",
-		"usr/local/lib/python3.12/site-packages/grpc/_cython/cygrpc.cpython-312-x86_64-linux-gnu.so",
 	}
 	slices.Sort(paths)
 	if !slices.Equal(paths, verified) {

@@ -133,7 +133,7 @@ func TestVerifyRescan(t *testing.T) {
 		t.Fatalf("tampered-but-signed bundle should pass plain verify: %d\n%s", code, out)
 	}
 	code, out = runCLI(t, "verify", ev2+".bundle.tar", "--pub", pfx+".pub", "--artifact", img, "--rescan")
-	if code != exitBelowThreshold || !strings.Contains(out, "rescan: MISMATCH") || !strings.Contains(out, "added findings: PH-0001 PH-CHROMA-TELEMETRY") {
+	if code != exitBelowThreshold || !strings.Contains(out, "rescan: MISMATCH") || !strings.Contains(out, "added findings: PH-0001 PH-CHROMA-RUST-INSTALL") || !strings.Contains(out, "added findings: PH-0002 PH-CHROMA-TELEMETRY") {
 		t.Errorf("rescan of a bundle with a removed finding: %d\n%s", code, out)
 	}
 }

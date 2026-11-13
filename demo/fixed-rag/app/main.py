@@ -1,7 +1,8 @@
 """fixed-rag: leaky-rag remediated for an air-gapped network (Gapproof demo target).
 
 What changed versus leaky-rag:
-  - chromadb product telemetry off (ANONYMIZED_TELEMETRY=False + Settings)
+  - chromadb replaced by a small in-process numpy cosine store (VectorStore below):
+    no vector-DB dependency, no CLI and no network code at all (D-045)
   - no Hugging Face download: HF_HUB_OFFLINE=1, the model is baked into the image
   - no hosted embedding fallback, no hosted SDK installed: local embeddings only
   - Sentry removed; no OTLP export
@@ -19,9 +20,7 @@ import re
 import zlib
 from pathlib import Path
 
-import chromadb
 import numpy as np
-from chromadb.config import Settings
 from cryptography.hazmat.primitives import hashes, hmac
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -86,8 +85,40 @@ def rerank(q: str, cands: list[dict]) -> list[dict]:
     return sorted(cands, key=lambda c: (-c["rerank"], c["id"]))
 
 
-chroma = chromadb.EphemeralClient(settings=Settings(anonymized_telemetry=False))
-docs = chroma.get_or_create_collection("docs", embedding_function=None, metadata={"hnsw:space": "cosine"})
+class VectorStore:
+    """Tiny in-memory cosine-similarity store. Embeddings are L2-normalised, so cosine
+    similarity is a dot product. Upsert by id; results are ordered by (-score, id) so
+    ties are deterministic. Pure numpy: it opens no sockets and reads no config."""
+
+    def __init__(self, dim: int) -> None:
+        self.dim = dim
+        self.ids: list[str] = []
+        self.texts: list[str] = []
+        self.vecs = np.zeros((0, dim), dtype=np.float64)
+
+    def count(self) -> int:
+        return len(self.ids)
+
+    def upsert(self, ids: list[str], texts: list[str], vecs: list[list[float]]) -> None:
+        for i, t, v in zip(ids, texts, vecs):
+            row = np.asarray(v, dtype=np.float64).reshape(1, self.dim)
+            if i in self.ids:
+                j = self.ids.index(i)
+                self.texts[j] = t
+                self.vecs[j] = row[0]
+            else:
+                self.ids.append(i)
+                self.texts.append(t)
+                self.vecs = np.vstack([self.vecs, row])
+
+    def query(self, vec: list[float], k: int) -> list[tuple[str, str, float]]:
+        """Top-k (id, text, cosine distance) with distance = 1 - cosine similarity."""
+        sims = self.vecs @ np.asarray(vec, dtype=np.float64)
+        order = sorted(range(len(self.ids)), key=lambda j: (-round(float(sims[j]), 12), self.ids[j]))
+        return [(self.ids[j], self.texts[j], 1.0 - float(sims[j])) for j in order[:k]]
+
+
+docs = VectorStore(DIM)
 
 # Integrity tag for citations (the cryptography wheel; its bundled OpenSSL is a
 # documented accepted risk in gapproof.waivers.yaml).
@@ -135,9 +166,9 @@ def ingest(req: IngestReq):
     if not req.documents:
         raise HTTPException(400, "no documents")
     docs.upsert(
-        ids=[d.id for d in req.documents],
-        documents=[d.text for d in req.documents],
-        embeddings=[embed(d.text) for d in req.documents],
+        [d.id for d in req.documents],
+        [d.text for d in req.documents],
+        [embed(d.text) for d in req.documents],
     )
     return {"ingested": len(req.documents)}
 
@@ -147,10 +178,7 @@ def query(req: QueryReq):
     n = docs.count()
     if n == 0:
         raise HTTPException(409, "index is empty; POST /ingest first")
-    r = docs.query(query_embeddings=[embed(req.q)], n_results=min(req.k, n))
-    cands = [
-        {"id": i, "text": t, "score": round(1.0 - d, 4), "tag": cite_tag(i)}
-        for i, t, d in zip(r["ids"][0], r["documents"][0], r["distances"][0])
-    ]
+    hits = docs.query(embed(req.q), max(1, min(req.k, n)))
+    cands = [{"id": i, "text": t, "score": round(1.0 - d, 4), "tag": cite_tag(i)} for i, t, d in hits]
     results = rerank(req.q, cands)
     return {"top_id": results[0]["id"], "answer": results[0]["text"], "results": results}

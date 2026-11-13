@@ -1,0 +1,26 @@
+id: PH-CHROMA-RUST-INSTALL
+title: chromadb bundles a CLI that names a GitHub install script and queries GitHub
+severity: low
+confidence: low
+explanation: >-
+  The chromadb 1.5.2 wheel bundles the Chroma CLI inside chromadb_rust_bindings. Its
+  update command queries https://api.github.com/repos/chroma-core/chroma/releases and
+  prints a curl command that points at
+  https://raw.githubusercontent.com/chroma-core/chroma/main/rust/cli/install/install.sh;
+  its install command downloads files from raw.githubusercontent.com and
+  api.github.com. These run only when the CLI is invoked (chroma update, chroma
+  install). The library path (chromadb.Client, EphemeralClient, PersistentClient) does
+  not call them as far as the cited source shows, so this is an inventory note, not an
+  observed phone-home. Confidence is low because no startup path was found. Only 1.5.2
+  was checked; other versions are not matched.
+match:
+  python_package: chromadb
+  python_package_version: "==1.5.2"
+fix: Don't invoke the chroma CLI in the air-gapped deployment, or use a vector store that has no CLI and no network code (the demo's fixed-rag uses a small numpy store).
+controls: [CM-7, SC-7]
+source:
+  - "https://github.com/chroma-core/chroma/blob/1.5.2/rust/cli/src/commands/update.rs#L9-L11 (tag 1.5.2, commit 201b5b56a08d1bcc322c3d9b68ab4007a32c866c; checked 2026-11-13; GITHUB_RELEASES_URL and the printed UNIX_CURL / WINDOWS_CURL install-script hints)"
+  - "https://github.com/chroma-core/chroma/blob/1.5.2/rust/cli/src/commands/update.rs#L28-L76 (same tag; version_check() GETs the GitHub releases API and only prints the install command)"
+  - "https://github.com/chroma-core/chroma/blob/1.5.2/rust/cli/src/commands/install.rs#L221-L233 (same tag; download_github_file() GETs https://raw.githubusercontent.com/chroma-core/chroma/main/<path>)"
+  - "https://github.com/chroma-core/chroma/blob/1.5.2/rust/cli/src/lib.rs#L56-L77 (same tag; chroma_cli() dispatches Update and Install only when the CLI is invoked)"
+  - "https://github.com/chroma-core/chroma/blob/1.5.2/rust/python_bindings/src/lib.rs#L55-L63 (same tag; the cli() function exported by the bindings; chromadb/cli/cli.py in the 1.5.2 wheel calls it)"

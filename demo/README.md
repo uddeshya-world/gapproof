@@ -1,7 +1,8 @@
 # Gapproof demo targets
 
-Two builds of one small FastAPI RAG service (chromadb + a local hashing
-embedder + an optional reranker). They exist so Gapproof has something real
+Two builds of one small FastAPI RAG service (a vector store + a local hashing
+embedder + an optional reranker). leaky-rag uses chromadb; fixed-rag uses a
+small in-process numpy cosine store (D-045). They exist so Gapproof has something real
 to scan in tests, in the video and in design-partner sessions.
 
 | | `leaky-rag` | `fixed-rag` |
@@ -41,6 +42,7 @@ is gitignored), carry the tars over, then `docker load` them and run
 |---|---|---|
 | egress | DNS and TCP attempts to `us.i.posthog.com` (chromadb telemetry), `o0.ingest.sentry.io`, `huggingface.co`, `api.openai.com` | observed in the harness |
 | phonehome | `PH-CHROMA-TELEMETRY`, `PH-TELEMETRY-SDK` (posthog) | chromadb 1.5.2 without `ANONYMIZED_TELEMETRY` |
+| | `PH-CHROMA-RUST-INSTALL` (low, low confidence) | chromadb 1.5.2's bundled CLI names GitHub URLs; inventory note, runs only if the CLI is invoked |
 | | `PH-HF-HUB-ONLINE`, `PH-HF-TELEMETRY` | huggingface_hub, no offline env; `hf_hub_download` at startup |
 | | `PH-OPENAI-SDK-HOSTED` | hosted-embedding fallback via the openai SDK |
 | | `PH-SENTRY-INIT`, `PH-SENTRY-DSN-ENV` | `sentry_sdk.init` and `SENTRY_DSN` on `o0.ingest.sentry.io` (fake key) |
@@ -54,17 +56,16 @@ is gitignored), carry the tars over, then `docker load` them and run
 ### fixed-rag (AGR-4)
 | Change | Fixes |
 |---|---|
-| `ANONYMIZED_TELEMETRY=False` plus `Settings(anonymized_telemetry=False)` | chromadb telemetry |
+| chromadb replaced by a pure-numpy cosine store in `app/main.py` (D-045); its requirements drop chromadb, posthog, grpcio, kubernetes, onnxruntime and the OpenTelemetry exporters | chromadb telemetry, the `chroma` CLI's GitHub fetches, `PH-TELEMETRY-SDK`, and the grpcio crypto module |
 | `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, `HF_HUB_DISABLE_TELEMETRY=1`; no Hub calls | HF online and telemetry |
 | openai and sentry-sdk removed, no OTLP env | hosted fallback, Sentry, OTLP |
 | `hashlib.sha256` cache keys | weak hash |
 | reranker shipped as `models/reranker.safetensors`, verified against `models/SHA256SUMS` at startup | pickle code execution |
 | numpy test fixtures stripped from the image | unwaivable pickle findings in site-packages |
 | `agents.yaml`: `http_post` behind `human_approval`, `run_python` removed | INV-01. `AGENT-NEARMISS-analyst` (info) remains: private data and untrusted input, but no ungated egress. Info doesn't block AGR-4 |
-| `gapproof.waivers.<arch>.yaml` | the 4 crypto modules a slim Python + chromadb image can't drop (accepted risk, expires 2027-06-30) |
+| `gapproof.waivers.<arch>.yaml` | the 3 crypto modules a slim Python + cryptography image can't drop (accepted risk, expires 2027-06-30) |
 
-What stays open: `PH-TELEMETRY-SDK` (medium) and the agents near miss (info). chromadb 1.5.2 hard-depends on posthog, but
-with telemetry off nothing calls it. Medium findings don't block AGR-3.
+What stays open: the agents near miss (info). Nothing else.
 
 Waived crypto modules (linux/arm64 paths; amd64 swaps `aarch64` for `x86_64`):
 
@@ -73,7 +74,6 @@ Waived crypto modules (linux/arm64 paths; amd64 swaps `aarch64` for `x86_64`):
 | `CRYPTO-UNVALIDATED-MODULE` | `usr/lib/aarch64-linux-gnu/libcrypto.so.3` (Debian OpenSSL 3.5.7) |
 | `CRYPTO-UNKNOWN-MODULE` | `usr/lib/aarch64-linux-gnu/libnettle.so.8.10` |
 | `CRYPTO-UNVALIDATED-MODULE` | `usr/local/lib/python3.12/site-packages/cryptography/hazmat/bindings/_rust.abi3.so` (bundled OpenSSL 4.0.3) |
-| `CRYPTO-UNVALIDATED-MODULE` | `usr/local/lib/python3.12/site-packages/grpc/_cython/cygrpc.cpython-312-aarch64-linux-gnu.so` (bundled BoringSSL) |
 
 Waiver paths contain the target triple, so there's one file per arch and
 `make demo` picks `gapproof.waivers.$(go env GOARCH).yaml`. A single file with
@@ -125,10 +125,14 @@ document. It exits 0 only if all of that holds.
 - Models: `python3 demo/tools/gen_models.py` (deterministic; commit the outputs).
 - Dependencies: in a clean `python:3.12-slim@<digest>` venv, `pip install` the
   top-level pins (leaky: `chromadb==1.5.2 "posthog<6" fastapi uvicorn sentry-sdk
-  openai huggingface-hub cryptography`; fixed: the same without sentry-sdk,
-  openai and huggingface-hub, plus `safetensors`), then `pip freeze`.
-- chromadb is pinned to 1.5.2 on purpose: from 1.5.4 its Python product
+  openai huggingface-hub cryptography`; fixed: `fastapi uvicorn cryptography
+  safetensors numpy`), then `pip freeze`.
+- leaky-rag pins chromadb 1.5.2 on purpose: from 1.5.4 its Python product
   telemetry is a no-op and posthog is no longer a dependency.
+- fixed-rag once used chromadb with telemetry off. In 1 of 4 early runs the
+  scan saw DNS and TLS attempts to `raw.githubusercontent.com`; the cause was
+  not confirmed (D-045), so the store was replaced instead of waived. A test
+  (`TestFixedRagHasNoNetworkCapableStore`) keeps network-capable packages out.
 
 ## Measured (2026-11-12, OrbStack on Apple silicon, linux/arm64)
 
@@ -138,7 +142,7 @@ document. It exits 0 only if all of that holds.
 | Cold build (pip downloads dominate; network-bound) | 106 s | 1046 s on a slow link |
 | Cached rebuild | < 5 s | < 5 s |
 | Level | AGR-1 | AGR-4 |
-| Findings | 34 open | 1 medium + 1 info open, 4 waived |
+| Findings | 35 open | 1 info open, 3 waived |
 | Egress attempts | 8 out of scope (DNS + TLS to the 4 hosts above) | 0 |
 | Scan time at `--observe 3m` | ≈ 3.5 min | ≈ 3.3 min |
 

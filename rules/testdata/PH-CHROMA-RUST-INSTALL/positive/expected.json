@@ -1,0 +1,18 @@
+[
+  {
+    "rule": "PH-CHROMA-RUST-INSTALL",
+    "severity": "low",
+    "title": "chromadb bundles a CLI that names a GitHub install script and queries GitHub",
+    "explanation": "The chromadb 1.5.2 wheel bundles the Chroma CLI inside chromadb_rust_bindings. Its update command queries https://api.github.com/repos/chroma-core/chroma/releases and prints a curl command that points at https://raw.githubusercontent.com/chroma-core/chroma/main/rust/cli/install/install.sh; its install command downloads files from raw.githubusercontent.com and api.github.com. These run only when the CLI is invoked (chroma update, chroma install). The library path (chromadb.Client, EphemeralClient, PersistentClient) does not call them as far as the cited source shows, so this is an inventory note, not an observed phone-home. Confidence is low because no startup path was found. Only 1.5.2 was checked; other versions are not matched.",
+    "evidence": {
+      "path": "usr/local/lib/python3.12/site-packages/chromadb-1.5.2.dist-info/METADATA",
+      "sha256": "e96e4f9c7b035fabcef0956685be6755fc87d7041e77a3713bba420aa43800a3",
+      "detail": "chromadb 1.5.2 installed, in affected range ==1.5.2"
+    },
+    "fix": "Don't invoke the chroma CLI in the air-gapped deployment, or use a vector store that has no CLI and no network code (the demo's fixed-rag uses a small numpy store).",
+    "controls": [
+      "CM-7",
+      "SC-7"
+    ]
+  }
+]
