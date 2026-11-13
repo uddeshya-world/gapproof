@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-13
+
+First public release (D-001: public launch at v0.2). Release binaries are signed with keyless cosign and carry build-provenance attestations for the first time.
+
+### Changed (docs, release)
+- README: Quickstart now downloads the release binary and harness image; Install covers the harness checksum; Podman is covered by a CI e2e job.
+
+
 ### Fixed (audit findings, branch `fix/audit-findings`)
 - **crypto:** a 64-byte ELF could make scanning allocate ~40 MB (`debug/elf` sizes reads from header fields). Program and section header tables, extended section counts and every file-backed section are now checked against the real file size before parsing, the section count is capped, and parsing reads through a reader capped at the file size. The fuzz crash input is a permanent seed.
 - **demo:** fixed-rag no longer depends on chromadb. In 1 of 4 runs the scan saw DNS and TLS attempts to `raw.githubusercontent.com` (cause unconfirmed, D-045), so the app uses a small in-process numpy cosine store. Its requirements drop chromadb, posthog, grpcio and their trees; the grpcio waiver is gone and `PH-TELEMETRY-SDK` no longer fires. leaky-rag is unchanged.

@@ -9,7 +9,7 @@
 | M3 Egress harness + sinkhole | ✅ 2026-11-11 (9-attempt probe + host capture clean; Podman untested, D-017) | 2–3 |
 | M4 Evidence, AGR, report, demo apps → **v0.1 (quiet release to design partners)** | ✅ 2026-11-12 v0.1.0 (demo: leaky-rag AGR-1, fixed-rag AGR-4, byte-identical rescans; Chromium zero-request check; amd64 demo via the manual `demo` workflow) | 3 |
 | M5 Agent containment (MESA port) | ✅ 2026-11-12 INV-01 ported from MESA's graded lattice (D-032, branch `m5-mesa-inv01`): parity on all 104 MESA lattice fixtures, 99.6% cov | 4–5 |
-| M6 Sign / verify, AI-BOM, OSCAL → **v0.2 public launch** | ✅ 2026-11-11 (schemas validate) | 5–6 |
+| M6 Sign / verify, AI-BOM, OSCAL → **v0.2 public launch** | ✅ 2026-11-11 (schemas validate); v0.2.0 released 2026-11-13 | 5–6 |
 | M7 Diff + CI gate (GitHub Action) → Pro beta | ✅ 2026-11-12 (action-smoke job green in CI) | 7–8 |
 | M8 Hardening: fuzzing, limits, self-scan | ✅ 2026-11-12 SECURITY.md, models fuzzing, sparse-member rejection, `--one-shot` (D-040), action SHA pinning, self-scan (`make selfscan`: gapproof's own scratch image, one-shot, AGR-4 with a vendor-declared `agents: []` manifest, observed 20s) | 9 |
 | M9 Design-partner fixes, docs site, v1.0 | ⬜ | 10–12 |
