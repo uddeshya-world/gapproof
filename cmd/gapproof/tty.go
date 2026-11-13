@@ -157,7 +157,7 @@ func sevColor(c func(string, string) string, s evidence.Severity) string {
 }
 
 // replay reprints a saved run's summary, paced for screen recordings.
-func replay(w io.Writer, dir string, only []string, speed float64) error {
+func replay(w io.Writer, dir string, only []string, speed float64, minAGR int) error {
 	b, err := evidence.Load(dir)
 	if err != nil {
 		return usagef("--replay: %v", err)
@@ -168,6 +168,9 @@ func replay(w io.Writer, dir string, only []string, speed float64) error {
 	for _, l := range renderTTY(b, only, color) {
 		fmt.Fprintln(w, l)
 		time.Sleep(delay)
+	}
+	if minAGR >= 0 && !evidence.MeetsMin(b.AGR.Level, minAGR) {
+		return &belowThresholdError{b.AGR.Level, fmt.Sprintf("AGR-%d", minAGR)}
 	}
 	return nil
 }

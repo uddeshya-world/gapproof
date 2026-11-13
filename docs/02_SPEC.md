@@ -13,7 +13,7 @@ gapproof scan  --image <ref|tar>       # container image (docker save tar or loc
                [--observe 10m]         # egress observation window
                [--agents <file>]       # agents.yaml or MCP tools/list JSON dumps
                [--skip egress|crypto|models|phonehome|agents]
-               [--min-agr N]           # CI gate threshold (see docs/AGR_SPEC.md §5)
+               [--min-agr N|AGR-N]     # CI gate threshold, 0-4, case-insensitive; also applies to --replay (see docs/AGR_SPEC.md §5)
                [--scope gapproof.scope.yaml]      # declared internal names/CIDRs (AGR_SPEC §2)
                [--waivers gapproof.waivers.yaml]  # accepted risks (AGR_SPEC §3)
                --out <dir>

@@ -77,7 +77,7 @@ waivers:
 | `phonehome`, `crypto` or `models` | AGR-2 |
 | `agents` (or no manifest) | AGR-3 |
 
-`--min-agr N`: `unassessed` is below every threshold, so it gives exit 1.
+`--min-agr N` (also `AGR-N`, any case; 0 to 4): `unassessed` is below every threshold, so it gives exit 1. With `--replay` it gates the saved run's recorded level the same way. Anything else is a usage error (exit 2).
 
 ## 6. Output
 `summary.json` carries:

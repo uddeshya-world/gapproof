@@ -27,6 +27,8 @@ func TestExitCodes(t *testing.T) {
 		{"scan needs out", []string{"scan", "--image", "a.tar"}, exitUsage, "--out is required"},
 		{"scan bad skip", []string{"scan", "--image", "a.tar", "--out", "o", "--skip", "dns"}, exitUsage, `unknown module "dns"`},
 		{"scan min-agr range", []string{"scan", "--image", "a.tar", "--out", "o", "--min-agr", "5"}, exitUsage, "between 0 and 4"},
+		{"scan min-agr garbage", []string{"scan", "--image", "a.tar", "--out", "o", "--min-agr", "AGR-x"}, exitUsage, "between 0 and 4"},
+		{"scan min-agr negative", []string{"scan", "--image", "a.tar", "--out", "o", "--min-agr", "-1"}, exitUsage, "between 0 and 4"},
 		{"scan zero observe", []string{"scan", "--image", "a.tar", "--out", "o", "--observe", "0s"}, exitUsage, "--observe must be at least 1s"},
 		{"scan rootfs needs skip egress", []string{"scan", "--rootfs", "r", "--out", "o"}, exitUsage, "--skip egress"},
 		{"scan only without replay", []string{"scan", "--image", "a.tar", "--out", "o", "--only", "egress"}, exitUsage, "--only requires --replay"},

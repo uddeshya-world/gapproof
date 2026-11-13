@@ -27,7 +27,7 @@ gapproof verify evidence.bundle.tar --pub vendor.pub --artifact myapp.tar --resc
 
 It writes `evidence.json`, `summary.json`, a CycloneDX AI-BOM, OSCAL assessment-results and the HTML/Markdown reports, plus a `MANIFEST.sha256` that `sign` signs.
 
-Exit codes: `0` ok, `1` below `--min-agr` (CI gate), `2` usage error, `3` internal error.
+Exit codes: `0` ok, `1` below `--min-agr` (CI gate; accepts `2` or `AGR-2`), `2` usage error, `3` internal error.
 
 ## AGR levels (`docs/AGR_SPEC.md`)
 | Level | Name | Meaning |
