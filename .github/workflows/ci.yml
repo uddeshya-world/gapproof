@@ -56,12 +56,17 @@ jobs:
         run: |
           set -eu
           podman version
+          # Rootless Podman can't start the harness (crun fails writing
+          # net.ipv4.ping_group_range in a fresh netns under --cap-drop ALL), so use
+          # rootful Podman: the shim runs `sudo podman`.
+          real=$(command -v podman)
           mkdir -p "$RUNNER_TEMP/shim"
-          ln -s "$(command -v podman)" "$RUNNER_TEMP/shim/docker"
-          sudo mkdir -p /etc/containers && sudo touch /etc/containers/nodocker
+          printf '#!/bin/sh\nexec sudo -E %s "$@"\n' "$real" > "$RUNNER_TEMP/shim/docker"
+          cp "$RUNNER_TEMP/shim/docker" "$RUNNER_TEMP/shim/podman"
+          chmod +x "$RUNNER_TEMP/shim/docker" "$RUNNER_TEMP/shim/podman"
           echo "$RUNNER_TEMP/shim" >> "$GITHUB_PATH"
           PATH="$RUNNER_TEMP/shim:$PATH"
-          test "$(command -v docker)" = "$RUNNER_TEMP/shim/docker"
+          cat "$RUNNER_TEMP/shim/docker"
           docker version --format '{{.Server.Version}}'
           docker info --format '{{.Host.Security.Rootless}} rootless; {{.Host.OCIRuntime.Name}}'
       - name: pre-pull the test images (test infra, not gapproof)

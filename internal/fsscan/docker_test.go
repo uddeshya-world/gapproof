@@ -71,6 +71,10 @@ func TestRealDockerSaveAttested(t *testing.T) {
 	if testing.Short() {
 		t.Skip("container test skipped in -short mode")
 	}
+	// Podman (also reachable as `docker`) has no buildx attestations.
+	if out, err := exec.Command("docker", "--version").Output(); err != nil || !strings.HasPrefix(string(out), "Docker version") {
+		t.Skip("not Docker: provenance attestations are Docker-only")
+	}
 	if exec.Command("docker", "buildx", "version").Run() != nil {
 		t.Skip("no docker buildx: provenance attestations are Docker-only")
 	}
