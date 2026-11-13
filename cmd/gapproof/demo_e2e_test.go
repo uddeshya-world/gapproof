@@ -114,7 +114,10 @@ func TestDemoApps(t *testing.T) {
 			if !bytes.Equal(a, b) {
 				t.Errorf("evidence.json differs between two runs (%d vs %d bytes); diff %s %s",
 					len(a), len(b), first, filepath.Join(out, "evidence.json"))
-				_ = os.WriteFile(first+".rerun", b, 0o644)
+				// Keep the rerun out of evidence/: a stray file there blocks `sign`.
+				rerun := filepath.Join(t.TempDir(), "evidence.json.rerun")
+				_ = os.WriteFile(rerun, b, 0o644)
+				t.Logf("rerun written to %s", rerun)
 			}
 		})
 	}
