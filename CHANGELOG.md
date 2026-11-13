@@ -4,6 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ## [Unreleased]
 
+### Fixed (audit findings, branch `fix/audit-findings`)
+- **crypto:** a 64-byte ELF could make scanning allocate ~40 MB (`debug/elf` sizes reads from header fields). Program and section header tables, extended section counts and every file-backed section are now checked against the real file size before parsing, the section count is capped, and parsing reads through a reader capped at the file size. The fuzz crash input is a permanent seed.
+- **demo:** fixed-rag no longer depends on chromadb. In 1 of 4 runs the scan saw DNS and TLS attempts to `raw.githubusercontent.com` (cause unconfirmed, D-045), so the app uses a small in-process numpy cosine store. Its requirements drop chromadb, posthog, grpcio and their trees; the grpcio waiver is gone and `PH-TELEMETRY-SDK` no longer fires. leaky-rag is unchanged.
+- **cli:** `scan --min-agr` accepts `2` or `AGR-2` (any case), and now gates `--replay` runs instead of being ignored there. Invalid values are usage errors.
+- **test:** `TestDemoApps` writes its `evidence.json.rerun` under a temp dir; it used to land in `evidence/<app>/` and make `sign` refuse the directory.
+
+### Added (audit findings)
+- Rule `PH-CHROMA-RUST-INSTALL` (low severity, low confidence, chromadb 1.5.2 only): the wheel bundles a CLI that names GitHub install URLs and queries GitHub. An inventory note; no phone-home from the library path was found.
+- `demo` workflow: a `repeat` input re-runs the scan-and-assert loop N times and fails on any deviation in level, finding rules or `evidence.json` bytes (`demo/tools/check_demo_run.sh`).
+- `fuzz` workflow: nightly, every `Fuzz*` target for a few minutes each. `FuzzExtractImage` runs with smaller limits and seeds.
+- CI job running `make e2e` under Podman.
+- README: status, an Install section (checksum and keyless cosign verification) and a "Write your agents.yaml" section.
+
 ### Fixed (models, D-044)
 - A text `.pth` path-configuration file in `site-packages` or `dist-packages` is no longer scanned as a PyTorch checkpoint (it produced a high `MODEL-PARSE-FAILED`). Real checkpoints, and `.pth` files elsewhere, are still scanned.
 
@@ -25,7 +38,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: Se
 
 ### Changed (release hygiene)
 - Every GitHub Action is pinned to a full commit SHA with a version comment.
-- Releases sign `checksums.sha256` with keyless cosign (`.sigstore.json` bundle) and publish a build-provenance attestation for the archives (README, "Verifying a release").
+- Releases sign `checksums.sha256` with keyless cosign (`.sigstore.json` bundle) and publish a build-provenance attestation for the archives (README, "Install").
 
 ### Changed (validators fail closed, D-042)
 - `evidence.Load` recomputes the AGR level, window and blocking list from the recorded findings and rejects evidence whose stored level disagrees.
