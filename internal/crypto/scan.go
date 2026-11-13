@@ -216,11 +216,18 @@ func (s *scanner) file(p string) {
 		s.warnf("%s: %d bytes, larger than the %d-byte ELF limit; not inventoried", p, fi.Size(), s.opt.MaxELFSize)
 		return
 	}
-	if bi, err := buildinfo.Read(f); err == nil {
-		s.goBinary(p, f, bi)
+	// Everything below reads through a reader capped at the real file size, and
+	// only after the headers have been checked against it (elfguard.go).
+	capped := io.NewSectionReader(f, 0, fi.Size())
+	if err := validateELF(capped, fi.Size()); err != nil {
+		s.warnf("%s: %v; not inventoried", p, err)
 		return
 	}
-	ef, err := elf.NewFile(f)
+	if bi, err := buildinfo.Read(capped); err == nil {
+		s.goBinary(p, f, capped, bi)
+		return
+	}
+	ef, err := elf.NewFile(capped)
 	if err != nil {
 		return // not an ELF we can read; not a crypto finding
 	}
@@ -301,8 +308,8 @@ func (s *scanner) rodata(ef *elf.File, f *os.File) ([]byte, error) {
 	return io.ReadAll(io.NewSectionReader(f, 0, s.opt.MaxScanBytes))
 }
 
-func (s *scanner) goBinary(p string, f *os.File, bi *buildinfo.BuildInfo) {
-	ef, err := elf.NewFile(f)
+func (s *scanner) goBinary(p string, f *os.File, capped *io.SectionReader, bi *buildinfo.BuildInfo) {
+	ef, err := elf.NewFile(capped)
 	if err != nil {
 		return
 	}

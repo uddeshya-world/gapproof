@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -430,5 +431,84 @@ func TestOrigin(t *testing.T) {
 		if o != want[0] || pkg != want[1] {
 			t.Errorf("origin(%s) = %s,%s want %v", p, o, pkg, want)
 		}
+	}
+}
+
+// ELF headers that point outside the file are refused before debug/elf or
+// debug/buildinfo size any read from them (FuzzScanELF found a 64-byte file
+// that made the stdlib allocate ~40 MB).
+func TestValidateELF(t *testing.T) {
+	good := makeELFNeeding("OpenSSL 3.0.13 30 Jan 2024", true, "libcrypto.so.3")
+	if err := validateELF(bytes.NewReader(good), int64(len(good))); err != nil {
+		t.Fatalf("well-formed ELF rejected: %v", err)
+	}
+	le := binary.LittleEndian
+	mut := func(f func(b []byte)) []byte {
+		b := append([]byte(nil), good...)
+		f(b)
+		return b
+	}
+	cases := map[string][]byte{
+		"empty":               nil,
+		"magic only":          []byte("\x7fELF"),
+		"short header":        good[:40],
+		"bad class":           mut(func(b []byte) { b[4] = 9 }),
+		"bad byte order":      mut(func(b []byte) { b[5] = 0 }),
+		"shoff past EOF":      mut(func(b []byte) { le.PutUint64(b[40:], uint64(len(b))+1) }),
+		"shoff huge":          mut(func(b []byte) { le.PutUint64(b[40:], 1<<63) }),
+		"shnum past EOF":      mut(func(b []byte) { le.PutUint16(b[60:], 0xfff0) }),
+		"shentsize tiny":      mut(func(b []byte) { le.PutUint16(b[58:], 8) }),
+		"shstrndx past table": mut(func(b []byte) { le.PutUint16(b[62:], 40) }),
+		"phnum past EOF":      mut(func(b []byte) { le.PutUint16(b[56:], 100) }),
+		"phentsize tiny":      mut(func(b []byte) { le.PutUint16(b[54:], 4); le.PutUint16(b[56:], 1) }),
+		"section off+size overflow": mut(func(b []byte) {
+			shoff := le.Uint64(b[40:])
+			le.PutUint64(b[shoff+64*2+24:], ^uint64(0)-8) // .shstrtab offset
+		}),
+		"section size past EOF": mut(func(b []byte) {
+			shoff := le.Uint64(b[40:])
+			le.PutUint64(b[shoff+64*1+32:], 1<<40) // .rodata size
+		}),
+	}
+	for name, b := range cases {
+		if err := validateELF(bytes.NewReader(b), int64(len(b))); err == nil {
+			t.Errorf("%s: accepted", name)
+		} else if !errors.Is(err, errELF) {
+			t.Errorf("%s: error %v does not wrap errELF", name, err)
+		}
+	}
+}
+
+// The FuzzScanELF crash input is rejected with a warning and a small allocation.
+func TestScanRejectsHostileELFHeaderCheaply(t *testing.T) {
+	data := []byte("\x7fELF\x02\x01\x010000000000000\x0100000000000000000000000000000000000\x00000000 ")
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "usr/lib"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "usr/lib/libcrypto.so.3"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	snap, err := BuiltinSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	res, err := Scan(context.Background(), root, nil, snap, DefaultOptions())
+	runtime.ReadMemStats(&after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := after.TotalAlloc - before.TotalAlloc; got > 4<<20 {
+		t.Errorf("scan of a %d-byte hostile ELF allocated %d bytes", len(data), got)
+	}
+	if len(res.Modules) != 0 || len(res.Warnings) == 0 {
+		t.Errorf("modules=%d warnings=%q; want no module and a warning", len(res.Modules), res.Warnings)
 	}
 }
