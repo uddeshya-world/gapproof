@@ -3,8 +3,15 @@ name: demo
 # The full demo on a real amd64 host: build both demo images, scan them with the
 # egress harness, assert leaky-rag = AGR-1 and fixed-rag = AGR-4, and require
 # byte-identical rescans. Manual (about 15 min); the evidence is uploaded.
+# With repeat=N (N > 1) the scan-and-assert loop runs N times in total and the job
+# fails if any run deviates: a different level, a different set of finding rules,
+# or an evidence.json that is not byte-identical to the first run's.
 on:
   workflow_dispatch:
+    inputs:
+      repeat:
+        description: "Run the scan-and-assert loop this many times (a positive integer)"
+        default: "1"
 
 permissions:
   contents: read
@@ -12,7 +19,7 @@ permissions:
 jobs:
   demo-amd64:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
@@ -22,8 +29,25 @@ jobs:
         run: uname -m && docker version --format '{{.Server.Version}}'
       - name: make demo (harness, build, demo images, both scans)
         run: make demo
+      - name: baseline (run 1) levels, finding rules and evidence hashes
+        run: sh demo/tools/check_demo_run.sh evidence .demo-baseline
       - name: make demo-e2e (levels, finding rules, byte-identical rescans)
         run: make demo-e2e
+      - name: repeat the scans and compare with run 1
+        env:
+          REPEAT: ${{ inputs.repeat || '1' }}
+        run: |
+          set -eu
+          case "$REPEAT" in ''|*[!0-9]*|0) echo "repeat must be a positive integer, got '$REPEAT'" >&2; exit 2;; esac
+          i=2
+          while [ "$i" -le "$REPEAT" ]; do
+            echo "::group::run $i of $REPEAT"
+            make demo-scan
+            sh demo/tools/check_demo_run.sh evidence .demo-baseline
+            echo "::endgroup::"
+            i=$((i + 1))
+          done
+          echo "all $REPEAT runs matched"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
